@@ -68,16 +68,19 @@
 <div class="flex-shrink-0 flex items-center">
 <img alt="Intellectum AI Solutions Logo" class="h-16 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ADBb0uiQFKF4Rlc4P5p_BwP7_3vB4gnCe-IxVV_GIKH44sd4XwbfCWKtGd9174JDqmtcF0soEvgiVrXEnWUiZfVX-9kah5rDhmmhPbuXXJ5xqGhF_o9cNx2buzvWGz9gXJ6UZbIQhOmKK5XZIPzp7Mkc68N5LdCpTm9w8TfWvCNT9sau5NiXOkPzGBk6Rr-NZeBKlvrdt4joTu_M0H90JEZZ9aFmJ1lj4aON7oghTlUFRuLsFFHxlVvSNLqBzjacyJUD8lr7-4vSh8Ws2Xw" style="filter: brightness(1.1) contrast(1.1);"/>
 </div>
-<nav class="hidden md:flex space-x-8">
-<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors" href="#servicios" style="">Servicios</a>
-<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors" href="#beneficios" style="">Beneficios</a>
-<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors" href="#contacto" style="">Contacto</a>
+<nav class="hidden md:flex flex-col md:flex-row absolute md:relative top-20 md:top-0 left-0 w-full md:w-auto bg-background-light dark:bg-background-dark md:bg-transparent border-b md:border-0 border-gray-200 dark:border-gray-800 p-4 md:p-0 space-y-4 md:space-y-0 md:space-x-8 z-50" id="main-nav">
+<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors block md:inline" href="#servicios">Servicios</a>
+<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors block md:inline" href="#beneficios">Beneficios</a>
+<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors block md:inline" href="#contacto">Contacto</a>
+<div class="md:hidden pt-4 border-t border-gray-200 dark:border-gray-800">
+<a class="bg-primary text-black block text-center px-6 py-3 rounded-full font-semibold shadow-[0_0_15px_rgba(0,240,255,0.4)] text-base" href="#contacto">Consultoría GRATIS</a>
+</div>
 </nav>
 <div class="hidden md:flex items-center space-x-4">
 <a class="bg-primary text-black hover:bg-opacity-90 px-6 py-2 rounded-full font-semibold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(0,240,255,0.4)] text-base" href="#contacto" style="">Consultoría personalizada GRATIS<br/></a>
 </div>
 <div class="flex md:hidden items-center">
-<button aria-label="Toggle menu" class="text-gray-400 hover:text-white focus:outline-none focus:text-white" style="" type="button">
+<button aria-label="Toggle menu" class="text-gray-400 hover:text-white focus:outline-none focus:text-white" id="mobile-menu-button" style="" type="button">
 <span class="material-icons text-3xl" style="">menu</span>
 </button>
 </div>
@@ -126,28 +129,28 @@
 <span class="material-icons text-primary text-4xl" style="">record_voice_over</span>
 </div>
 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" style="">Llamadas de Voz IA (Call Center)</h3>
-<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Agentes inteligentes 24/7. </p><div class="" style="">📞 Automatiza llamadas, califica leads y agenda citas de forma natural y sin esperas. 🚀</div><p class="" style=""></p>
+<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Agentes inteligentes 24/7. <div>📞 Automatiza llamadas, califica leads y agenda citas de forma natural y sin esperas. 🚀</div></p>
 </div>
 <div class="bg-white dark:bg-background-dark p-10 rounded-3xl glow-box border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-2">
 <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mb-8">
 <span class="material-icons text-primary text-4xl" style="">forum</span>
 </div>
 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" style="">Mensajería Inteligente &amp; Chatbots</h3>
-<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Atención omnicanal en WhatsApp y otras Redes Sociales. </p><div class="" style="">💬 IA generativa que resuelve dudas y cierra ventas al instante. 🤖</div><p class="" style=""></p>
+<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Atención omnicanal en WhatsApp y otras Redes Sociales. <div>💬 IA generativa que resuelve dudas y cierra ventas al instante. 🤖</div></p>
 </div>
 <div class="bg-white dark:bg-background-dark p-10 rounded-3xl glow-box border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-2">
 <div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl flex items-center justify-center mb-8">
 <span class="material-icons text-primary text-4xl" style="">payments</span>
 </div>
 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" style="">Ventas Automatizadas (Sales Flow)</h3>
-<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Embudo de ventas 100% autónomo. </p><div class="" style="">💰 Desde la prospección en frío hasta el cierre, sin intervención humana. 📈</div><p class="" style=""></p>
+<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Embudo de ventas 100% autónomo. <div>💰 Desde la prospección en frío hasta el cierre, sin intervención humana. 📈</div></p>
 </div>
 <div class="bg-white dark:bg-background-dark p-10 rounded-3xl glow-box border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-2">
 <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mb-8">
 <span class="material-icons text-primary text-4xl" style="">memory</span>
 </div>
 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" style="">Automatización de Procesos a Medida</h3>
-<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Flujos de trabajo inteligentes. </p><div class="" style="">⚙️ Conecta tus apps favoritas y elimina tareas repetitivas para escalar tu negocio. ✨</div><p class="" style=""></p>
+<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Flujos de trabajo inteligentes. <div>⚙️ Conecta tus apps favoritas y elimina tareas repetitivas para escalar tu negocio. ✨</div></p>
 </div>
 </div>
 </div>
@@ -169,7 +172,7 @@
 <div class="w-full lg:w-1/2 flex justify-center">
 <div class="relative group">
 <div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-110 group-hover:bg-primary/30 transition-all duration-500"></div>
-<img alt="Intellectum Logo Concept" class="relative z-10 w-full max-w-lg h-auto drop-shadow-[0_0_25px_rgba(0,240,255,0.3)] transform transition duration-500 hover:scale-105 object-cover object-top object-contain rounded-2xl" src="https://lh3.googleusercontent.com/aida/ADBb0uh7kYkN-4nejOUtCd8PkX3huq5bgXaKFYoTWZEuO7Xu3YwJD5Bocb6UVnEDTCpkwdixE4z4eRH9YTZFoIDnddnOmIhc_RS4QB-zP8IccJyGIfq1USl517pizpi3wwD0sI8uGPMPhxxzv51TCKysRCdyIEqY_38rjMntifkyEZ4B8aebWX5kvsH9iL4Dqo_qjLDjDQYzULqMbeBfHLZXsPHnwYOji2vXHosjZ4fz4UOXWtSOQw5UV8B-uv1lFHJMHoOnspVuRKdoD2Q" style=""/>
+<img alt="Intellectum Logo Concept" class="relative z-10 w-full max-w-lg h-auto drop-shadow-[0_0_25px_rgba(0,240,255,0.3)] transform transition duration-500 hover:scale-105 object-cover object-top object-contain" src="https://lh3.googleusercontent.com/aida/ADBb0ugjeiFS-9wP2eQUeNpf9MeyUF-4nMv5yvOUfFYgMMDo6nNNfN2pTZRSoSzaoJNVRsPHWCot1wPVOPrHpZhXMrNzELL0viuqbuLr6jAp02JBzJA44TwSFuoOS0AtMvqnzEFpxHbuNWYMNyiS_OP4cp4VE3Cg0_AeqoBY77ywMc8CW9BHvug6tBwY3MIafz1Z4vaMJZAhGLwv3h40xH1YtwOHLtPyRm9L3rcwjWI8OWejxunglNhMC2AWP6P2jWzuHQHg8AniQBwysQ" style=""/>
 </div>
 </div>
 </div>
@@ -230,7 +233,7 @@
 <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
 <h2 class="text-4xl font-extrabold text-black sm:text-5xl mb-8" style="">¿Estás listo para llevar tu empresa al siguiente nivel con el poder de la IA?</h2>
-<p class="text-2xl text-gray-900 mb-12 max-w-2xl mx-auto font-medium" style="">El futuro de tu empresa comienza hoy. No dejes que la competencia se adelante: ¡agenda tu consultoría gratuita ahora y descubre cómo la IA puede disparar tu productividad!</p>
+<p class="text-2xl text-gray-900 mb-12 max-w-2xl mx-auto font-medium" style="">No esperes más para dominar tu mercado. ¡Agenda tu consultoría estratégica ahora y empieza a transformar tus resultados hoy mismo!</p>
 <div class="mb-14 flex flex-col md:flex-row justify-center items-center gap-8 max-w-3xl mx-auto">
 <div class="bg-black/10 backdrop-blur-md p-6 rounded-2xl flex items-center space-x-4 text-black w-full md:w-auto justify-center">
 <span class="material-icons text-3xl" style="">email</span>
@@ -277,4 +280,30 @@
             </div>
 </div>
 </footer>
-</body></html>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuButton = document.getElementById('mobile-menu-button');
+        const mainNav = document.getElementById('main-nav');
+        const navLinks = mainNav.querySelectorAll('a');
+
+        menuButton.addEventListener('click', function() {
+            mainNav.classList.toggle('hidden');
+            const icon = menuButton.querySelector('.material-icons');
+            if (mainNav.classList.contains('hidden')) {
+                icon.textContent = 'menu';
+            } else {
+                icon.textContent = 'close';
+            }
+        });
+
+        // Close menu when clicking a link
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 768) {
+                    mainNav.classList.add('hidden');
+                    menuButton.querySelector('.material-icons').textContent = 'menu';
+                }
+            });
+        });
+    });
+</script></body></html>
