@@ -1,309 +1,1498 @@
-<!DOCTYPE html>
+<!doctype html>
+<html lang="es-EC">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0a0a" />
 
-<html class="dark" lang="es"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Intellectum AI Solutions</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-<script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#00F0FF",
-                        "background-light": "#F3F4F6",
-                        "background-dark": "#0B0E14",
-                        secondary: "#7000FF",
-                        surface: "#1A1F2B"
-                    },
-                    fontFamily: {
-                        display: ["Inter", "sans-serif"],
-                    },
-                    borderRadius: {
-                        DEFAULT: "0.5rem",
-                    },
-                },
-            },
-        };
-    </script>
+<!-- Primary SEO -->
+<title>Intellectum AI — Automatización con Inteligencia Artificial para empresas en Ecuador</title>
+<meta name="description" content="Agentes de voz IA, chatbots inteligentes, ventas automatizadas y procesos a medida. Reduce costos hasta 70% y escala tu negocio en Ecuador con inteligencia artificial aplicada." />
+<meta name="keywords" content="inteligencia artificial Ecuador, automatización empresas, agentes de voz IA, chatbots WhatsApp, IA para negocios, automatización Quito, call center IA, sales flow IA" />
+<meta name="author" content="Intellectum AI Solutions" />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+<link rel="canonical" href="https://www.intellectum.ec/" />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.intellectum.ec/" />
+<meta property="og:site_name" content="Intellectum AI Solutions" />
+<meta property="og:title" content="Intellectum AI — Automatiza tu negocio con Inteligencia Artificial" />
+<meta property="og:description" content="Soluciones de IA hechas a la medida para empresas ecuatorianas. Agentes de voz, chatbots, ventas automatizadas y procesos inteligentes." />
+<meta property="og:image" content="https://www.intellectum.ec/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="es_EC" />
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Intellectum AI — Automatización con IA para Ecuador" />
+<meta name="twitter:description" content="Agentes de voz, chatbots, ventas automatizadas y procesos a medida con IA." />
+<meta name="twitter:image" content="https://www.intellectum.ec/og-image.png" />
+
+<!-- Favicon (SVG inline para evitar archivo aparte) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0a0a'/%3E%3Cpath d='M30 30h12v40H30zm18 0h12v6H54v28h6v6H48zm18 0h6v6h6v28h-6v6h-6z' fill='%23d4ff3c'/%3E%3C/svg%3E" />
+
+<!-- Preconnect fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- Schema.org JSON-LD: Organization + LocalBusiness + WebSite -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.intellectum.ec/#organization",
+      "name": "Intellectum AI Solutions",
+      "url": "https://www.intellectum.ec/",
+      "logo": "https://www.intellectum.ec/logo.png",
+      "description": "Startup ecuatoriana de soluciones de inteligencia artificial y automatización empresarial.",
+      "email": "info@intellectum.ec",
+      "telephone": "+593984014129",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "EC",
+        "addressRegion": "Pichincha",
+        "addressLocality": "Quito"
+      },
+      "sameAs": []
+    },
+    {
+      "@type": "LocalBusiness",
+      "@id": "https://www.intellectum.ec/#business",
+      "name": "Intellectum AI Solutions",
+      "image": "https://www.intellectum.ec/og-image.png",
+      "telephone": "+593984014129",
+      "email": "info@intellectum.ec",
+      "url": "https://www.intellectum.ec/",
+      "priceRange": "$$",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "EC",
+        "addressRegion": "Pichincha",
+        "addressLocality": "Quito"
+      },
+      "areaServed": { "@type": "Country", "name": "Ecuador" }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.intellectum.ec/#website",
+      "url": "https://www.intellectum.ec/",
+      "name": "Intellectum AI Solutions",
+      "inLanguage": "es-EC",
+      "publisher": { "@id": "https://www.intellectum.ec/#organization" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Cuánto tiempo tarda implementar una solución de IA?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Depende del alcance, pero la mayoría de proyectos están operativos entre 2 y 6 semanas desde el diagnóstico inicial." }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Necesito conocimientos técnicos para usar las soluciones?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. Diseñamos las soluciones para que tu equipo opere con paneles simples. Te entregamos capacitación y soporte continuo." }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Trabajan con empresas pequeñas o solo grandes corporaciones?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Trabajamos con empresas de cualquier tamaño. Adaptamos el alcance al presupuesto y madurez digital de cada cliente." }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué pasa con la seguridad y privacidad de mis datos?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Aplicamos cifrado, accesos controlados y cumplimos con buenas prácticas de protección de datos. Toda integración se acuerda mediante NDA." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
 <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            /* Increase base font size for better mobile readability */
-            font-size: 18px;
-        }
-        @media (max-width: 640px) {
-            body {
-                font-size: 16px;
-            }
-        }
-        .glow-text {
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-        }
-        .glow-box {
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
-            transition: box-shadow 0.3s ease;
-        }
-        .glow-box:hover {
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
-        }
-        .gradient-text {
-            background: linear-gradient(90deg, #00F0FF, #7000FF);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        body {
-            min-height: max(884px, 100dvh);
-        }
-    </style>
-<link href="{{DATA:IMAGE:IMAGE_13}}" rel="shortcut icon" type="image/x-icon"/></head>
-<body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-white min-h-screen flex flex-col selection:bg-primary selection:text-black" id="top">
-<header class="fixed w-full z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="flex justify-between items-center h-20">
-<div class="flex-shrink-0 flex items-center">
-<a class="block transition-opacity hover:opacity-80" href="#top"><img alt="Intellectum AI Solutions Logo" class="h-16 w-auto object-contain h-16 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ADBb0uhZh-8CLSwqDoh3y-g1LHPR6YaJeDhVl9iXBDBvsn_C8vPl9dhmFeFI9HUTc0P1k3hb036uPm69L1iYUeLArHB0EhnJDPPXbm8IaFbRI68zrlc2LUBriyQvHey4JpdAwx_pRf6UuKgSKNTBRhyEts8KZholr-ncQF8uOAZfaDxMu2qkfi_JlAzlC5C6W0gb8WhA6ZMK2Y5A9ACKQHCdpYsORRdnP0H5vDXuHcYb8JQuXA9nsSGoyHwUPLdwFrxAw5p1cTbGTb1DdnM"/></a>
-</div>
-<nav class="hidden md:flex flex-col md:flex-row absolute md:relative top-20 md:top-0 left-0 w-full md:w-auto bg-background-light dark:bg-background-dark md:bg-transparent border-b md:border-0 border-gray-200 dark:border-gray-800 p-4 md:p-0 space-y-4 md:space-y-0 md:space-x-8 z-50" id="main-nav">
-<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors block md:inline" href="#servicios">Servicios</a>
-<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors block md:inline" href="#beneficios">Beneficios</a>
-<a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary px-3 py-2 rounded-md text-base font-medium transition-colors block md:inline" href="#contacto">Contacto</a>
-<div class="md:hidden pt-4 border-t border-gray-200 dark:border-gray-800">
-<a class="bg-primary text-black block text-center px-6 py-3 rounded-full font-semibold shadow-[0_0_15px_rgba(0,240,255,0.4)] text-base" href="#contacto">Consultoría GRATIS</a>
-</div>
-</nav>
-<div class="hidden md:flex items-center space-x-4">
-<a class="bg-primary text-black hover:bg-opacity-90 px-6 py-2 rounded-full font-semibold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(0,240,255,0.4)] text-base" href="#contacto" style="">Consultoría personalizada GRATIS<br/></a>
-</div>
-<div class="flex md:hidden items-center">
-<button aria-label="Toggle menu" class="text-gray-400 hover:text-white focus:outline-none focus:text-white" id="mobile-menu-button" style="" type="button">
-<span class="material-icons text-3xl" style="">menu</span>
-</button>
-</div>
-</div>
-</div>
+/* ============================================
+   DESIGN TOKENS
+   ============================================ */
+:root {
+  --bg: #0a0a0a;
+  --bg-elev: #111111;
+  --bg-card: rgba(255, 255, 255, 0.025);
+  --bg-card-hover: rgba(255, 255, 255, 0.045);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --text: #fafaf7;
+  --text-dim: #a8a89e;
+  --text-muted: #6e6e66;
+
+  --accent: #d4ff3c;
+  --accent-dim: #b8e032;
+  --accent-glow: rgba(212, 255, 60, 0.18);
+
+  --whatsapp: #25d366;
+
+  --font-display: "Fraunces", "Times New Roman", serif;
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --max-w: 1240px;
+  --pad-x: clamp(20px, 4vw, 48px);
+
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 22px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================
+   RESET
+   ============================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+img, svg { display: block; max-width: 100%; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; padding: 0; margin: 0; }
+input, textarea { font: inherit; color: inherit; }
+
+/* Background atmosphere — sutil grain + radial gradient */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 255, 60, 0.08), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(212, 255, 60, 0.04), transparent 60%);
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================
+   LAYOUT
+   ============================================ */
+.wrap {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding-left: var(--pad-x);
+  padding-right: var(--pad-x);
+  position: relative;
+  z-index: 1;
+}
+
+section { position: relative; z-index: 1; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.eyebrow::before {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: var(--accent);
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--text);
+}
+.serif-italic {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--accent);
+}
+.section-title {
+  font-size: clamp(36px, 5.5vw, 68px);
+  margin-bottom: 18px;
+}
+.section-lead {
+  max-width: 640px;
+  font-size: clamp(16px, 1.6vw, 19px);
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  transition: transform 0.3s var(--ease), background 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease);
+  white-space: nowrap;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-primary {
+  background: var(--accent);
+  color: #0a0a0a;
+  box-shadow: 0 0 0 0 var(--accent-glow);
+}
+.btn-primary:hover {
+  background: #e0ff6a;
+  box-shadow: 0 8px 32px var(--accent-glow);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--text-dim);
+}
+.btn-whatsapp {
+  background: var(--whatsapp);
+  color: #fff;
+}
+.btn-whatsapp:hover {
+  background: #1fb858;
+  box-shadow: 0 8px 32px rgba(37, 211, 102, 0.25);
+}
+.btn .arrow {
+  width: 14px; height: 14px;
+  transition: transform 0.3s var(--ease);
+}
+.btn:hover .arrow { transform: translateX(3px); }
+
+/* ============================================
+   NAV
+   ============================================ */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 18px 0;
+  transition: padding 0.3s var(--ease), background 0.3s var(--ease), border-color 0.3s var(--ease);
+  border-bottom: 1px solid transparent;
+}
+.nav.scrolled {
+  padding: 12px 0;
+  background: rgba(10, 10, 10, 0.72);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-bottom-color: var(--border);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #0a0a0a;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.nav-links a {
+  font-size: 14px;
+  color: var(--text-dim);
+  transition: color 0.2s var(--ease);
+  position: relative;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-cta { display: flex; align-items: center; gap: 12px; }
+.nav-cta .btn { padding: 10px 18px; font-size: 14px; }
+
+.nav-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  align-items: center;
+  justify-content: center;
+}
+.nav-toggle svg { width: 18px; height: 18px; }
+
+@media (max-width: 880px) {
+  .nav-links, .nav-cta { display: none; }
+  .nav-toggle { display: inline-flex; }
+}
+
+/* Mobile menu */
+.mobile-menu {
+  position: fixed;
+  inset: 64px 0 0 0;
+  z-index: 40;
+  background: rgba(10, 10, 10, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 32px var(--pad-x);
+  transform: translateY(-12px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.mobile-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.mobile-menu a {
+  display: block;
+  padding: 18px 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  border-bottom: 1px solid var(--border);
+}
+.mobile-menu .btn { margin-top: 24px; width: 100%; }
+
+/* ============================================
+   HERO
+   ============================================ */
+.hero {
+  padding: 160px 0 100px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: end;
+}
+@media (min-width: 1024px) {
+  .hero-grid { grid-template-columns: 1.4fr 1fr; gap: 80px; }
+}
+.hero h1 {
+  font-size: clamp(44px, 8vw, 108px);
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+.hero h1 .line { display: block; }
+.hero-sub {
+  margin-top: 28px;
+  max-width: 540px;
+  font-size: clamp(16px, 1.6vw, 19px);
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.hero-ctas {
+  margin-top: 36px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.hero-meta {
+  margin-top: 56px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+  max-width: 580px;
+}
+.hero-meta-item .num {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 40px);
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.hero-meta-item .num em {
+  color: var(--accent);
+  font-style: italic;
+  font-weight: 300;
+}
+.hero-meta-item .label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Hero visual — geometric glyph */
+.hero-visual {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  max-width: 480px;
+  width: 100%;
+  margin-left: auto;
+}
+.hero-visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, var(--accent-glow), transparent 65%);
+  filter: blur(40px);
+}
+.hero-visual svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hero entry animation */
+.hero h1 .line, .hero-sub, .hero-ctas, .hero-meta, .hero-visual {
+  animation: rise 1.1s var(--ease-out) both;
+}
+.hero h1 .line:nth-child(1) { animation-delay: 0.05s; }
+.hero h1 .line:nth-child(2) { animation-delay: 0.15s; }
+.hero h1 .line:nth-child(3) { animation-delay: 0.25s; }
+.hero-sub { animation-delay: 0.4s; }
+.hero-ctas { animation-delay: 0.5s; }
+.hero-meta { animation-delay: 0.6s; }
+.hero-visual { animation-delay: 0.3s; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   MARQUEE BAND (trust line)
+   ============================================ */
+.marquee {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 22px 0;
+  overflow: hidden;
+}
+.marquee-track {
+  display: flex;
+  gap: 64px;
+  white-space: nowrap;
+  animation: marquee 38s linear infinite;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(18px, 2vw, 26px);
+  color: var(--text-dim);
+}
+.marquee-track span { display: inline-flex; align-items: center; gap: 64px; }
+.marquee-track span::after {
+  content: "✦";
+  color: var(--accent);
+  font-style: normal;
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ============================================
+   SERVICES
+   ============================================ */
+.services {
+  padding: 120px 0 80px;
+}
+.services-head {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 64px;
+}
+@media (min-width: 900px) {
+  .services-head { grid-template-columns: 1fr 1fr; align-items: end; gap: 80px; }
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 760px) {
+  .service-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.service-card {
+  position: relative;
+  padding: 40px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  transition: background 0.4s var(--ease), border-color 0.4s var(--ease), transform 0.4s var(--ease);
+  overflow: hidden;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.service-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-4px);
+}
+.service-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent, rgba(212, 255, 60, 0.5), transparent 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+  pointer-events: none;
+}
+.service-card:hover::after { opacity: 1; }
+
+.service-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+.service-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(212, 255, 60, 0.08);
+  border: 1px solid rgba(212, 255, 60, 0.18);
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  margin-bottom: 28px;
+}
+.service-icon svg { width: 22px; height: 22px; stroke-width: 1.6; }
+.service-card h3 {
+  font-size: clamp(22px, 2.2vw, 28px);
+  font-weight: 400;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+.service-card p {
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0;
+}
+.service-card .tag {
+  display: inline-block;
+  margin-top: 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 6px 10px;
+  border: 1px solid rgba(212, 255, 60, 0.25);
+  border-radius: 999px;
+}
+
+.service-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+/* ============================================
+   PROCESS / HOW IT WORKS
+   ============================================ */
+.process {
+  padding: 80px 0 100px;
+}
+.process-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  margin-top: 56px;
+}
+@media (min-width: 760px) {
+  .process-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+}
+.step {
+  position: relative;
+  padding: 32px 0 0;
+  border-top: 1px solid var(--border);
+}
+.step-num {
+  font-family: var(--font-display);
+  font-size: 56px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 20px;
+}
+.step h3 {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+.step p {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ============================================
+   ABOUT SPLIT
+   ============================================ */
+.about {
+  padding: 100px 0;
+  border-top: 1px solid var(--border);
+}
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .about-grid { grid-template-columns: 1fr 1.2fr; gap: 80px; }
+}
+.about-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.about-quote em { color: var(--accent); font-weight: 400; }
+.about-body p {
+  color: var(--text-dim);
+  font-size: 16px;
+  line-height: 1.65;
+  margin: 0 0 16px;
+}
+.about-body p strong { color: var(--text); font-weight: 500; }
+
+/* ============================================
+   WHY US (3 BENEFITS)
+   ============================================ */
+.why {
+  padding: 100px 0;
+  border-top: 1px solid var(--border);
+}
+.why-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 56px;
+}
+@media (min-width: 760px) {
+  .why-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.why-card {
+  padding: 36px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+}
+.why-card:hover { border-color: var(--border-strong); background: var(--bg-card-hover); }
+.why-card .icon {
+  width: 36px; height: 36px;
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+.why-card .icon svg { width: 100%; height: 100%; stroke-width: 1.4; }
+.why-card h3 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+.why-card p {
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ============================================
+   FAQ
+   ============================================ */
+.faq {
+  padding: 100px 0;
+  border-top: 1px solid var(--border);
+}
+.faq-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .faq-grid { grid-template-columns: 1fr 1.4fr; gap: 80px; }
+}
+.faq-list {
+  border-top: 1px solid var(--border);
+}
+.faq-item {
+  border-bottom: 1px solid var(--border);
+}
+.faq-q {
+  width: 100%;
+  text-align: left;
+  padding: 26px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.faq-q .plus {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  position: relative;
+  transition: transform 0.4s var(--ease);
+}
+.faq-q .plus::before, .faq-q .plus::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  background: var(--accent);
+}
+.faq-q .plus::before { width: 100%; height: 1.5px; }
+.faq-q .plus::after { width: 1.5px; height: 100%; transition: transform 0.4s var(--ease); }
+.faq-item.open .faq-q .plus::after { transform: rotate(90deg); }
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s var(--ease);
+}
+.faq-a-inner {
+  padding: 0 0 26px;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 80ch;
+}
+.faq-item.open .faq-a { max-height: 400px; }
+
+/* ============================================
+   CTA / CONTACT
+   ============================================ */
+.cta {
+  padding: 120px 0;
+  border-top: 1px solid var(--border);
+  position: relative;
+}
+.cta-inner {
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.cta h2 {
+  font-size: clamp(40px, 7vw, 88px);
+  letter-spacing: -0.035em;
+  line-height: 1;
+  margin-bottom: 24px;
+}
+.cta-sub {
+  color: var(--text-dim);
+  font-size: clamp(16px, 1.6vw, 19px);
+  max-width: 580px;
+  margin: 0 auto 40px;
+  line-height: 1.55;
+}
+.cta-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.cta-channels {
+  margin-top: 56px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.cta-channels a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s var(--ease);
+}
+.cta-channels a:hover { color: var(--text); }
+.cta-channels svg { width: 16px; height: 16px; color: var(--accent); }
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 60px 0 40px;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+@media (min-width: 760px) {
+  .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
+}
+.footer-brand p {
+  margin-top: 18px;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 320px;
+}
+.footer-col h4 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: 14px;
+  color: var(--text-dim);
+  transition: color 0.2s var(--ease);
+}
+.footer-col a:hover { color: var(--text); }
+
+.footer-bottom {
+  border-top: 1px solid var(--border);
+  padding-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* Floating WhatsApp */
+.fab-whatsapp {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--whatsapp);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.35);
+  transition: transform 0.3s var(--ease);
+}
+.fab-whatsapp:hover { transform: scale(1.06); }
+.fab-whatsapp svg { width: 26px; height: 26px; }
+
+/* Reveal on scroll */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* Selection */
+::selection { background: var(--accent); color: #0a0a0a; }
+</style>
+</head>
+<body>
+
+<!-- =================== NAV =================== -->
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand" aria-label="Intellectum AI Solutions — Inicio">
+      <span class="brand-mark" aria-hidden="true">IA</span>
+      <span>Intellectum</span>
+    </a>
+
+    <nav class="nav-links" aria-label="Menú principal">
+      <a href="#servicios">Servicios</a>
+      <a href="#proceso">Proceso</a>
+      <a href="#nosotros">Nosotros</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="nav-cta">
+      <a href="https://wa.me/593984014129?text=Hola%20Intellectum%2C%20me%20interesa%20una%20consultor%C3%ADa%20gratis%20sobre%20automatizaci%C3%B3n%20con%20IA"
+         class="btn btn-primary" target="_blank" rel="noopener">
+        Consultoría gratis
+        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
 </header>
-<main class="flex-grow pt-20">
-<section class="relative overflow-hidden py-20 lg:py-32">
-<div class="absolute inset-0 z-0">
-<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,240,255,0.1)_0%,transparent_70%)]"></div>
-<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
-<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#servicios">Servicios</a>
+  <a href="#proceso">Proceso</a>
+  <a href="#nosotros">Nosotros</a>
+  <a href="#faq">FAQ</a>
+  <a href="https://wa.me/593984014129" class="btn btn-primary" target="_blank" rel="noopener">
+    Consultoría gratis →
+  </a>
 </div>
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-<div class="text-center max-w-4xl mx-auto">
-<h1 class="text-5xl tracking-tight font-extrabold sm:text-6xl md:text-7xl lg:text-8xl mb-6" style="">
-<span class="block text-gray-900 dark:text-white" style="">Automatiza el futuro de</span>
-<span class="block gradient-text mt-2 text-4xl" style="line-height: 1.2; padding-bottom: 0.1em;">tu negocio con IA</span>
-</h1>
-<p class="mt-4 text-2xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto" style="">
-                        Impulsa la eficiencia, reduce costos y escala tus operaciones con soluciones de inteligencia artificial diseñadas a medida para tu empresa.
-                    </p>
-<div class="mt-10 flex flex-col sm:flex-row justify-center gap-4 px-4">
-<a class="bg-primary text-black hover:bg-opacity-90 px-8 py-4 rounded-full font-bold text-xl transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(0,240,255,0.5)]" href="#contacto" style="">Consultoría personalizada GRATIS</a>
-<a class="bg-transparent border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:border-primary dark:hover:border-primary px-8 py-4 rounded-full font-bold text-xl transition-all" href="#servicios" style="">
-                            Explorar Servicios
-                        </a>
-</div>
-</div>
-</div>
+
+<main id="top">
+
+<!-- =================== HERO =================== -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">Inteligencia Artificial · Ecuador</span>
+        <h1 style="margin-top: 24px;">
+          <span class="line">Automatiza lo</span>
+          <span class="line"><em class="serif-italic">repetitivo.</em></span>
+          <span class="line">Escala lo importante.</span>
+        </h1>
+        <p class="hero-sub">
+          Diseñamos agentes de voz, chatbots y flujos inteligentes hechos a la medida para empresas en Ecuador. Reduce costos, atiende 24/7 y libera el tiempo de tu equipo para lo que realmente mueve tu negocio.
+        </p>
+        <div class="hero-ctas">
+          <a href="https://wa.me/593984014129?text=Hola%20Intellectum%2C%20me%20interesa%20una%20consultor%C3%ADa%20gratis"
+             class="btn btn-primary" target="_blank" rel="noopener">
+            Agenda tu consultoría
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a href="#servicios" class="btn btn-secondary">Explorar servicios</a>
+        </div>
+
+        <div class="hero-meta">
+          <div class="hero-meta-item">
+            <div class="num">24<em>/</em>7</div>
+            <div class="label">Disponibilidad</div>
+          </div>
+          <div class="hero-meta-item">
+            <div class="num">−<em>70</em>%</div>
+            <div class="label">Costo operativo*</div>
+          </div>
+          <div class="hero-meta-item">
+            <div class="num">2<em>—</em>6</div>
+            <div class="label">Semanas en vivo</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <svg viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="g1" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#d4ff3c" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#d4ff3c" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#d4ff3c"/>
+              <stop offset="100%" stop-color="#b8e032"/>
+            </linearGradient>
+          </defs>
+          <!-- Concentric rings -->
+          <circle cx="240" cy="240" r="220" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <circle cx="240" cy="240" r="170" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <circle cx="240" cy="240" r="120" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <circle cx="240" cy="240" r="70" fill="url(#g1)"/>
+          <!-- Orbital nodes -->
+          <g style="transform-origin: 240px 240px; animation: spin 60s linear infinite;">
+            <circle cx="240" cy="20" r="4" fill="url(#g2)"/>
+            <circle cx="240" cy="460" r="3" fill="rgba(212,255,60,0.4)"/>
+            <circle cx="20" cy="240" r="3" fill="rgba(212,255,60,0.5)"/>
+            <circle cx="460" cy="240" r="4" fill="url(#g2)"/>
+          </g>
+          <g style="transform-origin: 240px 240px; animation: spin 40s linear infinite reverse;">
+            <circle cx="380" cy="100" r="3" fill="url(#g2)"/>
+            <circle cx="100" cy="380" r="3" fill="rgba(212,255,60,0.5)"/>
+          </g>
+          <!-- Center monogram -->
+          <text x="240" y="262" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-weight="300" font-size="120" fill="#fafaf7">IA</text>
+        </svg>
+      </div>
+    </div>
+  </div>
 </section>
-<section class="py-24 bg-gray-50 dark:bg-surface border-y border-gray-200 dark:border-gray-800 relative z-10" id="servicios">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="text-center mb-20">
-<h2 class="text-2xl text-primary font-bold tracking-widest uppercase mb-4" style="">Nuestras Soluciones</h2>
-<p class="mt-2 text-4xl leading-tight font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl" style="">
-                        Inteligencia Artificial Aplicada
-                    </p>
-<p class="mt-4 max-w-3xl text-2xl text-gray-600 dark:text-gray-400 mx-auto" style="">
-                        Transformamos la forma en que interactúas con tus clientes y gestionas tus procesos internos con tecnología de vanguardia.
-                    </p>
+
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+<!-- =================== MARQUEE =================== -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>Voz IA</span><span>Chatbots</span><span>WhatsApp</span><span>Sales Flow</span><span>Automatización</span><span>Atención 24/7</span><span>Ecuador</span>
+    <span>Voz IA</span><span>Chatbots</span><span>WhatsApp</span><span>Sales Flow</span><span>Automatización</span><span>Atención 24/7</span><span>Ecuador</span>
+  </div>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-<div class="bg-white dark:bg-background-dark p-10 rounded-3xl glow-box border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-2">
-<div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-8">
-<span class="material-icons text-primary text-4xl" style="">record_voice_over</span>
-</div>
-<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" style="">Llamadas de Voz IA (Call Center)</h3>
-<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Agentes inteligentes 24/7. <div>📞 Automatiza llamadas, califica leads y agenda citas de forma natural y sin esperas. 🚀</div></p>
-</div>
-<div class="bg-white dark:bg-background-dark p-10 rounded-3xl glow-box border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-2">
-<div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mb-8">
-<span class="material-icons text-primary text-4xl" style="">forum</span>
-</div>
-<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" style="">Mensajería Inteligente &amp; Chatbots</h3>
-<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Atención omnicanal en WhatsApp y otras Redes Sociales. <div>💬 IA generativa que resuelve dudas y cierra ventas al instante. 🤖</div></p>
-</div>
-<div class="bg-white dark:bg-background-dark p-10 rounded-3xl glow-box border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-2">
-<div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl flex items-center justify-center mb-8">
-<span class="material-icons text-primary text-4xl" style="">payments</span>
-</div>
-<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" style="">Ventas Automatizadas (Sales Flow)</h3>
-<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Embudo de ventas 100% autónomo. <div>💰 Desde la prospección en frío hasta el cierre, sin intervención humana. 📈</div></p>
-</div>
-<div class="bg-white dark:bg-background-dark p-10 rounded-3xl glow-box border border-gray-100 dark:border-gray-800 transition-transform hover:-translate-y-2">
-<div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mb-8">
-<span class="material-icons text-primary text-4xl" style="">memory</span>
-</div>
-<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" style="">Automatización de Procesos a Medida</h3>
-<p class="text-gray-600 dark:text-gray-400 leading-relaxed text-xl" style="">Flujos de trabajo inteligentes. <div>⚙️ Conecta tus apps favoritas y elimina tareas repetitivas para escalar tu negocio. ✨</div></p>
-</div>
-</div>
-</div>
-</section>
-<section class="py-24 relative z-10 overflow-hidden bg-background-light dark:bg-background-dark" id="quienes-somos">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="flex flex-col lg:flex-row items-center gap-16">
-<div class="w-full lg:w-1/2">
-<h2 class="text-4xl font-extrabold text-gray-900 dark:text-white sm:text-5xl mb-8" style="">
-                            ¿Qué es Intellectum AI Solutions?
-                        </h2>
-<div class="relative">
-<div class="absolute -left-4 top-0 w-1 h-full bg-primary rounded-full"></div>
-<p class="text-2xl text-gray-600 dark:text-gray-400 leading-relaxed pl-6" style="">
-                                Intellectum AI Solutions es una startup ecuatoriana que transforma la manera en que las empresas operan. No vendemos tecnología por vender: diseñamos automatizaciones a la medida que eliminan lo repetitivo, optimizan lo complejo y liberan tu tiempo para lo que realmente importa — hacer crecer tu negocio.
-                            </p>
-</div>
-</div>
-<div class="w-full lg:w-1/2 flex justify-center">
-<div class="relative group">
-<div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-110 group-hover:bg-primary/30 transition-all duration-500"></div>
-<img alt="Intellectum Logo Concept" class="relative z-10 w-full max-w-lg h-auto drop-shadow-[0_0_25px_rgba(0,240,255,0.3)] transform transition duration-500 hover:scale-105 object-cover object-contain object-center" src="https://lh3.googleusercontent.com/aida/ADBb0uhPQVA7xp8S0t2J_iUgbcQn35gpKuNFIYxmcY2VzH9PttUISRjCPW7qDvpNT7SwSMdpbt_jJBd1qr8q3FSSrpDETcKrViz6lMZlE1x9SxRa94GQl1cNsMhEkeSCU67vufcaCnTrXnuUlLLq9knoqwxmQ1VFLzdcpTnsBgo3kL6dyABZjUH7zhMPjHGwNtkYNr23F2PNLOBjDZPDPoVaOyLacdVN_DrJWdNowDlSuvjqLU4mN5t8A48v_3i00MwR4BhC2pEnW1c8WQ" style="max-height: 500px; width: auto;"/>
-</div>
-</div>
-</div>
-</div>
-</section>
-<section class="py-24 relative z-10" id="beneficios">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="lg:grid lg:grid-cols-2 lg:gap-24 items-center"><div class="relative mb-12 lg:mb-0">
-<div class="absolute inset-0 bg-gradient-to-r from-primary to-secondary rounded-3xl transform -rotate-3 opacity-30 blur-2xl"></div>
-<img alt="Futuristic AI visualization" class="relative rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 object-cover w-full h-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZtWuAZ2josLEjk2NsymPp4u6SZQ3_nxfcmla6iF2V0yUdHc6ZCXkfBIJ3DukV6DsE1iUOCvDLPb0bRl2yRSN2jnTT-QdKxDjmwXha3roJE4PcmjJu4w2O08CFaDJwp-Fg8f0N5GtFqlJFufBGQUPp_q6haviQzs1X2IOWtak4VjP-G-rzXFu8oxwfd3iIIf0rMrMoTpkfH2yrfEyjUGdpjbyLDgDDBHK5Y9YuSm_IhQaIiALJUVyWoht00xJIr5mC7Nxfyvk1o8NI" style=""/>
-</div>
-<div class="">
-<h2 class="text-4xl font-extrabold text-gray-900 dark:text-white sm:text-5xl mb-8" style="">
-                            ¿Por qué elegir Intellectum?
-                        </h2>
-<p class="text-2xl text-gray-600 dark:text-gray-400 mb-10 leading-relaxed" style="">
-                            No solo proveemos tecnología; somos tu socio estratégico en la transformación digital. Nuestras soluciones están diseñadas para ofrecer resultados medibles desde el primer día.
-                        </p>
-<dl class="space-y-10">
-<div class="flex">
-<div class="flex-shrink-0">
-<div class="flex items-center justify-center h-14 w-14 rounded-xl bg-primary/20 text-primary">
-<span class="material-icons text-3xl" style="">rocket_launch</span>
-</div>
-</div>
-<div class="ml-6">
-<dt class="text-2xl leading-6 font-bold text-gray-900 dark:text-white">Escalabilidad Ilimitada</dt>
-<dd class="mt-3 text-xl text-gray-600 dark:text-gray-400">Crece sin límites. Nuestros sistemas manejan desde decenas hasta miles de interacciones simultáneas sin perder calidad.</dd>
-</div>
-</div>
-<div class="flex">
-<div class="flex-shrink-0">
-<div class="flex items-center justify-center h-14 w-14 rounded-xl bg-primary/20 text-primary">
-<span class="material-icons text-3xl" style="">schedule</span>
-</div>
-</div>
-<div class="ml-6">
-<dt class="text-2xl leading-6 font-bold text-gray-900 dark:text-white">Disponibilidad 24/7</dt>
-<dd class="mt-3 text-xl text-gray-600 dark:text-gray-400">Tu negocio nunca duerme. Atiende a tus clientes a cualquier hora, fines de semana y días festivos de forma ininterrumpida.</dd>
-</div>
-</div>
-<div class="flex">
-<div class="flex-shrink-0">
-<div class="flex items-center justify-center h-14 w-14 rounded-xl bg-primary/20 text-primary">
-<span class="material-icons text-3xl" style="">trending_down</span>
-</div>
-</div>
-<div class="ml-6">
-<dt class="text-2xl leading-6 font-bold text-gray-900 dark:text-white">Reducción de Costos</dt>
-<dd class="mt-3 text-xl text-gray-600 dark:text-gray-400">Optimiza tu presupuesto operativo automatizando tareas repetitivas y permitiendo a tu equipo enfocarse en tareas de alto valor.</dd>
-</div>
-</div>
-</dl>
-</div></div>
-</div>
-</section>
-<section class="py-24 bg-primary relative z-10 overflow-hidden" id="contacto">
-<div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-<h2 class="text-4xl font-extrabold text-black sm:text-5xl mb-8" style="">¿Estás listo para llevar tu empresa al siguiente nivel con el poder de la IA?</h2>
-<p class="text-2xl text-gray-900 mb-12 max-w-2xl mx-auto font-medium" style="">No esperes más para dominar tu mercado. ¡Agenda tu consultoría estratégica ahora y empieza a transformar tus resultados hoy mismo!</p>
-<div class="mb-14 flex flex-col md:flex-row justify-center items-center gap-8 max-w-3xl mx-auto">
-<div class="bg-black/10 backdrop-blur-md p-6 rounded-2xl flex items-center space-x-4 text-black w-full md:w-auto justify-center">
-<span class="material-icons text-3xl" style="">email</span>
-<a class="text-xl font-bold hover:underline" href="mailto:info@intellectum.ec" style="">info@intellectum.ec</a>
-</div>
-<div class="bg-black/10 backdrop-blur-md p-6 rounded-2xl flex items-center space-x-4 text-black w-full md:w-auto justify-center">
-<span class="material-icons text-3xl" style="">phone</span>
-<a class="text-xl font-bold hover:underline" href="tel:0984014129" style="">+593 9840 14 129</a>
-</div>
-</div>
-<form class="max-w-lg mx-auto space-y-6">
-<input class="w-full px-6 py-4 rounded-xl border-0 focus:ring-4 focus:ring-black/20 text-gray-900 shadow-sm text-lg" placeholder="Tu correo electrónico empresarial" required="" type="email"/>
-<button class="w-full bg-black text-white hover:bg-gray-900 px-10 py-5 rounded-xl font-bold text-xl transition-all shadow-xl active:scale-95" style="" type="submit">
-                        Agenda tu consultoría GRATIS</button>
-</form>
-</div>
-</section>
-</main>
-<footer class="bg-white dark:bg-background-dark border-t border-gray-200 dark:border-gray-800 py-16 relative z-10">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="flex flex-col md:flex-row justify-between items-center">
-<div class="mb-8 md:mb-0 flex items-center">
-<img alt="Intellectum AI Solutions Logo" class="h-10 w-auto h-12 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ADBb0uhZh-8CLSwqDoh3y-g1LHPR6YaJeDhVl9iXBDBvsn_C8vPl9dhmFeFI9HUTc0P1k3hb036uPm69L1iYUeLArHB0EhnJDPPXbm8IaFbRI68zrlc2LUBriyQvHey4JpdAwx_pRf6UuKgSKNTBRhyEts8KZholr-ncQF8uOAZfaDxMu2qkfi_JlAzlC5C6W0gb8WhA6ZMK2Y5A9ACKQHCdpYsORRdnP0H5vDXuHcYb8JQuXA9nsSGoyHwUPLdwFrxAw5p1cTbGTb1DdnM"/>
-<span class="ml-4 text-2xl font-bold text-gray-900 dark:text-white" style="">Intellectum AI</span>
-</div>
-<div class="flex flex-col items-center md:items-end space-y-4 mb-8 md:mb-0">
-<div class="flex items-center space-x-3 text-lg font-bold text-gray-700 dark:text-gray-300">
-<span class="material-icons text-primary" style="">email</span>
-<span class="" style="">info@intellectum.ec</span>
-</div>
-<div class="flex items-center space-x-3 text-lg font-bold text-gray-700 dark:text-gray-300">
-<span class="material-icons text-primary" style="">phone</span>
-<span class="" style="">+593 9840 14 129</span>
-</div>
-</div>
-<div class="flex space-x-10 text-base font-semibold text-gray-500 dark:text-gray-400">
-<a class="hover:text-primary transition-colors" href="#" style="">Términos</a>
-<a class="hover:text-primary transition-colors" href="#" style="">Privacidad</a>
-<a class="hover:text-primary transition-colors" href="#contacto" style="">Contacto</a>
-</div>
-</div>
-<div class="mt-12 text-center text-base text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-10" style="">
-                © 2026 Intellectum AI Solutions. Todos los derechos reservados.
+
+<!-- =================== SERVICES =================== -->
+<section class="services" id="servicios">
+  <div class="wrap">
+    <div class="services-head reveal">
+      <div>
+        <span class="eyebrow">Soluciones</span>
+        <h2 class="section-title">
+          Inteligencia Artificial<br>
+          <span class="serif-italic">aplicada a tu negocio.</span>
+        </h2>
+      </div>
+      <p class="section-lead">
+        Cuatro frentes donde la IA deja de ser promesa y se vuelve resultado: atención, ventas, conversación y procesos. Cada uno se integra a tu stack actual sin reemplazarlo.
+      </p>
+    </div>
+
+    <div class="service-grid">
+      <article class="service-card reveal">
+        <div>
+          <div class="service-card-top">
+            <div class="service-icon">
+              <!-- phone-call icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             </div>
-</div>
+            <span class="service-num">01</span>
+          </div>
+          <h3>Llamadas de voz IA</h3>
+          <p>Agentes de voz que califican leads, agendan citas y atienden a tus clientes con conversaciones naturales — sin esperas, sin guiones rígidos, todos los días del año.</p>
+        </div>
+        <span class="tag">Call Center 24/7</span>
+      </article>
+
+      <article class="service-card reveal">
+        <div>
+          <div class="service-card-top">
+            <div class="service-icon">
+              <!-- message-square icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <span class="service-num">02</span>
+          </div>
+          <h3>Mensajería &amp; chatbots</h3>
+          <p>Atención omnicanal en WhatsApp, Instagram y Messenger con IA generativa que entiende contexto, resuelve dudas y cierra ventas mientras tu equipo descansa.</p>
+        </div>
+        <span class="tag">Omnicanal</span>
+      </article>
+
+      <article class="service-card reveal">
+        <div>
+          <div class="service-card-top">
+            <div class="service-icon">
+              <!-- trending-up icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            </div>
+            <span class="service-num">03</span>
+          </div>
+          <h3>Ventas automatizadas</h3>
+          <p>Embudos de venta que prospectan en frío, nutren contactos y cierran sin intervención humana. Tu equipo recibe únicamente leads listos para firmar.</p>
+        </div>
+        <span class="tag">Sales Flow</span>
+      </article>
+
+      <article class="service-card reveal">
+        <div>
+          <div class="service-card-top">
+            <div class="service-icon">
+              <!-- cpu icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/></svg>
+            </div>
+            <span class="service-num">04</span>
+          </div>
+          <h3>Automatización a medida</h3>
+          <p>Conectamos tus apps (CRM, ERP, hojas de cálculo, correo, Slack) en flujos inteligentes que ejecutan tareas repetitivas, validan datos y notifican excepciones.</p>
+        </div>
+        <span class="tag">Custom Workflows</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- =================== PROCESS =================== -->
+<section class="process" id="proceso">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow">Cómo trabajamos</span>
+      <h2 class="section-title">
+        De la idea al<br>
+        <span class="serif-italic">resultado medible</span> en semanas.
+      </h2>
+      <p class="section-lead">No vendemos tecnología por vender. Cada implementación pasa por cuatro fases diseñadas para que el resultado sea visible y rentable desde la primera iteración.</p>
+    </div>
+
+    <div class="process-grid">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <h3>Diagnóstico</h3>
+        <p>Mapeamos tus procesos, identificamos cuellos de botella y proyectamos el ROI antes de escribir una sola línea de código.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <h3>Diseño</h3>
+        <p>Definimos arquitectura, integraciones y experiencia conversacional. Tú apruebas un prototipo antes del desarrollo.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <h3>Implementación</h3>
+        <p>Construimos, integramos con tu stack y entrenamos a la IA con tus datos reales. Lanzamos en piloto controlado.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">04</div>
+        <h3>Optimización</h3>
+        <p>Medimos, ajustamos y escalamos. Soporte continuo y mejora iterativa para que la solución crezca con tu negocio.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== ABOUT =================== -->
+<section class="about" id="nosotros">
+  <div class="wrap">
+    <div class="about-grid">
+      <div class="reveal">
+        <span class="eyebrow">Sobre Intellectum</span>
+        <p class="about-quote" style="margin-top: 24px;">
+          No vendemos tecnología por vender. <em>Diseñamos automatizaciones</em> que devuelven horas, dólares y foco a quienes dirigen el negocio.
+        </p>
+      </div>
+      <div class="about-body reveal">
+        <p><strong>Intellectum AI Solutions</strong> es una startup ecuatoriana enfocada en transformar la operación de empresas medianas y grandes mediante inteligencia artificial aplicada.</p>
+        <p>Trabajamos donde la IA genera retorno real: atención al cliente, ventas, soporte y procesos administrativos. Cada solución es a medida, integrada con tus sistemas actuales y diseñada para escalar sin fricción.</p>
+        <p>Detrás del nombre hay un equipo multidisciplinario: ingenieros, diseñadores conversacionales y consultores de negocio que entienden que la IA no es un fin — es una palanca para que tu empresa haga más con menos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== WHY US =================== -->
+<section class="why">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow">Por qué Intellectum</span>
+      <h2 class="section-title">
+        Tu socio en<br>
+        <span class="serif-italic">transformación digital.</span>
+      </h2>
+      <p class="section-lead">No solo entregamos código. Acompañamos cada implementación con métricas claras, soporte cercano y una mentalidad de mejora continua.</p>
+    </div>
+
+    <div class="why-grid">
+      <div class="why-card reveal">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/></svg>
+        </div>
+        <h3>Escalabilidad sin techo</h3>
+        <p>Pasa de decenas a miles de interacciones simultáneas sin perder calidad ni reescribir la solución. La infraestructura crece contigo.</p>
+      </div>
+      <div class="why-card reveal">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>Operación 24/7</h3>
+        <p>Tu negocio nunca duerme. Atiende clientes a cualquier hora, en cualquier canal, sin filas ni horarios de oficina que limiten tu crecimiento.</p>
+      </div>
+      <div class="why-card reveal">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+        </div>
+        <h3>Costos optimizados</h3>
+        <p>Reduce tu costo operativo automatizando lo repetitivo. Tu equipo se enfoca en decisiones estratégicas, no en tareas mecánicas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== FAQ =================== -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div class="faq-grid">
+      <div class="reveal">
+        <span class="eyebrow">Preguntas frecuentes</span>
+        <h2 class="section-title">Antes de<br><span class="serif-italic">empezar.</span></h2>
+        <p class="section-lead">Lo que más nos preguntan en la primera reunión. Si tu duda no está aquí, escríbenos por WhatsApp.</p>
+      </div>
+
+      <div class="faq-list reveal">
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            ¿Cuánto tiempo toma implementar una solución?
+            <span class="plus" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">Depende del alcance, pero la mayoría de proyectos están operativos entre 2 y 6 semanas desde el diagnóstico inicial. Casos complejos con múltiples integraciones pueden extenderse a 8–10 semanas.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            ¿Necesito conocimientos técnicos para operar la solución?
+            <span class="plus" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">No. Diseñamos paneles simples para que tu equipo monitoree y ajuste sin programar. Incluimos capacitación al lanzamiento y soporte continuo.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            ¿Trabajan con empresas pequeñas?
+            <span class="plus" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">Sí. Trabajamos con empresas de cualquier tamaño y adaptamos el alcance al presupuesto, madurez digital y prioridades de cada cliente.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            ¿Cómo manejan la seguridad y privacidad de los datos?
+            <span class="plus" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">Aplicamos cifrado en tránsito y reposo, accesos controlados por rol y cumplimos buenas prácticas de protección de datos. Toda integración se acuerda mediante NDA.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            ¿Qué pasa después del lanzamiento?
+            <span class="plus" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">Acompañamos con soporte, monitoreo y mejora continua. La IA aprende y se ajusta con datos reales — el rendimiento mejora mes a mes.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            ¿Puedo integrar la IA con mi CRM, ERP o WhatsApp Business?
+            <span class="plus" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">Sí. Trabajamos con HubSpot, Salesforce, Zoho, WhatsApp Business API, Google Workspace, Microsoft 365 y APIs personalizadas. Si tu sistema expone una API, lo conectamos.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== CTA =================== -->
+<section class="cta" id="contacto">
+  <div class="wrap cta-inner">
+    <span class="eyebrow reveal">Conversemos</span>
+    <h2 class="reveal" style="margin-top: 16px;">
+      ¿Listo para que la IA<br>
+      <span class="serif-italic">trabaje por ti?</span>
+    </h2>
+    <p class="cta-sub reveal">Una llamada de 30 minutos. Sin compromiso. Salimos de ahí con un mapa claro de qué automatizar primero y qué retorno esperar.</p>
+
+    <div class="cta-ctas reveal">
+      <a href="https://wa.me/593984014129?text=Hola%20Intellectum%2C%20quiero%20agendar%20mi%20consultor%C3%ADa%20gratis%20de%2030%20minutos"
+         class="btn btn-whatsapp" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.464 3.488"/></svg>
+        Escríbenos por WhatsApp
+      </a>
+      <a href="mailto:info@intellectum.ec?subject=Consultor%C3%ADa%20gratis&body=Hola%20Intellectum%2C%20me%20gustar%C3%ADa%20agendar%20una%20consultor%C3%ADa."
+         class="btn btn-secondary">
+        Enviar email
+      </a>
+    </div>
+
+    <div class="cta-channels reveal">
+      <a href="mailto:info@intellectum.ec">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        info@intellectum.ec
+      </a>
+      <a href="tel:+593984014129">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        +593 98 401 4129
+      </a>
+      <span style="display:inline-flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:16px;height:16px;color:var(--accent);"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Quito, Ecuador
+      </span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- =================== FOOTER =================== -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#top" class="brand">
+          <span class="brand-mark" aria-hidden="true">IA</span>
+          <span>Intellectum</span>
+        </a>
+        <p>Soluciones de inteligencia artificial y automatización empresarial diseñadas a medida para empresas en Ecuador.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Soluciones</h4>
+        <ul>
+          <li><a href="#servicios">Llamadas de voz IA</a></li>
+          <li><a href="#servicios">Chatbots</a></li>
+          <li><a href="#servicios">Ventas automatizadas</a></li>
+          <li><a href="#servicios">Procesos a medida</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Empresa</h4>
+        <ul>
+          <li><a href="#nosotros">Nosotros</a></li>
+          <li><a href="#proceso">Proceso</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#contacto">Contacto</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contacto</h4>
+        <ul>
+          <li><a href="mailto:info@intellectum.ec">info@intellectum.ec</a></li>
+          <li><a href="https://wa.me/593984014129" target="_blank" rel="noopener">WhatsApp</a></li>
+          <li><a href="tel:+593984014129">+593 98 401 4129</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 Intellectum AI Solutions. Todos los derechos reservados.</span>
+      <span>Hecho en <span style="color: var(--accent);">Ecuador</span> · Powered by IA</span>
+    </div>
+  </div>
 </footer>
+
+<!-- Floating WhatsApp -->
+<a href="https://wa.me/593984014129?text=Hola%20Intellectum%2C%20quiero%20m%C3%A1s%20info" class="fab-whatsapp" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.464 3.488"/></svg>
+</a>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const menuButton = document.getElementById('mobile-menu-button');
-        const mainNav = document.getElementById('main-nav');
-        const navLinks = mainNav.querySelectorAll('a');
+/* ========================================
+   NAV SCROLL STATE
+   ======================================== */
+(function () {
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+})();
 
-        menuButton.addEventListener('click', function() {
-            mainNav.classList.toggle('hidden');
-            const icon = menuButton.querySelector('.material-icons');
-            if (mainNav.classList.contains('hidden')) {
-                icon.textContent = 'menu';
-            } else {
-                icon.textContent = 'close';
-            }
-        });
+/* ========================================
+   MOBILE MENU
+   ======================================== */
+(function () {
+  const toggle = document.getElementById('navToggle');
+  const menu = document.getElementById('mobileMenu');
+  if (!toggle || !menu) return;
 
-        // Close menu when clicking a link
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth < 768) {
-                    mainNav.classList.add('hidden');
-                    menuButton.querySelector('.material-icons').textContent = 'menu';
-                }
-            });
-        });
+  const close = () => {
+    menu.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+  };
+
+  toggle.addEventListener('click', () => {
+    const open = menu.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
+})();
+
+/* ========================================
+   FAQ ACCORDION
+   ======================================== */
+document.querySelectorAll('.faq-item').forEach(item => {
+  const q = item.querySelector('.faq-q');
+  q.addEventListener('click', () => {
+    const isOpen = item.classList.toggle('open');
+    q.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+});
+
+/* ========================================
+   REVEAL ON SCROLL
+   ======================================== */
+(function () {
+  const els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(el => el.classList.add('in'));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
     });
-</script></body></html>
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  els.forEach(el => io.observe(el));
+})();
+</script>
+
+</body>
+</html>
