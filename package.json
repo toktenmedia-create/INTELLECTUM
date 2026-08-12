@@ -1,0 +1,16 @@
+{
+  "name": "intellectum-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sitio de Intellectum AI Solutions + chatbot de captura y calificación de leads.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env dev-server.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0"
+  }
+}
