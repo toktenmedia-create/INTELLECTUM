@@ -179,11 +179,17 @@
     });
   }
 
+  var saludoPintado = false;
+
   function abrir() {
+    if (abierto) return;
     abierto = true;
     panel.classList.add("abierto");
     launcher.hidden = true;
-    if (historial.length === 0) pintar("bot", SALUDO);
+    if (!saludoPintado) {
+      pintar("bot", SALUDO);
+      saludoPintado = true;
+    }
     setTimeout(function () {
       input.focus();
     }, 220);

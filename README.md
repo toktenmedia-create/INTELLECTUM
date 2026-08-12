@@ -126,28 +126,32 @@ El **carácter** del asistente (tono, flujo, reglas duras) está en
 
 ## 6. Cuánto cuesta
 
-El modelo por defecto es **Claude Opus 5**, el más capaz. Se cambia con la
-variable `ANTHROPIC_MODEL` sin tocar código.
+El modelo por defecto es **Claude Haiku 4.5**, el más rápido y económico,
+elegido para cuidar el gasto. Se cambia con la variable `ANTHROPIC_MODEL` en
+Vercel, sin tocar código ni volver a desplegar.
 
-| Modelo             | Entrada / salida por millón de tokens |
-| ------------------ | ------------------------------------- |
-| `claude-opus-5`    | $5 / $25                              |
-| `claude-sonnet-5`  | $3 / $15                              |
-| `claude-haiku-4-5` | $1 / $5                               |
+| Modelo             | Entrada / salida por millón de tokens | Caché de instrucciones |
+| ------------------ | ------------------------------------- | ---------------------- |
+| `claude-haiku-4-5` | $1 / $5                               | no (ver abajo)         |
+| `claude-sonnet-5`  | $3 / $15                              | sí                     |
+| `claude-opus-5`    | $5 / $25                              | sí                     |
 
-**Estimación** para una conversación de unos 10 mensajes, con las reglas de
-este proyecto (instrucciones ≈ 3.000 tokens, guardadas en caché, y respuestas
-cortas): alrededor de **8 centavos de dólar en Opus 5**, y cerca de **2
-centavos en Haiku 4.5**. Es una estimación con supuestos, no una factura: el
-número real depende de qué tan largas sean las conversaciones. Mira el gasto
-real en console.anthropic.com → *Usage* durante la primera semana.
+**Estimación** para una conversación de unos 10 mensajes con las reglas de este
+proyecto (instrucciones ≈ 3.000 tokens y respuestas cortas): alrededor de
+**4 centavos de dólar** con Haiku. Es una estimación con supuestos, no una
+factura. Mira el gasto real en console.anthropic.com → *Usage* durante la
+primera semana.
 
-Dos cosas ya están puestas para que no se dispare:
+**Por qué la caché no ayuda con Haiku:** Anthropic solo guarda en caché
+prefijos de al menos 4.096 tokens en Haiku 4.5, y nuestras instrucciones pesan
+unos 3.000. Se quedan justo por debajo, así que se pagan completas en cada
+mensaje. En Sonnet 5 el mínimo baja a 1.024 tokens y sí entrarían en caché
+(~10% del precio a partir de la segunda llamada). Por eso Haiku sale a la mitad
+del costo de Opus, no a la quinta parte como sugerirían las tarifas sueltas.
 
-- **Caché de instrucciones**: la parte fija del prompt se cobra ~10% después de
-  la primera llamada.
-- **Esfuerzo bajo** (`effort: "low"`): el modelo piensa lo justo. En un chat de
-  atención la rapidez vale más que la deliberación profunda.
+Haiku tampoco admite pensamiento adaptativo ni el parámetro de esfuerzo; el
+código lo detecta y no se los envía. Si algún día cambias a Sonnet o a Opus,
+esos ajustes se activan solos.
 
 ---
 

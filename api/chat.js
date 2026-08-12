@@ -31,81 +31,104 @@ const ORIGENES_PERMITIDOS = (
 /** Contador en memoria. Es "mejor que nada": cada instancia tiene el suyo. */
 const contador = new Map();
 
-export default async function handler(request) {
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cabecerasCors(request) });
+export default async function handler(req, res) {
+  const cors = cabecerasCors(req);
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, cors);
+    res.end();
+    return;
   }
 
-  if (request.method !== "POST") {
-    return json({ error: "Método no permitido" }, 405, request);
+  if (req.method !== "POST") {
+    responderJson(res, cors, 405, { error: "Método no permitido" });
+    return;
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error("[CHAT] falta la variable de entorno ANTHROPIC_API_KEY");
-    return json({ error: "El asistente no está configurado todavía." }, 503, request);
+    responderJson(res, cors, 503, { error: "El asistente no está configurado todavía." });
+    return;
   }
 
-  if (!origenPermitido(request)) {
-    return json({ error: "Origen no permitido" }, 403, request);
+  if (!origenPermitido(req)) {
+    responderJson(res, cors, 403, { error: "Origen no permitido" });
+    return;
   }
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "desconocida";
+  const ip = primeraIp(req);
   if (superaLimite(ip)) {
-    return json({ error: "Demasiados mensajes. Intenta de nuevo en unos minutos." }, 429, request);
+    responderJson(res, cors, 429, {
+      error: "Demasiados mensajes. Intenta de nuevo en unos minutos.",
+    });
+    return;
   }
 
-  let cuerpo;
-  try {
-    cuerpo = await request.json();
-  } catch {
-    return json({ error: "Cuerpo inválido" }, 400, request);
-  }
-
+  const cuerpo = await leerJson(req);
   const historial = validarHistorial(cuerpo?.messages);
   if (!historial) {
-    return json({ error: "Historial inválido" }, 400, request);
+    responderJson(res, cors, 400, { error: "Historial inválido" });
+    return;
   }
 
-  const codificador = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controlador) {
-      const enviar = (dato) =>
-        controlador.enqueue(codificador.encode(`data: ${JSON.stringify(dato)}\n\n`));
+  res.writeHead(200, {
+    ...cors,
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    "X-Accel-Buffering": "no",
+  });
 
+  const enviar = (dato) => res.write(`data: ${JSON.stringify(dato)}\n\n`);
+
+  try {
+    const { lead } = await responder({
+      historial,
+      canal: "web",
+      onTexto: (fragmento) => enviar({ t: "delta", v: fragmento }),
+      meta: {
+        origen: req.headers.referer || "sitio web",
+        sesion: typeof cuerpo?.sessionId === "string" ? cuerpo.sessionId.slice(0, 64) : null,
+      },
+    });
+
+    if (lead) enviar({ t: "lead" });
+    enviar({ t: "done" });
+  } catch (err) {
+    console.error("[CHAT] error hablando con Claude:", err?.status, err?.message ?? err);
+    enviar({
+      t: "error",
+      v: "Se me cortó la conexión. ¿Me repites lo último? Si prefieres, escríbenos al WhatsApp +593 98 401 4129.",
+    });
+  } finally {
+    res.end();
+  }
+}
+
+/**
+ * Vercel entrega el cuerpo ya interpretado en req.body cuando viene como JSON.
+ * Si no lo hizo (o llega como texto), se lee del flujo.
+ */
+async function leerJson(req) {
+  if (req.body !== undefined && req.body !== null) {
+    if (typeof req.body === "string") {
       try {
-        const { lead } = await responder({
-          historial,
-          canal: "web",
-          onTexto: (fragmento) => enviar({ t: "delta", v: fragmento }),
-          meta: {
-            origen: request.headers.get("referer") || "sitio web",
-            sesion: typeof cuerpo?.sessionId === "string" ? cuerpo.sessionId.slice(0, 64) : null,
-          },
-        });
-
-        if (lead) enviar({ t: "lead" });
-        enviar({ t: "done" });
-      } catch (err) {
-        console.error("[CHAT] error hablando con Claude:", err?.status, err?.message ?? err);
-        enviar({
-          t: "error",
-          v: "Se me cortó la conexión. ¿Me repites lo último? Si prefieres, escríbenos al WhatsApp +593 98 401 4129.",
-        });
-      } finally {
-        controlador.close();
+        return JSON.parse(req.body);
+      } catch {
+        return null;
       }
-    },
-  });
+    }
+    return req.body;
+  }
 
-  return new Response(stream, {
-    status: 200,
-    headers: {
-      ...cabecerasCors(request),
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      "X-Accel-Buffering": "no",
-    },
-  });
+  const trozos = [];
+  for await (const trozo of req) trozos.push(trozo);
+  if (trozos.length === 0) return null;
+
+  try {
+    return JSON.parse(Buffer.concat(trozos).toString("utf8"));
+  } catch {
+    return null;
+  }
 }
 
 function validarHistorial(mensajes) {
@@ -126,17 +149,22 @@ function validarHistorial(mensajes) {
   return limpio;
 }
 
-function origenPermitido(request) {
-  const origen = request.headers.get("origin");
-  const referer = request.headers.get("referer");
+function primeraIp(req) {
+  const cabecera = req.headers["x-forwarded-for"];
+  const valor = Array.isArray(cabecera) ? cabecera[0] : cabecera;
+  return valor?.split(",")[0]?.trim() || req.socket?.remoteAddress || "desconocida";
+}
+
+function origenPermitido(req) {
+  const origen = req.headers.origin;
+  const referer = req.headers.referer;
 
   // Si el navegador no manda ninguno de los dos, no se bloquea: hay navegadores
   // que los omiten en peticiones del mismo sitio. El límite por IP cubre ese caso.
   if (!origen && !referer) return true;
 
-  const candidato = origen || referer;
   try {
-    const url = new URL(candidato);
+    const url = new URL(origen || referer);
     if (ORIGENES_PERMITIDOS.includes(url.origin)) return true;
     if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return true; // pruebas locales
     return url.origin.endsWith(".vercel.app"); // previsualizaciones de Vercel
@@ -159,8 +187,8 @@ function superaLimite(ip) {
   return registro.veces > LIMITE_POR_IP;
 }
 
-function cabecerasCors(request) {
-  const origen = request.headers.get("origin");
+function cabecerasCors(req) {
+  const origen = req.headers.origin;
   const permitido =
     origen &&
     (ORIGENES_PERMITIDOS.includes(origen) ||
@@ -175,9 +203,7 @@ function cabecerasCors(request) {
   };
 }
 
-function json(datos, estado, request) {
-  return new Response(JSON.stringify(datos), {
-    status: estado,
-    headers: { ...cabecerasCors(request), "Content-Type": "application/json; charset=utf-8" },
-  });
+function responderJson(res, cors, estado, datos) {
+  res.writeHead(estado, { ...cors, "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify(datos));
 }

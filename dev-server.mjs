@@ -13,7 +13,6 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Readable } from "node:stream";
 
 const RAIZ = path.dirname(fileURLToPath(import.meta.url));
 const PUERTO = Number(process.env.PORT || 3000);
@@ -54,46 +53,14 @@ async function atenderApi(url, req, res) {
 
   try {
     const modulo = await import(`${archivo}?v=${Date.now()}`); // recarga en cada petición
-    const peticion = await aRequest(url, req);
-    const respuesta = await modulo.default(peticion);
-    await aServerResponse(respuesta, res);
+    // Misma firma que usa Vercel: (req, res) de Node, sin envoltorios.
+    if (!req.headers["x-forwarded-for"]) req.headers["x-forwarded-for"] = "127.0.0.1";
+    await modulo.default(req, res);
   } catch (err) {
     console.error("[dev] error en la función:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
+    if (!res.headersSent) res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: String(err?.message ?? err) }));
   }
-}
-
-async function aRequest(url, req) {
-  const cabeceras = new Headers();
-  for (const [clave, valor] of Object.entries(req.headers)) {
-    if (typeof valor === "string") cabeceras.set(clave, valor);
-  }
-  if (!cabeceras.has("x-forwarded-for")) cabeceras.set("x-forwarded-for", "127.0.0.1");
-
-  const opciones = { method: req.method, headers: cabeceras };
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    const trozos = [];
-    for await (const trozo of req) trozos.push(trozo);
-    opciones.body = Buffer.concat(trozos);
-  }
-
-  return new Request(url.toString(), opciones);
-}
-
-async function aServerResponse(respuesta, res) {
-  const cabeceras = {};
-  respuesta.headers.forEach((valor, clave) => {
-    cabeceras[clave] = valor;
-  });
-  res.writeHead(respuesta.status, cabeceras);
-
-  if (!respuesta.body) {
-    res.end();
-    return;
-  }
-
-  Readable.fromWeb(respuesta.body).pipe(res);
 }
 
 function servirArchivo(ruta, res) {

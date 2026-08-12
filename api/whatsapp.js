@@ -19,7 +19,9 @@
 import crypto from "node:crypto";
 import { responder } from "../lib/brain.js";
 
-export const config = { maxDuration: 60 };
+// bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
+// tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
+export const config = { maxDuration: 60, api: { bodyParser: false } };
 
 const MAX_MENSAJES_MEMORIA = 16;
 const MEMORIA_TTL_MS = 60 * 60 * 1000; // una hora sin escribir y se olvida
@@ -34,42 +36,49 @@ const MEMORIA_TTL_MS = 60 * 60 * 1000; // una hora sin escribir y se olvida
  */
 const memoria = new Map();
 
-export default async function handler(request) {
-  const url = new URL(request.url);
-
+export default async function handler(req, res) {
   // 1. Verificación del webhook: Meta llama una sola vez con un reto.
-  if (request.method === "GET") {
+  if (req.method === "GET") {
+    const url = new URL(req.url, "https://placeholder.local");
     const modo = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const reto = url.searchParams.get("hub.challenge");
 
     if (modo === "subscribe" && token && token === process.env.META_VERIFY_TOKEN) {
-      return new Response(reto, { status: 200 });
+      res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end(reto ?? "");
+      return;
     }
-    return new Response("Token incorrecto", { status: 403 });
+
+    res.writeHead(403).end("Token incorrecto");
+    return;
   }
 
-  if (request.method !== "POST") {
-    return new Response("Método no permitido", { status: 405 });
+  if (req.method !== "POST") {
+    res.writeHead(405).end("Método no permitido");
+    return;
   }
 
   if (!configurado()) {
     console.warn("[WHATSAPP] llegó un mensaje pero el canal no está configurado.");
-    return new Response("Canal de WhatsApp no configurado", { status: 503 });
+    res.writeHead(503).end("Canal de WhatsApp no configurado");
+    return;
   }
 
   // 2. Comprobar que el mensaje viene de Meta y no de un tercero.
-  const crudo = await request.text();
-  if (!firmaValida(crudo, request.headers.get("x-hub-signature-256"))) {
+  const crudo = await leerCrudo(req);
+  if (!firmaValida(crudo, req.headers["x-hub-signature-256"])) {
     console.warn("[WHATSAPP] firma inválida, mensaje descartado.");
-    return new Response("Firma inválida", { status: 401 });
+    res.writeHead(401).end("Firma inválida");
+    return;
   }
 
   let datos;
   try {
     datos = JSON.parse(crudo);
   } catch {
-    return new Response("OK", { status: 200 }); // a Meta siempre se le responde 200
+    res.writeHead(200).end("OK"); // a Meta siempre se le responde 200
+    return;
   }
 
   const valor = datos?.entry?.[0]?.changes?.[0]?.value;
@@ -77,12 +86,16 @@ export default async function handler(request) {
 
   // Confirmaciones de entrega, stickers, audios... no son conversación.
   if (!mensaje || mensaje.type !== "text") {
-    return new Response("OK", { status: 200 });
+    res.writeHead(200).end("OK");
+    return;
   }
 
   const numero = mensaje.from;
   const texto = mensaje.text?.body?.trim();
-  if (!numero || !texto) return new Response("OK", { status: 200 });
+  if (!numero || !texto) {
+    res.writeHead(200).end("OK");
+    return;
+  }
 
   const nombrePerfil = valor?.contacts?.[0]?.profile?.name;
 
@@ -106,7 +119,7 @@ export default async function handler(request) {
   }
 
   // Meta reintenta si no recibe 200, y eso duplicaría respuestas.
-  return new Response("OK", { status: 200 });
+  res.writeHead(200).end("OK");
 }
 
 function configurado() {
@@ -119,15 +132,27 @@ function configurado() {
   );
 }
 
+/** El cuerpo tal cual llegó. Si algo ya lo interpretó, se rearma como respaldo. */
+async function leerCrudo(req) {
+  const trozos = [];
+  for await (const trozo of req) trozos.push(trozo);
+  if (trozos.length > 0) return Buffer.concat(trozos).toString("utf8");
+
+  if (typeof req.body === "string") return req.body;
+  if (req.body) return JSON.stringify(req.body);
+  return "";
+}
+
 function firmaValida(cuerpoCrudo, cabecera) {
-  if (!cabecera?.startsWith("sha256=")) return false;
+  const firma = Array.isArray(cabecera) ? cabecera[0] : cabecera;
+  if (!firma?.startsWith("sha256=")) return false;
 
   const esperado = crypto
     .createHmac("sha256", process.env.META_APP_SECRET)
     .update(cuerpoCrudo, "utf8")
     .digest("hex");
 
-  const recibido = cabecera.slice("sha256=".length);
+  const recibido = firma.slice("sha256=".length);
   if (recibido.length !== esperado.length) return false;
 
   return crypto.timingSafeEqual(Buffer.from(recibido, "hex"), Buffer.from(esperado, "hex"));
