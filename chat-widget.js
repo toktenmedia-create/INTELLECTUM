@@ -204,10 +204,22 @@
 
   /* ------------------------------------------------------------ conversación */
 
+  /**
+   * El asistente tiene instruido escribir en texto plano, pero si algún día se
+   * le escapa un **negrita** o un ## título, aquí se limpian los símbolos en
+   * vez de mostrarlos crudos al visitante.
+   */
+  function limpiar(texto) {
+    return texto
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/__(.+?)__/g, "$1")
+      .replace(/^#{1,6}\s+/gm, "");
+  }
+
   function pintar(quien, texto) {
     var burbuja = document.createElement("div");
     burbuja.className = "iachat-msg " + (quien === "yo" ? "yo" : quien === "aviso" ? "aviso" : "bot");
-    burbuja.textContent = texto;
+    burbuja.textContent = quien === "yo" ? texto : limpiar(texto);
     log.appendChild(burbuja);
     abajo();
     return burbuja;
@@ -288,7 +300,7 @@
                   primero = false;
                 }
                 acumulado += evento.v;
-                burbuja.textContent = acumulado;
+                burbuja.textContent = limpiar(acumulado);
                 abajo();
               } else if (evento.t === "error") {
                 if (primero) {
@@ -296,7 +308,7 @@
                   primero = false;
                 }
                 acumulado += (acumulado ? "\n\n" : "") + evento.v;
-                burbuja.textContent = acumulado;
+                burbuja.textContent = limpiar(acumulado);
                 abajo();
               }
             });
