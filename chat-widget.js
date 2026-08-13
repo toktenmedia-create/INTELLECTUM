@@ -332,7 +332,7 @@
         pintar(
           "bot",
           (err && err.message ? err.message : "Se cayó la conexión.") +
-            "\n\nSi es urgente, escríbenos al WhatsApp +593 98 401 4129 o a info@intellectum.ec.",
+            "\n\nSi es urgente, escríbenos al WhatsApp +593 98 312 0003 o a info@intellectum.ec.",
         );
       })
       .then(function () {
