@@ -57,9 +57,13 @@ if (
 
 execFileSync("pbcopy", { input: valor });
 
+// De un secreto no se muestra ningún trozo. La única excepción es la cabecera
+// de una clave PEM, que es idéntica en todas las claves del mundo y por eso no
+// revela nada, pero sí confirma de un vistazo que se copió lo correcto.
 const secreta = /KEY|TOKEN|SECRET|PASSWORD/i.test(nombre);
-const inicio = secreta ? valor.slice(0, 27).split("\\n")[0] : valor;
+const pem = valor.startsWith("-----BEGIN");
+const pista = !secreta ? valor : pem ? "-----BEGIN…  (una clave PEM)" : "(oculto)";
 
 console.log(`\n  ✓ ${nombre} copiada al portapapeles`);
-console.log(`    ${valor.length} caracteres · empieza por: ${inicio}${secreta ? "…" : ""}`);
+console.log(`    ${valor.length} caracteres · ${pista}`);
 console.log(`\n  Pégala en Vercel con ⌘V. No pasó por la pantalla ni por el chat.\n`);
