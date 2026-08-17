@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aviso de privacidad — Intellectum AI Solutions</title>
+    <meta
+      name="description"
+      content="Cómo Intellectum AI Solutions trata los datos personales recogidos en intellectum.ec y en su asistente virtual IntelliA, conforme a la Ley Orgánica de Protección de Datos Personales del Ecuador."
+    />
+    <link rel="canonical" href="https://www.intellectum.ec/privacidad" />
+    <meta name="robots" content="index, follow" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --bg-elev: #111111;
+        --bg-card: rgba(255, 255, 255, 0.025);
+        --text: #fafaf7;
+        --text-dim: #a8a89e;
+        --text-muted: #6e6e66;
+        --accent: #22d3ee;
+        --accent-bright: #67e8f9;
+        --border: rgba(255, 255, 255, 0.08);
+        --border-strong: rgba(255, 255, 255, 0.16);
+        --accent-tint-bg: rgba(34, 211, 238, 0.08);
+        --accent-tint-border: rgba(34, 211, 238, 0.22);
+        --font-display: "Fraunces", "Times New Roman", serif;
+        --font-sans: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-sans);
+        font-weight: 300;
+        font-size: 17px;
+        line-height: 1.7;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px solid var(--accent-tint-border);
+      }
+
+      a:hover {
+        color: var(--accent-bright);
+        border-bottom-color: var(--accent-bright);
+      }
+
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* ── barra superior ─────────────────────────────────────────────── */
+      .topbar {
+        border-bottom: 1px solid var(--border);
+        background: rgba(10, 10, 10, 0.85);
+        backdrop-filter: saturate(140%) blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .topbar .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text);
+        border-bottom: 0;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+      }
+
+      .brand .sparkle {
+        color: var(--accent);
+        font-size: 0.8em;
+      }
+
+      .back {
+        font-size: 0.9rem;
+        color: var(--text-dim);
+        border-bottom: 0;
+      }
+
+      .back:hover {
+        color: var(--accent);
+      }
+
+      /* ── encabezado ─────────────────────────────────────────────────── */
+      header.hero {
+        padding: 72px 0 40px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .eyebrow {
+        font-size: 0.72rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 500;
+        margin: 0 0 14px;
+      }
+
+      h1 {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(2.1rem, 6vw, 3.1rem);
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin: 0 0 18px;
+      }
+
+      .lede {
+        color: var(--text-dim);
+        font-size: 1.05rem;
+        margin: 0 0 20px;
+        max-width: 60ch;
+      }
+
+      .meta {
+        font-size: 0.86rem;
+        color: var(--text-muted);
+        margin: 0;
+      }
+
+      /* ── cuerpo ─────────────────────────────────────────────────────── */
+      main {
+        padding: 8px 0 72px;
+      }
+
+      section {
+        padding: 40px 0 0;
+      }
+
+      h2 {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: 1.5rem;
+        letter-spacing: -0.01em;
+        margin: 0 0 14px;
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+      }
+
+      h2 .num {
+        font-family: var(--font-sans);
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--accent);
+        letter-spacing: 0.08em;
+        flex: none;
+        padding-top: 2px;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: var(--text-dim);
+      }
+
+      p strong,
+      li strong {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      ul {
+        margin: 0 0 16px;
+        padding-left: 20px;
+        color: var(--text-dim);
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      li::marker {
+        color: var(--accent);
+      }
+
+      .callout {
+        background: var(--accent-tint-bg);
+        border: 1px solid var(--accent-tint-border);
+        border-radius: 12px;
+        padding: 20px 22px;
+        margin: 4px 0 16px;
+      }
+
+      .callout p:last-child {
+        margin-bottom: 0;
+      }
+
+      .datos {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px 22px;
+        margin: 4px 0 16px;
+      }
+
+      .datos dl {
+        margin: 0;
+        display: grid;
+        grid-template-columns: minmax(120px, max-content) 1fr;
+        gap: 8px 20px;
+      }
+
+      .datos dt {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .datos dd {
+        margin: 0;
+        color: var(--text);
+      }
+
+      @media (max-width: 520px) {
+        .datos dl {
+          grid-template-columns: 1fr;
+          gap: 2px;
+        }
+        .datos dd {
+          margin-bottom: 12px;
+        }
+      }
+
+      /* ── pie ────────────────────────────────────────────────────────── */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 32px 0 56px;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+
+      footer .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 24px;
+        justify-content: space-between;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="topbar">
+      <div class="wrap">
+        <a class="brand" href="/"><span class="sparkle">◆</span> Intellectum AI Solutions</a>
+        <a class="back" href="/">← Volver al sitio</a>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <header class="hero">
+        <p class="eyebrow">Protección de datos personales</p>
+        <h1>Aviso de privacidad</h1>
+        <p class="lede">
+          Qué datos recogemos cuando escribes en este sitio o hablas con nuestro asistente
+          virtual, para qué los usamos y cómo puedes pedirlos, corregirlos o borrarlos.
+        </p>
+        <p class="meta">Última actualización: 17 de agosto de 2026</p>
+      </header>
+
+      <main>
+        <section>
+          <h2><span class="num">01</span> Quién trata tus datos</h2>
+          <div class="datos">
+            <dl>
+              <dt>Responsable</dt>
+              <dd>Intellectum AI Solutions S.A.S.</dd>
+              <dt>RUC</dt>
+              <dd>1793236353001</dd>
+              <dt>Domicilio</dt>
+              <dd>República y Teresa de Cepeda, Quito, Ecuador</dd>
+              <dt>Contacto</dt>
+              <dd><a href="mailto:datos@intellectum.ec">datos@intellectum.ec</a></dd>
+            </dl>
+          </div>
+          <p>
+            Intellectum AI Solutions S.A.S. es la responsable del tratamiento de los datos
+            personales recogidos a través del sitio
+            <a href="https://www.intellectum.ec">www.intellectum.ec</a>, de su asistente
+            virtual IntelliA y de sus canales de contacto.
+          </p>
+        </section>
+
+        <section>
+          <h2><span class="num">02</span> Qué datos recogemos</h2>
+          <p>
+            Únicamente los que nos entregas de forma voluntaria en la conversación o en los
+            formularios: nombre, correo electrónico, número de teléfono o WhatsApp, empresa,
+            cargo y la descripción del proceso que quieres resolver. También queda registrado
+            el contenido de la conversación con el asistente y datos técnicos básicos de la
+            visita.
+          </p>
+          <div class="callout">
+            <p>
+              <strong>No solicitamos ni almacenamos</strong> número de cédula, datos
+              bancarios, números de tarjeta ni contraseñas. Te pedimos que no los escribas en
+              el chat.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2><span class="num">03</span> Para qué los usamos</h2>
+          <ul>
+            <li>Responder tu consulta y atender tu solicitud de contacto.</li>
+            <li>Preparar una propuesta y coordinar la consultoría gratuita de 30 minutos.</li>
+            <li>Mejorar la calidad de la atención del asistente.</li>
+          </ul>
+          <p>
+            No usamos tus datos para publicidad de terceros, no los vendemos y no los cedemos
+            con fines comerciales.
+          </p>
+        </section>
+
+        <section>
+          <h2><span class="num">04</span> Con qué base legal</h2>
+          <p>
+            Tratamos tus datos con base en tu consentimiento, que otorgas al escribirnos
+            voluntariamente, y en la ejecución de medidas precontractuales solicitadas por ti.
+            Puedes retirar tu consentimiento en cualquier momento, sin que ello afecte la
+            licitud del tratamiento anterior.
+          </p>
+        </section>
+
+        <section>
+          <h2><span class="num">05</span> Quién más puede verlos</h2>
+          <p>
+            Para operar el sitio y el asistente utilizamos proveedores tecnológicos que actúan
+            como encargados del tratamiento y que se encuentran fuera del Ecuador,
+            principalmente en Estados Unidos:
+          </p>
+          <ul>
+            <li><strong>Anthropic</strong> — modelo de inteligencia artificial.</li>
+            <li><strong>Supabase</strong> — base de datos.</li>
+            <li><strong>Vercel</strong> — alojamiento del sitio.</li>
+            <li><strong>Resend</strong> — envío de correo.</li>
+            <li><strong>Meta Platforms</strong> — WhatsApp Business.</li>
+          </ul>
+          <p>
+            Estas transferencias internacionales se realizan al amparo de los contratos de
+            tratamiento de datos suscritos con cada proveedor, que les exigen medidas de
+            seguridad y les prohíben usar la información para fines propios.
+          </p>
+        </section>
+
+        <section>
+          <h2><span class="num">06</span> Cuánto tiempo los guardamos</h2>
+          <p>
+            Los datos de contacto se conservan mientras dure la relación comercial y hasta
+            <strong>dos años</strong> después de finalizada, salvo que una obligación legal
+            exija conservarlos por más tiempo. El historial de conversaciones con el asistente
+            se elimina automáticamente a los <strong>180 días</strong>.
+          </p>
+        </section>
+
+        <section>
+          <h2><span class="num">07</span> Tus derechos</h2>
+          <p>
+            Como titular de los datos tienes derecho a acceder a ellos, rectificarlos,
+            eliminarlos, oponerte a su tratamiento, solicitar que se limite, pedir su
+            portabilidad y a no ser objeto de decisiones automatizadas que te afecten de manera
+            significativa.
+          </p>
+          <div class="callout">
+            <p>
+              Para ejercer cualquiera de estos derechos escribe a
+              <a href="mailto:datos@intellectum.ec">datos@intellectum.ec</a> indicando tu
+              nombre y el derecho que deseas ejercer. Responderemos en un plazo máximo de
+              <strong>quince (15) días hábiles</strong> contados desde la recepción de tu
+              solicitud.
+            </p>
+          </div>
+          <p>
+            Si consideras que tu solicitud no fue atendida adecuadamente, puedes presentar un
+            reclamo ante la Superintendencia de Protección de Datos Personales del Ecuador.
+          </p>
+        </section>
+
+        <section>
+          <h2><span class="num">08</span> Decisiones automatizadas</h2>
+          <p>
+            Nuestro asistente virtual IntelliA responde de forma automática y organiza tu
+            consulta para el equipo. No toma decisiones que produzcan efectos jurídicos sobre
+            ti: toda propuesta comercial es revisada por una persona antes de enviarse.
+          </p>
+        </section>
+
+        <section>
+          <h2><span class="num">09</span> Cambios a este aviso</h2>
+          <p>
+            Si actualizamos este aviso publicaremos la nueva versión en esta misma página,
+            indicando su fecha de actualización.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>© 2026 Intellectum AI Solutions S.A.S. — Quito, Ecuador</span>
+        <span><a href="/">intellectum.ec</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

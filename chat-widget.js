@@ -98,6 +98,8 @@
 .iachat-send:disabled{opacity:.4;cursor:default}
 .iachat-send:focus-visible{outline:2px solid var(--accent-bright,#67e8f9);outline-offset:2px}
 .iachat-legal{margin:8px 2px 0;font:400 10.5px/1.4 var(--font-sans,system-ui,sans-serif);color:var(--text-muted,#6e6e66);text-align:center}
+.iachat-legal a{color:var(--text-dim,#a8a89e);text-decoration:underline;text-underline-offset:2px}
+.iachat-legal a:hover{color:var(--accent,#22d3ee)}
 
 @media (max-width:520px){
   .iachat-panel{right:10px;left:10px;bottom:10px;width:auto;max-width:none;height:min(78vh,calc(100vh - 20px))}
@@ -141,7 +143,7 @@
       '<textarea class="iachat-input" rows="1" placeholder="Escribe tu mensaje…" aria-label="Tu mensaje"></textarea>' +
       '<button class="iachat-send" type="button" aria-label="Enviar mensaje">↑</button>' +
       "</div>" +
-      '<p class="iachat-legal">Asistente con IA. Puede equivocarse: los datos definitivos los confirma el equipo.</p>' +
+      '<p class="iachat-legal">Asistente con IA. Puede equivocarse: los datos definitivos los confirma el equipo.<br><a href="/privacidad" target="_blank" rel="noopener">Aviso de privacidad</a></p>' +
       "</footer>";
 
     document.body.appendChild(launcher);

@@ -65,7 +65,13 @@ async function atenderApi(url, req, res) {
 
 function servirArchivo(ruta, res) {
   const relativa = ruta === "/" ? "index.html" : decodeURIComponent(ruta).replace(/^\/+/, "");
-  const destino = path.join(RAIZ, relativa);
+  let destino = path.join(RAIZ, relativa);
+
+  // Igual que "cleanUrls" de Vercel: /privacidad sirve privacidad.html. Sin
+  // esto, en local da 404 y en producción funciona, que es la peor combinación.
+  if (!path.extname(destino) && fs.existsSync(`${destino}.html`)) {
+    destino = `${destino}.html`;
+  }
 
   if (!destino.startsWith(RAIZ) || !fs.existsSync(destino) || fs.statSync(destino).isDirectory()) {
     res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
