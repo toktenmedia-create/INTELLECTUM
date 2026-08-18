@@ -18,23 +18,26 @@
 
 import crypto from "node:crypto";
 import { responder } from "../lib/brain.js";
+import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
 // tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
 export const config = { maxDuration: 60, api: { bodyParser: false } };
 
-const MAX_MENSAJES_MEMORIA = 16;
-const MEMORIA_TTL_MS = 60 * 60 * 1000; // una hora sin escribir y se olvida
-
 /**
- * Memoria de conversación por número.
+ * La memoria de cada conversación vive en la base (lib/almacen.js), no en esta
+ * función. Es la diferencia entre que IntelliA recuerde a quién le habla y que
+ * le pregunte el nombre tres veces: en el chat de la web el navegador manda el
+ * historial completo en cada mensaje, pero en WhatsApp cada mensaje llega solo
+ * y el que tiene que acordarse es el servidor. Vercel apaga y enciende
+ * instancias sin avisar, así que guardar esto en memoria del proceso es
+ * guardarlo en algo que se borra sin horario.
  *
- * OJO: vive en la memoria de la función, así que se pierde cuando Vercel apaga
- * la instancia (minutos de inactividad). Para una conversación seguida funciona;
- * para producción seria conviene mover esto a Upstash Redis o Vercel KV — es un
- * cambio de ~20 líneas, todo aislado en estas dos funciones.
+ * PENDIENTE CONOCIDO: WhatsApp entrega en paralelo dos mensajes seguidos de la
+ * misma persona, y ahí gana el último que escribe. Se resuelve al mudar a
+ * Cloudflare con Durable Objects, que serializan por número. Mientras tanto,
+ * el caso raro es perder una línea del historial, no responder mal.
  */
-const memoria = new Map();
 
 export default async function handler(req, res) {
   // 1. Verificación del webhook: Meta llama una sola vez con un reto.
@@ -99,8 +102,20 @@ export default async function handler(req, res) {
 
   const nombrePerfil = valor?.contacts?.[0]?.profile?.name;
 
+  avisarSiLaMemoriaEsFragil();
+
+  const almacen = abrirAlmacen();
+  let historial = [];
+
+  // Si la base no contesta, se responde sin memoria. Contestar sin recordar es
+  // peor que recordar, pero muchísimo mejor que dejar a alguien sin respuesta.
   try {
-    const historial = recordar(numero);
+    historial = await almacen.recordarConversacion({ canal: "whatsapp", sesion: numero });
+  } catch (err) {
+    console.error("[WHATSAPP] no se pudo leer la memoria:", err?.message ?? err);
+  }
+
+  try {
     historial.push({ role: "user", content: texto.slice(0, 2000) });
 
     const { texto: respuesta } = await responder({
@@ -110,9 +125,24 @@ export default async function handler(req, res) {
     });
 
     if (respuesta) {
-      historial.push({ role: "assistant", content: respuesta });
-      guardar(numero, historial);
+      // Primero se envía y después se guarda: si fallara el orden inverso,
+      // quedaría escrita una respuesta que la persona nunca recibió.
       await enviarWhatsApp(numero, respuesta);
+      historial.push({ role: "assistant", content: respuesta });
+
+      try {
+        await almacen.guardarConversacion({
+          canal: "whatsapp",
+          sesion: numero,
+          nombrePerfil,
+          mensajes: historial,
+        });
+      } catch (err) {
+        console.error(
+          "[WHATSAPP] la respuesta salió pero no se pudo guardar la memoria:",
+          err?.message ?? err,
+        );
+      }
     }
   } catch (err) {
     console.error("[WHATSAPP] error procesando el mensaje:", err?.message ?? err);
@@ -120,6 +150,23 @@ export default async function handler(req, res) {
 
   // Meta reintenta si no recibe 200, y eso duplicaría respuestas.
   res.writeHead(200).end("OK");
+}
+
+let yaAvisado = false;
+
+/**
+ * Sin Supabase, la memoria cae en un archivo temporal que Vercel borra sin
+ * horario. El canal sigue funcionando, pero conviene que quede escrito en el
+ * registro: un bot que olvida a medias es más difícil de diagnosticar que uno
+ * que no responde.
+ */
+function avisarSiLaMemoriaEsFragil() {
+  if (yaAvisado || esPersistente()) return;
+  yaAvisado = true;
+  console.warn(
+    "[WHATSAPP] sin SUPABASE_URL/SUPABASE_SERVICE_KEY: la memoria de las " +
+      "conversaciones no sobrevive a los reinicios.",
+  );
 }
 
 function configurado() {
@@ -156,20 +203,6 @@ function firmaValida(cuerpoCrudo, cabecera) {
   if (recibido.length !== esperado.length) return false;
 
   return crypto.timingSafeEqual(Buffer.from(recibido, "hex"), Buffer.from(esperado, "hex"));
-}
-
-function recordar(numero) {
-  const entrada = memoria.get(numero);
-  if (!entrada || Date.now() - entrada.actualizado > MEMORIA_TTL_MS) return [];
-  return [...entrada.mensajes];
-}
-
-function guardar(numero, mensajes) {
-  memoria.set(numero, {
-    mensajes: mensajes.slice(-MAX_MENSAJES_MEMORIA),
-    actualizado: Date.now(),
-  });
-  if (memoria.size > 1000) memoria.clear();
 }
 
 async function enviarWhatsApp(numero, texto) {
