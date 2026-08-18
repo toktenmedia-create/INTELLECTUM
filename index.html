@@ -889,6 +889,23 @@ h1, h2, h3, h4 {
   font-family: var(--font-mono);
 }
 
+/* Identidad legal. Va en la portada, no solo en el aviso de privacidad:
+   quien verifica el negocio (Meta, Google, un cliente) la busca en el pie y
+   si no la encuentra ahí, asume que no existe. */
+.footer-legal {
+  margin-top: 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text-muted);
+  opacity: .78;
+  /* Los dos botones flotantes viven abajo (56px + 20px de margen). Sin este
+     colchón se comen justo la línea que identifica a la empresa. */
+  padding-bottom: 76px;
+}
+.footer-legal a { color: inherit; text-decoration: none; }
+.footer-legal a:hover { color: var(--accent); }
+
 /* Floating WhatsApp — a la izquierda para no montarse con el chat de IntelliA */
 .fab-whatsapp {
   position: fixed;
@@ -1380,6 +1397,12 @@ h1, h2, h3, h4 {
     <div class="footer-bottom">
       <span>© 2026 Intellectum AI Solutions. Todos los derechos reservados. · <a href="/privacidad">Aviso de privacidad</a></span>
       <span>Hecho en <span style="color: var(--accent);">Ecuador</span> · Powered by IA</span>
+    </div>
+
+    <div class="footer-legal">
+      Intellectum AI Solutions S.A.S. · RUC 1793236353001 · Gaspar de Carvajal S1-10 y Guayaquil, Quito, Pichincha, Ecuador ·
+      <a href="tel:+593983120003">+593 98 312 0003</a> ·
+      <a href="mailto:info@intellectum.ec">info@intellectum.ec</a>
     </div>
   </div>
 </footer>
