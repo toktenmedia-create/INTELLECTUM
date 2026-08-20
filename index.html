@@ -78,7 +78,19 @@
         "addressRegion": "Pichincha",
         "addressLocality": "Quito"
       },
-      "areaServed": { "@type": "Country", "name": "Ecuador" }
+      "areaServed": { "@type": "Country", "name": "Ecuador" },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Soluciones de inteligencia artificial",
+        "itemListElement": [
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Agentes de voz IA", "description": "Agentes de voz que califican leads, agendan citas y atienden llamadas 24/7 con conversaciones naturales." } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Chatbots y mensajería omnicanal", "description": "Atención con IA generativa en WhatsApp, Instagram y Messenger que entiende contexto y cierra ventas." } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Ventas automatizadas", "description": "Embudos que prospectan, nutren contactos y entregan al equipo solo leads listos para firmar." } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Automatización a medida", "description": "Integración de CRM, ERP, hojas de cálculo y correo en flujos inteligentes que ejecutan tareas repetitivas." } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Sitios web y landing pages", "description": "Páginas rápidas y medibles, diseñadas para convertir, con agente de IA integrado desde el lanzamiento." } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Tiendas en línea", "description": "E-commerce con catálogo, carrito y pagos para Ecuador, con atención automatizada y recuperación de carritos." } }
+        ]
+      }
     },
     {
       "@type": "WebSite",
@@ -333,6 +345,21 @@ h1, h2, h3, h4 {
   position: relative;
 }
 .nav-links a:hover { color: var(--text); }
+.nav-ia { display: inline-flex; align-items: center; gap: 7px; }
+.ia-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  animation: iaLatido 2.4s infinite;
+}
+@keyframes iaLatido { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.mobile-ia { display: inline-flex; align-items: center; gap: 9px; }
+.hero-note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+@media (prefers-reduced-motion: reduce) { .ia-dot { animation: none; } }
 .nav-cta { display: flex; align-items: center; gap: 12px; }
 .nav-cta .btn { padding: 10px 18px; font-size: 14px; }
 
@@ -964,6 +991,7 @@ h1, h2, h3, h4 {
       <a href="#proceso">Proceso</a>
       <a href="#nosotros">Nosotros</a>
       <a href="#faq">FAQ</a>
+      <a href="/chat" class="nav-ia"><span class="ia-dot" aria-hidden="true"></span>IntelliA</a>
     </nav>
 
     <div class="nav-cta">
@@ -985,6 +1013,7 @@ h1, h2, h3, h4 {
   <a href="#proceso">Proceso</a>
   <a href="#nosotros">Nosotros</a>
   <a href="#faq">FAQ</a>
+  <a href="/chat" class="mobile-ia"><span class="ia-dot" aria-hidden="true"></span>IntelliA — chat en línea</a>
   <a href="https://wa.me/593983120003" class="btn btn-primary" target="_blank" rel="noopener">
     Consultoría gratis →
   </a>
@@ -1029,6 +1058,7 @@ h1, h2, h3, h4 {
             <div class="label">Más ventas</div>
           </div>
         </div>
+        <p class="hero-note">*Estimación referencial para tareas repetitivas; el resultado real depende de cada proceso y se proyecta en el diagnóstico.</p>
       </div>
 
       <div class="hero-visual" aria-hidden="true">
@@ -1334,6 +1364,10 @@ h1, h2, h3, h4 {
          class="btn btn-secondary">
         Enviar email
       </a>
+      <a href="/chat" class="btn btn-secondary">
+        <span class="ia-dot" aria-hidden="true"></span>
+        Chatear con IntelliA
+      </a>
     </div>
 
     <div class="cta-channels reveal">
@@ -1388,6 +1422,7 @@ h1, h2, h3, h4 {
       <div class="footer-col">
         <h4>Contacto</h4>
         <ul>
+          <li><a href="/chat">Chat con IntelliA</a></li>
           <li><a href="mailto:info@intellectum.ec">info@intellectum.ec</a></li>
           <li><a href="https://wa.me/593983120003" target="_blank" rel="noopener">WhatsApp</a></li>
           <li><a href="tel:+593983120003">+593 98 312 0003</a></li>
@@ -1465,9 +1500,6 @@ document.querySelectorAll('.faq-item').forEach(item => {
   els.forEach(el => io.observe(el));
 })();
 </script>
-
-<!-- Asistente IntelliA (chat de captura de leads) -->
-<script defer src="/chat-widget.js"></script>
 
 </body>
 </html>
