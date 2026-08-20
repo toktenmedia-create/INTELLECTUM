@@ -11,6 +11,7 @@
     "dev": "node --env-file-if-exists=.env dev-server.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.116.0"
+    "@anthropic-ai/sdk": "^0.116.0",
+    "@vercel/functions": "^3.9.3"
   }
 }

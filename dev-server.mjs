@@ -25,6 +25,7 @@ const TIPOS = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".svg": "image/svg+xml",
+  ".webp": "image/webp",
   ".ico": "image/x-icon",
   ".xml": "application/xml; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
