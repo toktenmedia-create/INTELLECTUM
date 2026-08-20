@@ -43,6 +43,11 @@ const MENSAJE_TROPIEZO =
   "Perdona, se me complicó procesar tu mensaje. ¿Me lo repites? Si prefieres, " +
   "escríbenos a info@intellectum.ec y el equipo te ayuda directamente.";
 
+const MENSAJE_BAJA =
+  "Listo, queda registrado: no te escribiremos más por este medio y tu historial " +
+  "de conversación quedó borrado. Si algún día quieres retomar, solo escríbenos y " +
+  "con gusto te atendemos. También estamos en info@intellectum.ec.";
+
 export default async function handler(req, res) {
   // 1. Verificación del webhook: Meta llama una sola vez con un reto.
   if (req.method === "GET") {
@@ -130,6 +135,26 @@ async function procesar(valor, mensaje) {
   // Es cosmético: si falla, no detiene nada.
   marcarLeido(mensaje.id).catch(() => {});
 
+  // "SALIR": la única palabra que no pasa por el cerebro. Se atiende aquí,
+  // determinista y al instante, porque una baja no es una conversación: es un
+  // derecho. Se apunta en la lista (que no caduca), se borra el historial y
+  // se confirma. Si la persona vuelve a escribir después, se le responde con
+  // normalidad: retomar la conversación es decisión suya.
+  if (esSolicitudDeBaja(mensaje)) {
+    try {
+      await almacen.registrarBaja({ canal: "whatsapp", sesion: numero });
+      await almacen.olvidarConversacion({ canal: "whatsapp", sesion: numero });
+    } catch (err) {
+      // La confirmación sale igual: la persona no tiene la culpa de que la
+      // base tosa. Pero queda gritado en el registro para arreglarlo a mano.
+      console.error("[BAJA] ¡no se pudo registrar la baja de", numero + "!:", err?.message ?? err);
+    }
+    await enviarWhatsApp(numero, MENSAJE_BAJA).catch((err) =>
+      console.error("[BAJA] no se pudo confirmar:", err?.message ?? err),
+    );
+    return;
+  }
+
   let entrada;
   try {
     entrada = await prepararEntrada(mensaje);
@@ -201,6 +226,26 @@ function enSegundoPlano(promesa) {
   } catch {
     promesa.catch((err) => console.error("[WHATSAPP] tarea de fondo:", err?.message ?? err));
   }
+}
+
+/**
+ * ¿El mensaje es una solicitud de baja? Solo cuenta si el texto COMPLETO es la
+ * palabra clave ("SALIR", "salir.", "Baja!"), sin importar mayúsculas, tildes
+ * ni signos. Una frase que la contenga ("quiero salir de viaje") NO es baja:
+ * esa conversación la entiende el cerebro, no una lista de palabras.
+ */
+const PALABRAS_DE_BAJA = new Set(["salir", "baja", "stop", "unsubscribe", "no molestar"]);
+
+function esSolicitudDeBaja(mensaje) {
+  if (mensaje.type !== "text") return false;
+  const texto = (mensaje.text?.body ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // fuera tildes
+    .replace(/[^a-z\s]/g, " ") // fuera signos y números
+    .replace(/\s+/g, " ")
+    .trim();
+  return PALABRAS_DE_BAJA.has(texto);
 }
 
 let yaAvisado = false;
