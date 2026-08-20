@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es-EC">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0a0a0a" />
+<title>Blog de Intellectum — IA aplicada a los negocios</title>
+<meta name="description" content="Guías prácticas y sin humo sobre inteligencia artificial aplicada a los negocios: agentes de voz, chatbots de WhatsApp y automatización, por el equipo de Intellectum." />
+<link rel="canonical" href="https://www.intellectum.ec/blog" />
+<meta name="robots" content="index, follow" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.intellectum.ec/blog" />
+<meta property="og:site_name" content="Intellectum AI Solutions" />
+<meta property="og:title" content="Blog de Intellectum — IA aplicada a los negocios" />
+<meta property="og:description" content="Guías prácticas y sin humo sobre inteligencia artificial aplicada a los negocios: agentes de voz, chatbots de WhatsApp y automatización, por el equipo de Intellectum." />
+<meta property="og:image" content="https://www.intellectum.ec/logo.png" />
+<meta property="og:locale" content="es_EC" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  "@id": "https://www.intellectum.ec/blog#blog",
+  "url": "https://www.intellectum.ec/blog",
+  "name": "Blog de Intellectum — IA aplicada a los negocios",
+  "inLanguage": "es-EC",
+  "publisher": {
+    "@id": "https://www.intellectum.ec/#organization"
+  },
+  "blogPost": [
+    {
+      "@type": "BlogPosting",
+      "headline": "¿Qué es un agente de voz con IA y cómo funciona?",
+      "url": "https://www.intellectum.ec/blog/que-es-un-agente-de-voz-ia",
+      "datePublished": "2026-08-20"
+    },
+    {
+      "@type": "BlogPosting",
+      "headline": "Chatbot con IA para WhatsApp: lo que debes saber antes de contratar uno",
+      "url": "https://www.intellectum.ec/blog/chatbot-whatsapp-para-empresas",
+      "datePublished": "2026-08-20"
+    },
+    {
+      "@type": "BlogPosting",
+      "headline": "Cinco señales de que tu empresa necesita automatización (y por dónde empezar)",
+      "url": "https://www.intellectum.ec/blog/senales-de-que-tu-empresa-necesita-automatizacion",
+      "datePublished": "2026-08-20"
+    }
+  ]
+}
+</script>
+<style>
+:root {
+  --bg: #0a0a0a; --bg-card: rgba(255,255,255,0.025);
+  --text: #fafaf7; --text-dim: #a8a89e; --text-muted: #6e6e66;
+  --accent: #22d3ee; --accent-bright: #67e8f9;
+  --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.16);
+  --accent-tint-bg: rgba(34,211,238,0.08); --accent-tint-border: rgba(34,211,238,0.22);
+  --whatsapp: #25d366;
+  --font-display: "Fraunces", "Times New Roman", serif;
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-sans);
+  font-weight: 300; font-size: 17px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-tint-border); }
+a:hover { color: var(--accent-bright); border-bottom-color: var(--accent-bright); }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+.topbar { border-bottom: 1px solid var(--border); background: rgba(10,10,10,0.85);
+  backdrop-filter: saturate(140%) blur(10px); position: sticky; top: 0; z-index: 10; }
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding-top: 16px; padding-bottom: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); border-bottom: 0;
+  font-weight: 500; letter-spacing: 0.01em; }
+.brand .sparkle { color: var(--accent); font-size: 0.8em; }
+.back { font-size: 0.9rem; color: var(--text-dim); border-bottom: 0; }
+.back:hover { color: var(--accent); }
+header.hero { padding: 64px 0 36px; border-bottom: 1px solid var(--border); }
+.eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent); font-weight: 500; margin: 0 0 14px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(2rem, 5.5vw, 2.9rem);
+  line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 18px; }
+.lede { color: var(--text-dim); font-size: 1.08rem; margin: 0 0 20px; max-width: 62ch; }
+.meta { font-size: 0.86rem; color: var(--text-muted); margin: 0; }
+main { padding: 8px 0 64px; }
+article h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.55rem;
+  letter-spacing: -0.01em; margin: 44px 0 14px; }
+article h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; margin: 30px 0 10px; }
+article p { margin: 0 0 18px; color: var(--text-dim); }
+article strong { color: var(--text); font-weight: 500; }
+article ul, article ol { margin: 0 0 18px; padding-left: 22px; color: var(--text-dim); }
+article li { margin-bottom: 8px; }
+article li::marker { color: var(--accent); }
+.cta-caja { margin-top: 48px; padding: 26px; border: 1px solid var(--accent-tint-border);
+  border-radius: 18px; background: var(--accent-tint-bg); }
+.cta-caja p { margin: 0 0 16px; color: var(--text); }
+.cta-caja .botones { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px;
+  font-weight: 500; font-size: 14.5px; border-bottom: 0; }
+.btn-primario { background: var(--accent); color: #06141a; }
+.btn-primario:hover { background: var(--accent-bright); color: #06141a; }
+.btn-wa { background: var(--whatsapp); color: #fff; }
+.btn-wa:hover { background: #1fb858; color: #fff; }
+.tarjeta { display: block; border: 1px solid var(--border); border-radius: 18px; background: var(--bg-card);
+  padding: 26px; margin-bottom: 18px; border-bottom: 1px solid var(--border); transition: border-color .25s, background .25s; }
+.tarjeta:hover { border-color: var(--accent-tint-border); background: var(--accent-tint-bg); }
+.tarjeta h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.45rem; margin: 0 0 10px; color: var(--text); }
+.tarjeta p { margin: 0 0 12px; color: var(--text-dim); font-size: 0.98rem; }
+.tarjeta .fecha { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted); }
+footer { border-top: 1px solid var(--border); padding: 26px 0 40px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between;
+  font-size: 0.86rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="sparkle">◆</span> Intellectum AI Solutions</a>
+    <a class="back" href="/">← Volver al sitio</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <p class="eyebrow">Blog</p>
+    <h1>IA aplicada, <em style="font-style:italic;color:var(--accent);font-weight:300;">sin humo.</em></h1>
+    <p class="lede">Guías prácticas sobre agentes de voz, chatbots y automatización, escritas para dueños y gerentes de negocio — no para programadores.</p>
+  </header>
+  <main>
+    <a class="tarjeta" href="/blog/que-es-un-agente-de-voz-ia">
+      <span class="fecha">Agentes de voz · 20 de agosto de 2026</span>
+      <h2>¿Qué es un agente de voz con IA y cómo funciona?</h2>
+      <p>Qué es un agente de voz con inteligencia artificial, cómo funciona por dentro, qué puede y qué no puede hacer, y cuándo tiene sentido para una empresa.</p>
+    </a>
+    <a class="tarjeta" href="/blog/chatbot-whatsapp-para-empresas">
+      <span class="fecha">Chatbots · WhatsApp · 20 de agosto de 2026</span>
+      <h2>Chatbot con IA para WhatsApp: lo que debes saber antes de contratar uno</h2>
+      <p>Cómo funciona un chatbot con IA generativa en WhatsApp, qué diferencia hay con la app normal, y las preguntas clave que deberías hacerle a cualquier proveedor.</p>
+    </a>
+    <a class="tarjeta" href="/blog/senales-de-que-tu-empresa-necesita-automatizacion">
+      <span class="fecha">Automatización · 20 de agosto de 2026</span>
+      <h2>Cinco señales de que tu empresa necesita automatización (y por dónde empezar)</h2>
+      <p>Cinco síntomas cotidianos que delatan procesos listos para automatizar con IA, y una guía honesta de por dónde empezar sin arriesgar de más.</p>
+    </a>
+    
+<div class="cta-caja">
+  <p><strong>¿Quieres saber si esto aplica a tu negocio?</strong> Cuéntale tu caso a IntelliA, nuestro asistente con IA, o escríbenos directo por WhatsApp. La primera consultoría es gratis.</p>
+  <div class="botones">
+    <a class="btn btn-primario" href="/chat">Hablar con IntelliA</a>
+    <a class="btn btn-wa" href="https://wa.me/593983120003?text=Hola%20Intellectum%2C%20le%C3%AD%20un%20art%C3%ADculo%20del%20blog%20y%20quiero%20m%C3%A1s%20informaci%C3%B3n" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+  </div>
+</div>
+
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Intellectum AI Solutions S.A.S. — Quito, Ecuador</span>
+    <span><a href="/chat">Habla con IntelliA</a> · <a href="/">intellectum.ec</a></span>
+  </div>
+</footer>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

@@ -34,5 +34,10 @@ entre 2 y 6 semanas.
 
 - [Inicio](https://www.intellectum.ec/): servicios, proceso, preguntas frecuentes y contacto.
 - [Habla con IntelliA](https://www.intellectum.ec/chat): chat en línea con el asistente de IA.
+- [English version](https://www.intellectum.ec/en): the site in English.
+- [Blog](https://www.intellectum.ec/blog): guías prácticas sobre IA aplicada a los negocios.
+- [¿Qué es un agente de voz con IA?](https://www.intellectum.ec/blog/que-es-un-agente-de-voz-ia)
+- [Chatbot con IA para WhatsApp](https://www.intellectum.ec/blog/chatbot-whatsapp-para-empresas)
+- [Cinco señales de que tu empresa necesita automatización](https://www.intellectum.ec/blog/senales-de-que-tu-empresa-necesita-automatizacion)
 - [Aviso de privacidad](https://www.intellectum.ec/privacidad)
 - [Condiciones del servicio](https://www.intellectum.ec/condiciones)
