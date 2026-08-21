@@ -243,6 +243,42 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 .chip-filtro:active { transform: scale(0.97); }
 .chip-filtro.activo { border-color: var(--accent); color: var(--accent); background: var(--accent-tint-bg); }
 
+.etiquetas-zona { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.pastilla.etiqueta { display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--border-strong); color: var(--text-dim); }
+.pastilla.etiqueta .quitar { padding: 0 2px; color: var(--text-muted); font-size: 13px; line-height: 1; }
+.pastilla.etiqueta .quitar:hover { color: var(--rojo); }
+.etiqueta-nueva { width: 110px; padding: 4px 10px; border-radius: 999px; font-size: 12px;
+  background: none; border: 1px dashed var(--border-strong); color: var(--text-dim); }
+.etiqueta-nueva:focus { outline: none; border-style: solid; border-color: var(--accent); }
+.etiqueta-nueva::placeholder { color: var(--text-muted); }
+
+.valor-zona { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; }
+.valor-zona .moneda { color: var(--text-muted); font-family: var(--font-mono); font-size: 12px; }
+.valor-input { width: 130px; padding: 5px 10px; border-radius: 8px; font-size: 13px;
+  font-family: var(--font-mono); background: var(--bg-card);
+  border: 1px solid var(--border); color: var(--text); }
+.valor-input:focus { outline: none; border-color: var(--accent); }
+.valor-input::placeholder { color: var(--text-muted); font-family: var(--font-sans); }
+.motivo-txt { color: var(--text-muted); font-size: 12.5px; }
+
+.motivo-zona {
+  margin-top: 10px; padding: 12px 14px; border-radius: 10px; font-size: 13.5px;
+  border: 1px solid var(--border-strong); background: rgba(255,255,255,0.03);
+  color: var(--text-dim);
+}
+.motivo-zona .opciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+.motivo-op {
+  padding: 6px 13px; border-radius: 999px; font-size: 12.5px;
+  border: 1px solid var(--border-strong); color: var(--text-dim);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.motivo-op:hover { border-color: var(--accent); color: var(--accent); }
+.motivo-op:active { transform: scale(0.97); }
+.motivo-otro { width: 150px; padding: 6px 12px; border-radius: 999px; font-size: 12.5px;
+  background: none; border: 1px dashed var(--border-strong); color: var(--text-dim); }
+.motivo-otro:focus { outline: none; border-style: solid; border-color: var(--accent); }
+
 .estados { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .estado-btn {
   padding: 5px 12px; border-radius: 999px; font-size: 12px;
@@ -556,6 +592,12 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       stat(d.leads.ultimos30, "leads este mes", "leads") +
       stat(d.leads.nuevos, "por atender", "leads") +
       stat(d.citas.proximas, "citas próximas", "citas") +
+      (d.leads.embudo && d.leads.embudo.abierto > 0
+        ? stat("$" + Number(d.leads.embudo.abierto).toLocaleString("es-EC"), "en el embudo", "leads")
+        : "") +
+      (d.leads.embudo && d.leads.embudo.ganado > 0
+        ? stat("$" + Number(d.leads.embudo.ganado).toLocaleString("es-EC"), "ganado", "leads")
+        : "") +
       "</div>" +
       (d.leads.en_riesgo
         ? '<div class="alerta-riesgo" data-ir="leads">🧊 ' +
@@ -633,10 +675,12 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 
   /* ──────────────────────────────────────────────────────────────── leads */
 
-  var ESTADOS = ["nuevo", "contactado", "ganado", "perdido"];
+  var ESTADOS = ["nuevo", "contactado", "en_conversacion", "ganado", "perdido"];
+  var NOMBRE_ESTADO = { en_conversacion: "en conversación" };
   var FILTROS = [
     ["todos", "Todos"], ["riesgo", "🧊 En riesgo"], ["nuevo", "Nuevos"],
-    ["contactado", "Contactados"], ["ganado", "Ganados"], ["perdido", "Perdidos"],
+    ["contactado", "Contactados"], ["en_conversacion", "En conversación"],
+    ["ganado", "Ganados"], ["perdido", "Perdidos"],
   ];
   var filtroLeads = "todos";
 
@@ -695,6 +739,20 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         zona.querySelectorAll("[data-guardar-nota]").forEach(function (b) {
           b.addEventListener("click", function () { guardarNota(b); });
         });
+        zona.querySelectorAll("[data-quitar-etiqueta]").forEach(function (b) {
+          b.addEventListener("click", function () { quitarEtiqueta(b); });
+        });
+        zona.querySelectorAll("[data-nueva-etiqueta]").forEach(function (i) {
+          i.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") { e.preventDefault(); agregarEtiqueta(i); }
+          });
+        });
+        zona.querySelectorAll("[data-valor]").forEach(function (i) {
+          i.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") { e.preventDefault(); i.blur(); }
+          });
+          i.addEventListener("blur", function () { guardarValor(i); });
+        });
       })
       .catch(fallo("leads"));
   }
@@ -724,10 +782,25 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       (leadEnRiesgo(l) ? '<span class="pastilla riesgo">🧊 ' + diasSinTocar(l) + " días sin atención</span>" : "") +
       "</div>" +
       (l.necesidad || l.resumen ? '<div class="detalle">' + esc(l.necesidad || l.resumen) + "</div>" : "") +
+      '<div class="etiquetas-zona">' +
+      (Array.isArray(l.etiquetas) ? l.etiquetas : []).map(function (e) {
+        return '<span class="pastilla etiqueta" data-etiqueta="' + esc(e) + '">' + esc(e) +
+          '<button class="quitar" data-quitar-etiqueta title="Quitar etiqueta">×</button></span>';
+      }).join("") +
+      '<input class="etiqueta-nueva" data-nueva-etiqueta placeholder="+ etiqueta" maxlength="30" />' +
+      "</div>" +
+      '<div class="valor-zona"><span class="moneda">$</span>' +
+      '<input class="valor-input" data-valor inputmode="decimal" placeholder="valor estimado"' +
+      ' value="' + (l.valor_estimado == null ? "" : esc(l.valor_estimado)) + '"' +
+      ' data-previo="' + (l.valor_estimado == null ? "" : esc(l.valor_estimado)) + '" />' +
+      (estado === "perdido" && l.motivo_perdida
+        ? '<span class="motivo-txt">Perdido: ' + esc(l.motivo_perdida) + "</span>"
+        : "") +
+      "</div>" +
       (l.contacto ? '<div class="contacto">' + enlaceContacto(l.contacto) + "</div>" : "") +
       '<div class="estados">' +
       ESTADOS.map(function (e) {
-        return '<button class="estado-btn ' + e + (e === estado ? " activo" : "") + '" data-estado="' + e + '">' + e + "</button>";
+        return '<button class="estado-btn ' + e + (e === estado ? " activo" : "") + '" data-estado="' + e + '">' + (NOMBRE_ESTADO[e] || e) + "</button>";
       }).join("") +
       "</div>" +
       '<div class="nota-zona"><textarea placeholder="Nota interna…">' + esc(l.nota || "") + "</textarea>" +
@@ -749,8 +822,100 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       .then(function () {
         tarjeta.querySelectorAll("[data-estado]").forEach(function (b) { b.classList.remove("activo"); });
         boton.classList.add("activo");
+        if (boton.dataset.estado === "perdido") pedirMotivo(tarjeta);
       })
       .catch(function () { alert("No se pudo guardar el estado."); });
+  }
+
+  /* El motivo de pérdida se pregunta justo al marcar perdido, que es cuando el
+     dueño lo tiene fresco. Es opcional: cerrar la zona no guarda nada. */
+  function pedirMotivo(tarjeta) {
+    if (tarjeta.querySelector(".motivo-zona")) return;
+    var zona = document.createElement("div");
+    zona.className = "motivo-zona";
+    var texto = document.createElement("div");
+    texto.textContent = "¿Por qué se perdió? Es opcional, pero leerlos juntos enseña.";
+    var opciones = document.createElement("div");
+    opciones.className = "opciones";
+    zona.appendChild(texto);
+    zona.appendChild(opciones);
+    tarjeta.appendChild(zona);
+
+    function guardar(motivo) {
+      ordenar("lead", { id: tarjeta.dataset.lead, motivo_perdida: motivo })
+        .then(function () {
+          pintaListaLeads(document.getElementById("buscaLeads").value.trim());
+        })
+        .catch(avisoLead);
+    }
+
+    ["Precio", "No respondió", "Eligió otra opción", "No era el momento"].forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "motivo-op";
+      b.textContent = m;
+      b.addEventListener("click", function () { guardar(m); });
+      opciones.appendChild(b);
+    });
+    var otro = document.createElement("input");
+    otro.className = "motivo-otro";
+    otro.placeholder = "otro motivo…";
+    otro.maxLength = 300;
+    otro.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && otro.value.trim()) { e.preventDefault(); guardar(otro.value.trim()); }
+    });
+    opciones.appendChild(otro);
+    var cerrar = document.createElement("button");
+    cerrar.className = "motivo-op";
+    cerrar.textContent = "Omitir";
+    cerrar.addEventListener("click", function () { zona.remove(); });
+    opciones.appendChild(cerrar);
+  }
+
+  function etiquetasDe(tarjeta) {
+    return Array.prototype.map.call(tarjeta.querySelectorAll("[data-etiqueta]"), function (p) {
+      return p.dataset.etiqueta;
+    });
+  }
+
+  function agregarEtiqueta(input) {
+    var tarjeta = input.closest("[data-lead]");
+    var nueva = input.value.trim().toLowerCase();
+    if (!nueva) return;
+    var lista = etiquetasDe(tarjeta);
+    if (lista.indexOf(nueva) === -1) lista.push(nueva);
+    input.disabled = true;
+    ordenar("lead", { id: tarjeta.dataset.lead, etiquetas: lista })
+      .then(function () {
+        pintaListaLeads(document.getElementById("buscaLeads").value.trim());
+      })
+      .catch(function (e) { input.disabled = false; avisoLead(e); });
+  }
+
+  function quitarEtiqueta(boton) {
+    var tarjeta = boton.closest("[data-lead]");
+    var chip = boton.closest("[data-etiqueta]");
+    var lista = etiquetasDe(tarjeta).filter(function (e) { return e !== chip.dataset.etiqueta; });
+    ordenar("lead", { id: tarjeta.dataset.lead, etiquetas: lista })
+      .then(function () { chip.remove(); })
+      .catch(avisoLead);
+  }
+
+  function guardarValor(input) {
+    var crudo = input.value.trim().replace(",", ".");
+    if (crudo === (input.dataset.previo || "")) return;
+    var valor = crudo === "" ? null : Number(crudo);
+    if (valor !== null && (!isFinite(valor) || valor < 0)) {
+      input.value = input.dataset.previo || "";
+      return;
+    }
+    var tarjeta = input.closest("[data-lead]");
+    ordenar("lead", { id: tarjeta.dataset.lead, valor_estimado: valor })
+      .then(function () { input.dataset.previo = crudo; })
+      .catch(function (e) { input.value = input.dataset.previo || ""; avisoLead(e); });
+  }
+
+  function avisoLead() {
+    alert("No se pudo guardar. Si es la primera vez que usas etiquetas o valores, falta aplicar supabase/crm.sql en la base (Supabase → SQL Editor).");
   }
 
   function guardarNota(boton) {

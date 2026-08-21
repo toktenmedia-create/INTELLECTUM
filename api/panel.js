@@ -42,7 +42,8 @@ import { enviarCancelacionWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeri
 
 export const config = { maxDuration: 30 };
 
-const ESTADOS_VALIDOS = new Set(["nuevo", "contactado", "ganado", "perdido"]);
+const ESTADOS_VALIDOS = new Set(["nuevo", "contactado", "en_conversacion", "ganado", "perdido"]);
+const ESTADOS_ABIERTOS = new Set(["nuevo", "contactado", "en_conversacion"]);
 
 export default async function handler(req, res) {
   const esperado = process.env.AGENTE_PRIVADO_TOKEN;
@@ -67,9 +68,55 @@ export default async function handler(req, res) {
         }
         const nota = cuerpo.nota === undefined ? undefined : String(cuerpo.nota).slice(0, 2000);
 
-        const lead = await almacen.actualizarLead({ id: String(cuerpo.id ?? ""), estado, nota });
-        if (!lead) return responderJson(res, 404, { error: "Ese lead no existe" });
-        return responderJson(res, 200, { lead });
+        // Etiquetas: lista corta de palabras del dueño, sin duplicados.
+        const etiquetas =
+          cuerpo.etiquetas === undefined
+            ? undefined
+            : [
+                ...new Set(
+                  (Array.isArray(cuerpo.etiquetas) ? cuerpo.etiquetas : [])
+                    .map((e) => String(e).trim().toLowerCase().slice(0, 30))
+                    .filter(Boolean),
+                ),
+              ].slice(0, 10);
+
+        // Valor estimado en dólares. Nulo = "sin estimar", que no es cero.
+        let valor_estimado;
+        if (cuerpo.valor_estimado !== undefined) {
+          if (cuerpo.valor_estimado === null || cuerpo.valor_estimado === "") {
+            valor_estimado = null;
+          } else {
+            valor_estimado = Number(cuerpo.valor_estimado);
+            if (!Number.isFinite(valor_estimado) || valor_estimado < 0 || valor_estimado > 99_999_999) {
+              return responderJson(res, 400, { error: "Valor inválido" });
+            }
+          }
+        }
+
+        const motivo_perdida =
+          cuerpo.motivo_perdida === undefined ? undefined : String(cuerpo.motivo_perdida).slice(0, 300);
+
+        try {
+          const lead = await almacen.actualizarLead({
+            id: String(cuerpo.id ?? ""),
+            estado,
+            nota,
+            etiquetas,
+            valor_estimado,
+            motivo_perdida,
+          });
+          if (!lead) return responderJson(res, 404, { error: "Ese lead no existe" });
+          return responderJson(res, 200, { lead });
+        } catch (err) {
+          // Hasta que se corra supabase/crm.sql, la base no conoce las columnas
+          // nuevas. Mejor decirlo con claridad que devolver un error genérico.
+          if (/does not exist|column/i.test(String(err?.message))) {
+            return responderJson(res, 400, {
+              error: "Falta aplicar supabase/crm.sql en la base (Supabase → SQL Editor).",
+            });
+          }
+          throw err;
+        }
       }
 
       if (cuerpo?.accion === "responder") {
@@ -296,6 +343,16 @@ export default async function handler(req, res) {
               String(l.urgencia ?? "").toLowerCase() === "alta" &&
               l.creado_en < hace(3),
           ).length,
+          // La plata del embudo: suma de los valores estimados. "Abierto" es
+          // lo que todavía puede cerrarse; "ganado" es el total ya cerrado.
+          embudo: {
+            abierto: leads
+              .filter((l) => ESTADOS_ABIERTOS.has(l.estado ?? "nuevo"))
+              .reduce((suma, l) => suma + (Number(l.valor_estimado) || 0), 0),
+            ganado: leads
+              .filter((l) => (l.estado ?? "nuevo") === "ganado")
+              .reduce((suma, l) => suma + (Number(l.valor_estimado) || 0), 0),
+          },
         },
         conversaciones: conversaciones.length,
         citas: { proximas: citas.length, siguiente: citas[0] ?? null },
