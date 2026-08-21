@@ -161,6 +161,38 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 .pastilla.alta { border-color: rgba(248,113,113,0.4); color: var(--rojo); }
 .pastilla.media { border-color: rgba(251,191,36,0.4); color: var(--ambar); }
 .pastilla.canal { border-color: var(--accent-tint-border); color: var(--accent); }
+.pastilla.riesgo { border-color: rgba(251,191,36,0.5); color: var(--ambar); background: rgba(251,191,36,0.06); }
+
+.alerta-riesgo {
+  display: flex; align-items: center; gap: 10px; margin-top: 12px;
+  padding: 12px 15px; border-radius: var(--radius); font-size: 13.5px;
+  border: 1px solid rgba(251,191,36,0.35); background: rgba(251,191,36,0.06);
+  color: var(--ambar); cursor: pointer; transition: background 0.2s;
+}
+.alerta-riesgo:hover { background: rgba(251,191,36,0.12); }
+
+.cita-pie { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.cita-pie .codigo { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); }
+.btn-cancelar {
+  margin-left: auto; padding: 5px 12px; border-radius: 999px; font-size: 12px;
+  border: 1px solid rgba(248,113,113,0.35); color: var(--rojo);
+}
+.btn-cancelar:hover { background: rgba(248,113,113,0.08); }
+.confirma-zona {
+  margin-top: 10px; padding: 12px 14px; border-radius: 10px; font-size: 13.5px;
+  border: 1px solid rgba(248,113,113,0.3); background: rgba(248,113,113,0.05);
+  color: var(--text-dim);
+}
+.confirma-zona .botones { display: flex; gap: 8px; margin-top: 10px; }
+.confirma-zona .si {
+  padding: 7px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  background: var(--rojo); color: #1a0606;
+}
+.confirma-zona .no {
+  padding: 7px 14px; border-radius: 999px; font-size: 12.5px;
+  border: 1px solid var(--border-strong); color: var(--text-dim);
+}
+.cita-resultado { margin-top: 10px; font-size: 13.5px; color: var(--text-dim); }
 
 .estados { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .estado-btn {
@@ -448,6 +480,13 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       stat(d.leads.nuevos, "por atender", "leads") +
       stat(d.citas.proximas, "citas próximas", "citas") +
       "</div>" +
+      (d.leads.en_riesgo
+        ? '<div class="alerta-riesgo" data-ir="leads">🧊 ' +
+          (d.leads.en_riesgo === 1
+            ? "1 lead de urgencia alta lleva 3+ días sin atención. Llámalo antes de que se enfríe."
+            : d.leads.en_riesgo + " leads de urgencia alta llevan 3+ días sin atención. Llámalos antes de que se enfríen.") +
+          "</div>"
+        : "") +
       (s
         ? '<h2 class="seccion">Siguiente cita</h2><div class="tarjeta" data-ir="citas"><div class="fila1">' +
           '<span class="nombre">' + esc(s.nombre || "Sin nombre") + "</span>" +
@@ -482,7 +521,15 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       if (h === "guardar_lead") return { icono: "⭐", texto: "IntelliA capturó un lead nuevo", ir: "leads" };
       if (h === "agendar_cita") return { icono: "📅", texto: "Se agendó una cita nueva", ir: "citas" };
       if (h === "reagendar_cita") return { icono: "📅", texto: "Se movió una cita", ir: "citas" };
-      if (h === "cancelar_cita") return { icono: "📅", texto: "Se canceló una cita", ir: "citas" };
+      if (h === "cancelar_cita") {
+        if (det.origen === "panel")
+          return {
+            icono: "📅",
+            texto: "Cancelaste una cita desde el panel" + (det.correo_enviado ? " y se pidió reagendar por correo" : ""),
+            ir: "citas",
+          };
+        return { icono: "📅", texto: "Se canceló una cita", ir: "citas" };
+      }
       if (h === "ver_disponibilidad") return { icono: "🕐", texto: "Alguien revisó horarios disponibles", ir: "citas" };
       if (h === "escalar_a_humano") return { icono: "🙋", texto: "Una conversación pidió atención humana", ir: "chats" };
       return { icono: "⚙️", texto: "IntelliA usó " + (h || "una herramienta"), ir: null };
@@ -530,6 +577,8 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   function pintaListaLeads(texto) {
     pedir("leads", texto ? { texto: texto } : {})
       .then(function (d) {
+        // Los que se están enfriando van arriba; el resto conserva su orden.
+        d.leads = d.leads.slice().sort(function (a, b) { return leadEnRiesgo(b) - leadEnRiesgo(a); });
         var zona = document.getElementById("listaLeads");
         if (!d.leads.length) {
           zona.innerHTML = '<div class="vacio">' + (texto ? "Nada con ese texto." : "Todavía no hay leads.") + "</div>";
@@ -546,6 +595,18 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       .catch(fallo("leads"));
   }
 
+  /* Urgencia alta y nadie lo ha tocado en 3+ días: se está enfriando.
+     La misma regla vive en api/panel.js (en_riesgo); si cambia allá, cambia aquí. */
+  function leadEnRiesgo(l) {
+    return (l.estado || "nuevo") === "nuevo" &&
+      String(l.urgencia || "").toLowerCase() === "alta" &&
+      Date.now() - new Date(l.creado_en).getTime() > 3 * 86400000 ? 1 : 0;
+  }
+
+  function diasSinTocar(l) {
+    return Math.floor((Date.now() - new Date(l.creado_en).getTime()) / 86400000);
+  }
+
   function tarjetaLead(l) {
     var estado = l.estado || "nuevo";
     return (
@@ -556,6 +617,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">' +
       '<span class="pastilla canal">' + esc(etiquetaCanal(l.canal)) + "</span>" +
       (l.urgencia ? '<span class="pastilla ' + esc(l.urgencia) + '">' + esc(l.urgencia) + "</span>" : "") +
+      (leadEnRiesgo(l) ? '<span class="pastilla riesgo">🧊 ' + diasSinTocar(l) + " días sin atención</span>" : "") +
       "</div>" +
       (l.necesidad || l.resumen ? '<div class="detalle">' + esc(l.necesidad || l.resumen) + "</div>" : "") +
       (l.contacto ? '<div class="contacto">' + enlaceContacto(l.contacto) + "</div>" : "") +
@@ -661,14 +723,69 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     }
     v.innerHTML = d.citas.map(function (c) {
       return (
-        '<div class="tarjeta"><div class="fila1">' +
+        '<div class="tarjeta" data-cita="' + esc(c.codigo) + '" data-contacto="' + esc(c.contacto || "") + '">' +
+        '<div class="fila1">' +
         '<span class="nombre">' + esc(c.nombre || c.titulo || "Sin nombre") + "</span>" +
         '<span class="cuando">' + esc(c.etiqueta) + "</span></div>" +
         (c.contacto ? '<div class="contacto">' + enlaceContacto(c.contacto) + "</div>" : "") +
-        (c.codigo ? '<div style="font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);margin-top:6px;">código ' + esc(c.codigo) + "</div>" : "") +
+        (c.codigo
+          ? '<div class="cita-pie"><span class="codigo">código ' + esc(c.codigo) + "</span>" +
+            '<button class="btn-cancelar" data-cancelar>Cancelar cita</button></div>'
+          : "") +
         "</div>"
       );
     }).join("");
+    v.querySelectorAll("[data-cancelar]").forEach(function (b) {
+      b.addEventListener("click", function () { confirmarCancelacion(b); });
+    });
+  }
+
+  /* Cancelar desde el panel es para emergencias: por eso pide confirmación
+     explícita y deja claro, antes y después, si al cliente le llegó el aviso. */
+  function confirmarCancelacion(boton) {
+    var tarjeta = boton.closest("[data-cita]");
+    if (tarjeta.querySelector(".confirma-zona")) return;
+    var contacto = tarjeta.dataset.contacto || "";
+    var esCorreo = contacto.indexOf("@") !== -1;
+
+    var zona = document.createElement("div");
+    zona.className = "confirma-zona";
+    var texto = document.createElement("div");
+    texto.textContent = esCorreo
+      ? "Se cancelará la cita y le llegará un correo a " + contacto + " con la disculpa y el pedido de reagendar. ¿Seguro?"
+      : "Se cancelará la cita. Este contacto no tiene correo (" + (contacto || "sin contacto") + "), así que tendrás que avisarle tú. ¿Seguro?";
+    var botones = document.createElement("div");
+    botones.className = "botones";
+    var si = document.createElement("button");
+    si.className = "si"; si.textContent = "Sí, cancelar";
+    var no = document.createElement("button");
+    no.className = "no"; no.textContent = "No, dejarla";
+    botones.appendChild(si); botones.appendChild(no);
+    zona.appendChild(texto); zona.appendChild(botones);
+    tarjeta.appendChild(zona);
+
+    no.addEventListener("click", function () { zona.remove(); });
+    si.addEventListener("click", function () {
+      si.disabled = true; no.disabled = true;
+      si.textContent = "Cancelando…";
+      ordenar("cancelar_cita", { codigo: tarjeta.dataset.cita })
+        .then(function (r) {
+          zona.remove();
+          boton.remove();
+          var resultado = document.createElement("div");
+          resultado.className = "cita-resultado";
+          resultado.textContent = r.correo
+            ? "✓ Cancelada. Le llegó el correo a " + (r.contacto || contacto) + " pidiendo reagendar."
+            : "✓ Cancelada. ⚠ No salió correo: avísale tú al " + (r.contacto || contacto || "cliente") + ".";
+          tarjeta.appendChild(resultado);
+          tarjeta.style.opacity = "0.65";
+        })
+        .catch(function () {
+          si.disabled = false; no.disabled = false;
+          si.textContent = "Sí, cancelar";
+          alert("No se pudo cancelar. Intenta de nuevo.");
+        });
+    });
   }
 
   /* ─────────────────────────────────────────────────────── agente privado */
