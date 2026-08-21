@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       const [leads, conversaciones, eventos, citas] = await Promise.all([
         almacen.listarLeads({ limite: 200 }),
         almacen.listarConversaciones({ limite: 100 }),
-        almacen.listarEventos({ limite: 6 }),
+        almacen.listarEventos({ limite: 10 }),
         agendaConfigurada() ? citasProximas().catch(() => []) : Promise.resolve([]),
       ]);
 

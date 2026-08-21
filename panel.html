@@ -121,7 +121,26 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 .stat {
   padding: 16px; border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--bg-card);
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
 }
+.stat[data-ir] { cursor: pointer; }
+.stat[data-ir]:hover { border-color: var(--accent-tint-border); background: var(--accent-tint-bg); transform: translateY(-1px); }
+.tarjeta[data-ir] { cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.tarjeta[data-ir]:hover { border-color: var(--accent-tint-border); background: var(--accent-tint-bg); }
+
+.act-fila {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 10px; border-radius: 12px; margin: 2px 0;
+}
+.act-fila[data-ir] { cursor: pointer; }
+.act-fila[data-ir]:hover { background: var(--accent-tint-bg); }
+.act-icono {
+  width: 36px; height: 36px; border-radius: 50%; flex: none;
+  background: var(--bg-card); border: 1px solid var(--border);
+  display: grid; place-items: center; font-size: 16px;
+}
+.act-texto { font-size: 13.5px; color: var(--text-dim); }
+.act-cuando { margin-left: auto; color: var(--text-muted); font-size: 11.5px; white-space: nowrap; padding-left: 8px; }
 .stat .num { font-family: var(--font-display); font-size: 30px; line-height: 1.1; color: var(--accent); }
 .stat .label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
@@ -414,40 +433,78 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 
   /* ────────────────────────────────────────────────────────────── resumen */
 
+  function irA(vista) {
+    var boton = document.querySelector('.tab[data-vista="' + vista + '"]');
+    if (boton) boton.click();
+  }
+
   function pintarResumen(d) {
     var v = document.getElementById("vista-resumen");
     var s = d.citas && d.citas.siguiente;
     v.innerHTML =
       '<div class="stats">' +
-      stat(d.leads.ultimos7, "leads esta semana") +
-      stat(d.leads.ultimos30, "leads este mes") +
-      stat(d.leads.nuevos, "por atender") +
-      stat(d.citas.proximas, "citas próximas") +
+      stat(d.leads.ultimos7, "leads esta semana", "leads") +
+      stat(d.leads.ultimos30, "leads este mes", "leads") +
+      stat(d.leads.nuevos, "por atender", "leads") +
+      stat(d.citas.proximas, "citas próximas", "citas") +
       "</div>" +
       (s
-        ? '<h2 class="seccion">Siguiente cita</h2><div class="tarjeta"><div class="fila1">' +
+        ? '<h2 class="seccion">Siguiente cita</h2><div class="tarjeta" data-ir="citas"><div class="fila1">' +
           '<span class="nombre">' + esc(s.nombre || "Sin nombre") + "</span>" +
           '<span class="cuando">' + esc(s.etiqueta) + "</span></div>" +
           (s.contacto ? '<div class="contacto">' + esc(s.contacto) + "</div>" : "") +
           "</div>"
         : "") +
       '<h2 class="seccion">Última actividad</h2>' +
-      ((d.eventos || []).map(function (e) {
-        return '<div class="evento"><span class="tipo">' + esc(e.tipo) + "</span>" +
-          '<span>' + esc(resumirEvento(e)) + "</span>" +
-          '<span class="cuando">' + haceCuanto(e.creado_en) + "</span></div>";
-      }).join("") || '<div class="vacio">Sin actividad todavía.</div>') +
+      ((d.eventos || []).map(filaActividad).join("") ||
+        '<div class="vacio">Sin actividad todavía.</div>') +
       (d.persistente ? "" : '<div class="vacio">⚠ Sin base de datos real: ' + esc(d.guardadoEn) + "</div>");
+
+    v.querySelectorAll("[data-ir]").forEach(function (el) {
+      el.addEventListener("click", function () { irA(el.dataset.ir); });
+    });
   }
 
-  function stat(n, label) {
-    return '<div class="stat"><div class="num">' + esc(n) + '</div><div class="label">' + esc(label) + "</div></div>";
+  function stat(n, label, ir) {
+    return '<div class="stat"' + (ir ? ' data-ir="' + ir + '"' : "") + '><div class="num">' +
+      esc(n) + '</div><div class="label">' + esc(label) + "</div></div>";
   }
 
-  function resumirEvento(e) {
+  /* La bitácora guarda códigos de máquina; aquí se traducen a frases de humano. */
+  function humanizarEvento(e) {
     var det = e.detalle || {};
-    var texto = det.resumen || det.marcador || det.sesion || det.motivo || "";
-    return String(texto).length > 60 ? String(texto).slice(0, 57) + "…" : texto;
+    var h = det.herramienta || "";
+    if (e.tipo === "mensaje_procesado")
+      return { icono: "💬", texto: "IntelliA atendió un mensaje de WhatsApp", ir: "chats" };
+    if (e.tipo === "consulta_disponibilidad")
+      return { icono: "🕐", texto: "Alguien consultó horarios para una cita", ir: "citas" };
+    if (e.tipo === "herramienta_ejecutada") {
+      if (h === "guardar_lead") return { icono: "⭐", texto: "IntelliA capturó un lead nuevo", ir: "leads" };
+      if (h === "agendar_cita") return { icono: "📅", texto: "Se agendó una cita nueva", ir: "citas" };
+      if (h === "reagendar_cita") return { icono: "📅", texto: "Se movió una cita", ir: "citas" };
+      if (h === "cancelar_cita") return { icono: "📅", texto: "Se canceló una cita", ir: "citas" };
+      if (h === "ver_disponibilidad") return { icono: "🕐", texto: "Alguien revisó horarios disponibles", ir: "citas" };
+      if (h === "escalar_a_humano") return { icono: "🙋", texto: "Una conversación pidió atención humana", ir: "chats" };
+      return { icono: "⚙️", texto: "IntelliA usó " + (h || "una herramienta"), ir: null };
+    }
+    if (e.tipo === "herramienta_fallida")
+      return { icono: "⚠️", texto: "Falló una acción de IntelliA" + (h ? " (" + h + ")" : ""), ir: null };
+    if (e.tipo === "herramienta_rechazada")
+      return { icono: "🛑", texto: "IntelliA intentó algo fuera de su alcance y se bloqueó", ir: null };
+    if (e.tipo === "accion_pendiente_de_confirmacion")
+      return { icono: "✋", texto: "Hay una acción esperando tu visto bueno", ir: null };
+    return { icono: "·", texto: e.tipo.replace(/_/g, " "), ir: null };
+  }
+
+  function filaActividad(e) {
+    var x = humanizarEvento(e);
+    return (
+      '<div class="act-fila"' + (x.ir ? ' data-ir="' + x.ir + '"' : "") + ">" +
+      '<span class="act-icono">' + x.icono + "</span>" +
+      '<span class="act-texto">' + esc(x.texto) + "</span>" +
+      '<span class="act-cuando">' + haceCuanto(e.creado_en) + "</span>" +
+      "</div>"
+    );
   }
 
   /* ──────────────────────────────────────────────────────────────── leads */
@@ -630,6 +687,10 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); mandarAlAgente(agenteEntrada.value); }
   });
 
+  function limpiarMd(t) {
+    return String(t).replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/^#{1,6}\s+/gm, "");
+  }
+
   function burbujaAgente(clase, texto) {
     var b = document.createElement("div");
     b.className = "burbuja " + clase;
@@ -682,7 +743,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
               if (ev.t === "delta" || ev.t === "error") {
                 if (primero) { b.textContent = ""; primero = false; }
                 acumulado += ev.v;
-                b.textContent = acumulado;
+                b.textContent = limpiarMd(acumulado);
                 agenteLog.scrollTop = agenteLog.scrollHeight;
               } else if (ev.t === "aviso") {
                 burbujaAgente("aviso", ev.v);
