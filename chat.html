@@ -453,7 +453,7 @@ body::before {
     var intencion = new URLSearchParams(location.search).get("intencion");
     if (!intencion || enviando) return;
     var arranques = {
-      reagendar: "Hola, mi cita fue cancelada y quiero elegir una nueva hora. ¿Qué fechas tienes disponibles?",
+      reagendar: "Hola, me avisaron que mi cita quedó cancelada, así que necesito agendar una nueva. ¿Qué fechas tienes disponibles?",
       agendar: "Hola, quiero agendar una consultoría gratuita. ¿Qué fechas tienes disponibles?",
     };
     var mensaje = arranques[intencion];
