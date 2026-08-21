@@ -12,6 +12,7 @@
  *   conversaciones  — lista de conversaciones, la más reciente primero.
  *   conversacion    — los mensajes de una (?canal=...&sesion=...).
  *   citas           — las citas de los próximos 14 días.
+ *   horarios        — las horas libres para agendar o mover una cita.
  *   eventos         — la bitácora.
  *
  * Acciones (POST {accion:...}):
@@ -21,6 +22,8 @@
  *   responder       — manda un mensaje escrito a mano a una conversación de
  *                     WhatsApp. Solo entra dentro de la ventana de 24 horas de
  *                     Meta; fuera de ella se devuelve motivo "ventana".
+ *   mover_cita      — mueve una cita a otra hora libre. Al cliente le llega la
+ *                     invitación nueva por correo y el aviso por WhatsApp.
  */
 
 import { abrirAlmacen, esPersistente, dondeSeGuarda } from "../lib/almacen.js";
@@ -29,6 +32,9 @@ import {
   citasProximas,
   buscarPorCodigo,
   cancelarCita,
+  moverCita,
+  horariosLibres,
+  inicioDesdeCodigo,
   invitacionICS,
 } from "../lib/calendario.js";
 import { enviarConfirmacionCita } from "../lib/leads.js";
@@ -109,6 +115,81 @@ export default async function handler(req, res) {
           .catch(() => {});
 
         return responderJson(res, 200, { ok: true, guardado });
+      }
+
+      if (cuerpo?.accion === "mover_cita") {
+        if (!agendaConfigurada()) return responderJson(res, 400, { error: "La agenda no está conectada" });
+
+        const cita = await buscarPorCodigo(cuerpo.codigo);
+        if (!cita) return responderJson(res, 404, { error: "Esa cita ya no existe o ya fue cancelada" });
+
+        const nuevoInicio = inicioDesdeCodigo(String(cuerpo.nueva_hora ?? ""));
+        if (!nuevoInicio) return responderJson(res, 400, { error: "Esa hora nueva no es válida" });
+
+        const movida = await moverCita(cita, nuevoInicio);
+        if (!movida.ok) return responderJson(res, 200, { ok: false, motivo: movida.motivo });
+
+        // Igual que al cancelar: los avisos salen después de mover y nunca
+        // deshacen nada. Si fallan, la cita igual quedó movida y el panel
+        // avisa que hay que escribirle a mano.
+        const promesaCorreo = (cita.contacto || "").includes("@")
+          ? enviarConfirmacionCita({
+              para: cita.contacto,
+              nombre: cita.nombre,
+              cuando: movida.etiqueta,
+              codigo: cita.codigo,
+              cambio: "movida",
+              ics: invitacionICS({
+                inicioISO: movida.inicio,
+                finISO: movida.fin,
+                nombre: cita.nombre,
+                id: cita.id,
+                secuencia: movida.secuencia,
+              }),
+            })
+              .then((r) => Boolean(r?.entregado))
+              .catch((err) => {
+                console.error("[PANEL] correo de cambio de hora falló:", err?.message ?? err);
+                return false;
+              })
+          : Promise.resolve(false);
+
+        const promesaWhatsApp = enviarTextoWhatsApp({
+          para: cita.telefono || cita.contacto,
+          texto:
+            `Hola${cita.nombre ? ` ${cita.nombre}` : ""}: tu consultoría con Intellectum quedó ` +
+            `movida del ${cita.etiqueta} al ${movida.etiqueta} (hora de Ecuador). La invitación ` +
+            `nueva ya va en camino a tu correo. Si esa hora no te sirve, respóndenos por aquí y ` +
+            `buscamos otra.`,
+        })
+          .then((r) => Boolean(r?.entregado))
+          .catch(() => false);
+
+        const [correoEnviado, whatsappEnviado] = await Promise.all([promesaCorreo, promesaWhatsApp]);
+
+        await almacen
+          .registrarEvento({
+            tipo: "herramienta_ejecutada",
+            actor: "panel",
+            detalle: {
+              herramienta: "mover_cita",
+              origen: "panel",
+              codigo: cita.codigo,
+              de: cita.etiqueta,
+              a: movida.etiqueta,
+              correo_enviado: correoEnviado,
+              whatsapp_enviado: whatsappEnviado,
+            },
+          })
+          .catch(() => {});
+
+        return responderJson(res, 200, {
+          ok: true,
+          de: cita.etiqueta,
+          a: movida.etiqueta,
+          correo: correoEnviado,
+          whatsapp: whatsappEnviado,
+        });
       }
 
       if (cuerpo?.accion === "cancelar_cita") {
@@ -257,6 +338,11 @@ export default async function handler(req, res) {
     if (vista === "citas") {
       if (!agendaConfigurada()) return responderJson(res, 200, { citas: [], agenda: false });
       return responderJson(res, 200, { citas: await citasProximas(), agenda: true });
+    }
+
+    if (vista === "horarios") {
+      if (!agendaConfigurada()) return responderJson(res, 200, { horarios: [], agenda: false });
+      return responderJson(res, 200, { horarios: await horariosLibres({ maximo: 12 }), agenda: true });
     }
 
     if (vista === "eventos") {

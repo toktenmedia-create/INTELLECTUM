@@ -209,6 +209,40 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 }
 .cita-resultado { margin-top: 10px; font-size: 13.5px; color: var(--text-dim); }
 
+.cita-pie .btn-mover {
+  margin-left: auto; padding: 5px 12px; border-radius: 999px; font-size: 12px;
+  border: 1px solid var(--accent-tint-border); color: var(--accent);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.cita-pie .btn-mover:hover { background: var(--accent-tint-bg); }
+.cita-pie .btn-mover:active { transform: scale(0.97); }
+.cita-pie .btn-mover + .btn-cancelar { margin-left: 0; }
+.horas-zona {
+  margin-top: 10px; padding: 12px 14px; border-radius: 10px; font-size: 13.5px;
+  border: 1px solid var(--accent-tint-border); background: var(--accent-tint-bg);
+  color: var(--text-dim);
+}
+.horas-zona .opciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.hora-op {
+  padding: 7px 14px; border-radius: 999px; font-size: 12.5px;
+  border: 1px solid var(--accent-tint-border); color: var(--accent);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hora-op:hover { background: rgba(34,211,238,0.14); }
+.hora-op:active { transform: scale(0.97); }
+.hora-op:disabled { opacity: 0.55; cursor: default; }
+.hora-op.quieta { border-color: var(--border-strong); color: var(--text-dim); }
+.hora-op.quieta:hover { background: rgba(255,255,255,0.05); }
+
+.filtros { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 14px; }
+.chip-filtro {
+  padding: 5px 12px; border-radius: 999px; font-size: 12px;
+  border: 1px solid var(--border); color: var(--text-muted);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.chip-filtro:active { transform: scale(0.97); }
+.chip-filtro.activo { border-color: var(--accent); color: var(--accent); background: var(--accent-tint-bg); }
+
 .estados { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .estado-btn {
   padding: 5px 12px; border-radius: 999px; font-size: 12px;
@@ -600,12 +634,37 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   /* ──────────────────────────────────────────────────────────────── leads */
 
   var ESTADOS = ["nuevo", "contactado", "ganado", "perdido"];
+  var FILTROS = [
+    ["todos", "Todos"], ["riesgo", "🧊 En riesgo"], ["nuevo", "Nuevos"],
+    ["contactado", "Contactados"], ["ganado", "Ganados"], ["perdido", "Perdidos"],
+  ];
+  var filtroLeads = "todos";
+
+  function montarFiltros(v) {
+    var zona = document.createElement("div");
+    zona.className = "filtros";
+    FILTROS.forEach(function (f) {
+      var b = document.createElement("button");
+      b.className = "chip-filtro" + (filtroLeads === f[0] ? " activo" : "");
+      b.textContent = f[1];
+      b.addEventListener("click", function () {
+        filtroLeads = f[0];
+        zona.querySelectorAll(".chip-filtro").forEach(function (x) { x.classList.remove("activo"); });
+        b.classList.add("activo");
+        pintaListaLeads(document.getElementById("buscaLeads").value.trim());
+      });
+      zona.appendChild(b);
+    });
+    v.insertBefore(zona, document.getElementById("listaLeads"));
+  }
 
   function cargarLeads(texto) {
     var v = document.getElementById("vista-leads");
     v.innerHTML =
       '<input class="buscador" id="buscaLeads" placeholder="Buscar por nombre, empresa o necesidad…" value="' + esc(texto) + '" />' +
       '<div id="listaLeads"><div class="cargando">Cargando…</div></div>';
+
+    montarFiltros(v);
 
     var caja = document.getElementById("buscaLeads");
     var pausa;
@@ -622,9 +681,11 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       .then(function (d) {
         // Los que se están enfriando van arriba; el resto conserva su orden.
         d.leads = d.leads.slice().sort(function (a, b) { return leadEnRiesgo(b) - leadEnRiesgo(a); });
+        if (filtroLeads === "riesgo") d.leads = d.leads.filter(leadEnRiesgo);
+        else if (filtroLeads !== "todos") d.leads = d.leads.filter(function (l) { return (l.estado || "nuevo") === filtroLeads; });
         var zona = document.getElementById("listaLeads");
         if (!d.leads.length) {
-          zona.innerHTML = '<div class="vacio">' + (texto ? "Nada con ese texto." : "Todavía no hay leads.") + "</div>";
+          zona.innerHTML = '<div class="vacio">' + (filtroLeads !== "todos" ? "Ninguno con este filtro." : texto ? "Nada con ese texto." : "Todavía no hay leads.") + "</div>";
           return;
         }
         zona.innerHTML = d.leads.map(tarjetaLead).join("");
@@ -833,6 +894,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         (c.contacto ? '<div class="contacto">' + enlaceContacto(c.contacto) + "</div>" : "") +
         (c.codigo
           ? '<div class="cita-pie"><span class="codigo">código ' + esc(c.codigo) + "</span>" +
+            '<button class="btn-mover" data-mover>Mover</button>' +
             '<button class="btn-cancelar" data-cancelar>Cancelar cita</button></div>'
           : "") +
         "</div>"
@@ -841,6 +903,90 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     v.querySelectorAll("[data-cancelar]").forEach(function (b) {
       b.addEventListener("click", function () { confirmarCancelacion(b); });
     });
+    v.querySelectorAll("[data-mover]").forEach(function (b) {
+      b.addEventListener("click", function () { elegirNuevaHora(b); });
+    });
+  }
+
+  /* Mover una cita: se cargan las horas libres y, al elegir una, la cita se
+     mueve y al cliente le llega la invitación nueva. Igual que al cancelar,
+     el resultado dice con claridad qué aviso salió y cuál no. */
+  function elegirNuevaHora(boton) {
+    var tarjeta = boton.closest("[data-cita]");
+    if (tarjeta.querySelector(".horas-zona") || tarjeta.querySelector(".confirma-zona")) return;
+
+    var zona = document.createElement("div");
+    zona.className = "horas-zona";
+    var texto = document.createElement("div");
+    texto.textContent = "Cargando las horas libres…";
+    var opciones = document.createElement("div");
+    opciones.className = "opciones";
+    zona.appendChild(texto);
+    zona.appendChild(opciones);
+    tarjeta.appendChild(zona);
+
+    var cerrar = document.createElement("button");
+    cerrar.className = "hora-op quieta";
+    cerrar.textContent = "Dejarla como está";
+    cerrar.addEventListener("click", function () { zona.remove(); });
+
+    pedir("horarios")
+      .then(function (d) {
+        var horas = d.horarios || [];
+        if (!horas.length) {
+          texto.textContent = "No hay horas libres en los próximos días.";
+          opciones.appendChild(cerrar);
+          return;
+        }
+        texto.textContent = "Elige la nueva hora. Al elegirla, la cita se mueve y al cliente le llega la invitación nueva por correo y el aviso por WhatsApp.";
+        horas.forEach(function (h) {
+          var b = document.createElement("button");
+          b.className = "hora-op";
+          b.textContent = h.etiqueta;
+          b.addEventListener("click", function () { moverA(h, b); });
+          opciones.appendChild(b);
+        });
+        opciones.appendChild(cerrar);
+      })
+      .catch(function () {
+        texto.textContent = "No se pudieron cargar las horas. Cierra y vuelve a intentar.";
+        opciones.appendChild(cerrar);
+      });
+
+    function moverA(h, b) {
+      zona.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
+      b.textContent = "Moviendo…";
+      ordenar("mover_cita", { codigo: tarjeta.dataset.cita, nueva_hora: h.codigo })
+        .then(function (r) {
+          if (!r.ok) {
+            b.remove();
+            zona.querySelectorAll("button").forEach(function (x) { x.disabled = false; });
+            texto.textContent = r.motivo === "ocupado"
+              ? "Esa hora se acaba de ocupar. Elige otra."
+              : "No se pudo mover. Intenta de nuevo.";
+            return;
+          }
+          zona.remove();
+          var cuando = tarjeta.querySelector(".cuando");
+          if (cuando) cuando.textContent = r.a;
+          var resultado = document.createElement("div");
+          resultado.className = "cita-resultado";
+          resultado.textContent =
+            r.correo && r.whatsapp
+              ? "✓ Movida al " + r.a + ". Avisado por correo y WhatsApp."
+              : r.correo
+                ? "✓ Movida al " + r.a + ". Le llegó el correo con la invitación nueva (el WhatsApp no salió)."
+                : r.whatsapp
+                  ? "✓ Movida al " + r.a + ". Avisado por WhatsApp (sin correo)."
+                  : "✓ Movida al " + r.a + ". ⚠ No salió ningún aviso: escríbele tú.";
+          tarjeta.appendChild(resultado);
+        })
+        .catch(function () {
+          b.textContent = h.etiqueta;
+          zona.querySelectorAll("button").forEach(function (x) { x.disabled = false; });
+          texto.textContent = "Se cortó la conexión. Intenta de nuevo.";
+        });
+    }
   }
 
   /* Cancelar desde el panel es para emergencias: por eso pide confirmación
