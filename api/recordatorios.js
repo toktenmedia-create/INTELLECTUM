@@ -26,7 +26,8 @@ import {
   citasDeHoySinRecordar,
   marcarRecordada,
 } from "../lib/calendario.js";
-import { enviarRecordatorioCita, enviarAviso } from "../lib/leads.js";
+import { enviarRecordatorioCita, enviarAviso, enviarRespaldo } from "../lib/leads.js";
+import { enviarRecordatorioWhatsApp, whatsappSalidaConfigurada } from "../lib/mensajeria.js";
 import { abrirAlmacen } from "../lib/almacen.js";
 
 export default async function handler(req, res) {
@@ -53,6 +54,27 @@ export default async function handler(req, res) {
     console.error("[RETENCION] no se pudo limpiar:", err?.message ?? err);
   }
 
+  // 0.5. El respaldo semanal: cada domingo, una foto completa de la base
+  // llega por correo con el JSON adjunto. Ecuador es UTC-5 todo el año, así
+  // que restar cinco horas da el día correcto sin librerías de zona horaria.
+  // Con ?respaldo=ahora (y la misma clave del cron) sale uno al instante,
+  // para probar el circuito o para tener copia fresca antes de un cambio.
+  const hoyEnEcuador = new Date(Date.now() - 5 * 3_600_000);
+  const respaldoForzado =
+    new URL(req.url ?? "/", "http://interno").searchParams.get("respaldo") === "ahora";
+  if (hoyEnEcuador.getUTCDay() === 0 || respaldoForzado) {
+    try {
+      const foto = await abrirAlmacen().respaldo();
+      const { entregado } = await enviarRespaldo({
+        fecha: hoyEnEcuador.toISOString().slice(0, 10),
+        contenido: foto,
+      });
+      console.log(`[RESPALDO] ${entregado ? "enviado" : "NO se pudo enviar"}.`);
+    } catch (err) {
+      console.error("[RESPALDO] falló:", err?.message ?? err);
+    }
+  }
+
   if (!agendaConfigurada()) {
     return res.status(503).json({ error: "La agenda no está conectada" });
   }
@@ -66,24 +88,48 @@ export default async function handler(req, res) {
     }
 
     let recordadas = 0;
+    let porWhatsAppTotal = 0;
+    let porCorreoTotal = 0;
 
     for (const cita of citas) {
-      if (cita.recordada || !cita.contacto) continue;
-      try {
-        const { entregado } = await enviarRecordatorioCita({
-          para: cita.contacto,
+      if (cita.recordada || (!cita.contacto && !cita.telefono)) continue;
+
+      // WhatsApp primero: es donde la gente sí lee. Va con plantilla aprobada
+      // porque es el negocio escribiendo primero (ver lib/mensajeria.js).
+      // Sirve el número guardado al agendar o, si no hay, lo que la persona
+      // haya dejado como contacto (si resulta ser un teléfono).
+      let porWhatsApp = false;
+      if (whatsappSalidaConfigurada()) {
+        ({ entregado: porWhatsApp } = await enviarRecordatorioWhatsApp({
+          para: cita.telefono || cita.contacto,
           nombre: cita.nombre,
           cuando: cita.etiqueta,
           codigo: cita.codigo,
-        });
-        // Solo se marca si el correo salió: si falló, mañana no sirve de nada,
-        // pero al menos queda registro de que esta persona no fue avisada.
-        if (entregado) {
-          await marcarRecordada(cita.id);
-          recordadas++;
+        }));
+      }
+
+      // El correo refuerza (o cubre a quien no dejó teléfono).
+      let porCorreo = false;
+      if (cita.contacto?.includes("@")) {
+        try {
+          ({ entregado: porCorreo } = await enviarRecordatorioCita({
+            para: cita.contacto,
+            nombre: cita.nombre,
+            cuando: cita.etiqueta,
+            codigo: cita.codigo,
+          }));
+        } catch (err) {
+          console.error(`[RECORDATORIOS] falló el correo a ${cita.contacto}:`, err?.message ?? err);
         }
-      } catch (err) {
-        console.error(`[RECORDATORIOS] falló el aviso a ${cita.contacto}:`, err?.message ?? err);
+      }
+
+      // Solo se marca si ALGO salió: si todo falló, queda registro de que a
+      // esta persona no se le avisó.
+      if (porWhatsApp || porCorreo) {
+        await marcarRecordada(cita.id);
+        recordadas++;
+        if (porWhatsApp) porWhatsAppTotal++;
+        if (porCorreo) porCorreoTotal++;
       }
     }
 
@@ -92,7 +138,7 @@ export default async function handler(req, res) {
       cuerpo: [
         ...citas.map((c) => `${c.etiqueta} — ${c.nombre || "sin nombre"} (${c.contacto || "sin correo"})`),
         "",
-        `A ${recordadas} de ${citas.length} se les recordó por correo.`,
+        `A ${recordadas} de ${citas.length} se les recordó (${porWhatsAppTotal} por WhatsApp, ${porCorreoTotal} por correo).`,
       ].join("\n"),
     }).catch((err) => console.error("[RECORDATORIOS] no se pudo avisar al equipo:", err?.message));
 
