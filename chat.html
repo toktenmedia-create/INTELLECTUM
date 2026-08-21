@@ -446,6 +446,23 @@ body::before {
   });
   entrada.focus();
 
+  /* Si llegan desde un aviso de cancelación (?intencion=reagendar) o desde un
+     botón de agendar (?intencion=agendar), la conversación arranca sola
+     pidiendo las fechas disponibles: nadie debería teclear para eso. */
+  (function () {
+    var intencion = new URLSearchParams(location.search).get("intencion");
+    if (!intencion || enviando) return;
+    var arranques = {
+      reagendar: "Hola, mi cita fue cancelada y quiero elegir una nueva hora. ¿Qué fechas tienes disponibles?",
+      agendar: "Hola, quiero agendar una consultoría gratuita. ¿Qué fechas tienes disponibles?",
+    };
+    var mensaje = arranques[intencion];
+    if (!mensaje) return;
+    // Sin repetir si la persona recarga la página con el mismo enlace.
+    history.replaceState(null, "", location.pathname);
+    enviar(mensaje);
+  })();
+
   /* ------------------------------------------------------------ conversación */
 
   function limpiar(texto) {

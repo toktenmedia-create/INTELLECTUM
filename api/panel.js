@@ -29,6 +29,7 @@ import {
   invitacionICS,
 } from "../lib/calendario.js";
 import { enviarConfirmacionCita } from "../lib/leads.js";
+import { enviarCancelacionWhatsApp } from "../lib/mensajeria.js";
 
 export const config = { maxDuration: 30 };
 
@@ -70,32 +71,42 @@ export default async function handler(req, res) {
 
         await cancelarCita(cita.id);
 
-        // El aviso al cliente sale después de cancelar y nunca deshace nada:
-        // si el correo falla, la cita igual quedó cancelada y se le dice al
-        // panel que avise a mano.
-        let correoEnviado = false;
-        if ((cita.contacto || "").includes("@")) {
-          correoEnviado = await enviarConfirmacionCita({
-            para: cita.contacto,
-            nombre: cita.nombre,
-            cuando: cita.etiqueta,
-            codigo: cita.codigo,
-            cambio: "reagendar",
-            ics: invitacionICS({
-              inicioISO: cita.inicio,
-              finISO: cita.fin,
+        // Los avisos al cliente salen después de cancelar y nunca deshacen
+        // nada: si fallan, la cita igual quedó cancelada y se le dice al
+        // panel que avise a mano. Correo y WhatsApp van en paralelo.
+        const promesaCorreo = (cita.contacto || "").includes("@")
+          ? enviarConfirmacionCita({
+              para: cita.contacto,
               nombre: cita.nombre,
-              id: cita.id,
-              secuencia: (cita.secuencia ?? 0) + 1,
-              cancelada: true,
-            }),
-          })
-            .then((r) => Boolean(r?.entregado))
-            .catch((err) => {
-              console.error("[PANEL] correo de cancelación falló:", err?.message ?? err);
-              return false;
-            });
-        }
+              cuando: cita.etiqueta,
+              codigo: cita.codigo,
+              cambio: "reagendar",
+              ics: invitacionICS({
+                inicioISO: cita.inicio,
+                finISO: cita.fin,
+                nombre: cita.nombre,
+                id: cita.id,
+                secuencia: (cita.secuencia ?? 0) + 1,
+                cancelada: true,
+              }),
+            })
+              .then((r) => Boolean(r?.entregado))
+              .catch((err) => {
+                console.error("[PANEL] correo de cancelación falló:", err?.message ?? err);
+                return false;
+              })
+          : Promise.resolve(false);
+
+        // El teléfono guardado en la cita primero; si no hay, puede que el
+        // "contacto" sea un número. enviarCancelacionWhatsApp descarta solo
+        // lo que no sea teléfono.
+        const promesaWhatsApp = enviarCancelacionWhatsApp({
+          para: cita.telefono || cita.contacto,
+          nombre: cita.nombre,
+          cuando: cita.etiqueta,
+        }).then((r) => Boolean(r?.entregado));
+
+        const [correoEnviado, whatsappEnviado] = await Promise.all([promesaCorreo, promesaWhatsApp]);
 
         await almacen
           .registrarEvento({
@@ -107,6 +118,7 @@ export default async function handler(req, res) {
               codigo: cita.codigo,
               etiqueta: cita.etiqueta,
               correo_enviado: correoEnviado,
+              whatsapp_enviado: whatsappEnviado,
             },
           })
           .catch(() => {});
@@ -116,6 +128,7 @@ export default async function handler(req, res) {
           etiqueta: cita.etiqueta,
           contacto: cita.contacto || "",
           correo: correoEnviado,
+          whatsapp: whatsappEnviado,
         });
       }
 

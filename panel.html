@@ -752,8 +752,8 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     zona.className = "confirma-zona";
     var texto = document.createElement("div");
     texto.textContent = esCorreo
-      ? "Se cancelará la cita y le llegará un correo a " + contacto + " con la disculpa y el pedido de reagendar. ¿Seguro?"
-      : "Se cancelará la cita. Este contacto no tiene correo (" + (contacto || "sin contacto") + "), así que tendrás que avisarle tú. ¿Seguro?";
+      ? "Se cancelará la cita y se le avisará a " + contacto + " por correo (y por WhatsApp si dejó número) con la disculpa y el pedido de reagendar. ¿Seguro?"
+      : "Se cancelará la cita y se intentará avisar por WhatsApp a " + (contacto || "su número") + " con la disculpa y el pedido de reagendar. ¿Seguro?";
     var botones = document.createElement("div");
     botones.className = "botones";
     var si = document.createElement("button");
@@ -774,9 +774,15 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
           boton.remove();
           var resultado = document.createElement("div");
           resultado.className = "cita-resultado";
-          resultado.textContent = r.correo
-            ? "✓ Cancelada. Le llegó el correo a " + (r.contacto || contacto) + " pidiendo reagendar."
-            : "✓ Cancelada. ⚠ No salió correo: avísale tú al " + (r.contacto || contacto || "cliente") + ".";
+          var quien = r.contacto || contacto || "cliente";
+          resultado.textContent =
+            r.correo && r.whatsapp
+              ? "✓ Cancelada. Avisado por correo y WhatsApp con el pedido de reagendar."
+              : r.correo
+                ? "✓ Cancelada. Le llegó el correo pidiendo reagendar (el WhatsApp no salió)."
+                : r.whatsapp
+                  ? "✓ Cancelada. Avisado por WhatsApp con las fechas disponibles (sin correo)."
+                  : "✓ Cancelada. ⚠ No salió ningún aviso: escríbele tú al " + quien + ".";
           tarjeta.appendChild(resultado);
           tarjeta.style.opacity = "0.65";
         })
