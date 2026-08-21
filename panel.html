@@ -255,6 +255,34 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 }
 .burbuja.cliente { align-self: flex-start; background: var(--bg-card); border: 1px solid var(--border); border-bottom-left-radius: 5px; }
 .burbuja.bot { align-self: flex-end; background: var(--accent-tint-bg); border: 1px solid var(--accent-tint-border); border-bottom-right-radius: 5px; }
+.burbuja.mano { background: rgba(255,255,255,0.05); border-color: var(--border-strong); }
+.burbuja.mano::before {
+  content: "Tú"; display: block; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
+}
+
+/* El cajón para responder a mano una conversación de WhatsApp. */
+.composer { display: flex; gap: 10px; align-items: flex-end; margin-top: 16px; }
+.composer textarea {
+  flex: 1; min-height: 44px; max-height: 140px; resize: none; padding: 11px 14px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  color: var(--text); font: inherit; font-size: 14px; line-height: 1.45;
+  transition: border-color 0.18s;
+}
+.composer textarea:focus { outline: none; border-color: var(--border-strong); }
+.composer textarea::placeholder { color: var(--text-muted); }
+.composer .enviar-mano {
+  flex-shrink: 0; padding: 11px 20px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--accent); color: #06141a; font-weight: 500; font-size: 13.5px;
+  transition: background 0.18s, transform 0.12s var(--ease-out, ease-out);
+}
+.composer .enviar-mano:active { transform: scale(0.97); }
+.composer .enviar-mano:disabled { opacity: 0.55; cursor: default; }
+@media (hover: hover) and (pointer: fine) {
+  .composer .enviar-mano:hover:not(:disabled) { background: var(--accent-bright, #67e8f9); }
+}
+.composer-nota { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+.composer-nota.alerta { color: #fca5a5; }
 
 .evento { display: flex; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--border); font-size: 13.5px; min-width: 0; }
 .evento span { overflow-wrap: anywhere; }
@@ -712,7 +740,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
           esc(etiquetaCanal(canal)) + " · " + esc(acortarSesion(sesion)) + "</div>" +
           '<div class="burbujas">' +
           ((d.mensajes || []).map(function (m) {
-            var quien = m.role === "user" ? "cliente" : "bot";
+            var quien = m.role === "user" ? "cliente" : (m.via === "panel" ? "bot mano" : "bot");
             var texto = typeof m.content === "string" ? m.content : "[contenido multimedia]";
             return '<div class="burbuja ' + quien + '">' + esc(texto) + "</div>";
           }).join("") || '<div class="vacio">Conversación vacía o vencida.</div>') +
@@ -720,8 +748,68 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         document.getElementById("volverChats").addEventListener("click", function () {
           pedir("conversaciones").then(pintarChats).catch(fallo("chats"));
         });
+        if (canal === "whatsapp") montarComposer(v, canal, sesion);
       })
       .catch(fallo("chats"));
+  }
+
+  /* El cajón para responder a mano. Solo WhatsApp: en el chat de la web no hay
+     forma de empujarle un mensaje al visitante después de que cerró la página. */
+  function montarComposer(v, canal, sesion) {
+    var caja = document.createElement("div");
+    caja.className = "composer";
+    var campo = document.createElement("textarea");
+    campo.placeholder = "Responder por WhatsApp…";
+    campo.rows = 1;
+    var boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = "enviar-mano";
+    boton.textContent = "Enviar";
+    caja.appendChild(campo);
+    caja.appendChild(boton);
+    var nota = document.createElement("div");
+    nota.className = "composer-nota";
+    nota.textContent = "Llega al instante si el cliente escribió en las últimas 24 horas.";
+    v.appendChild(caja);
+    v.appendChild(nota);
+
+    function avisar(texto, alerta) {
+      nota.textContent = texto;
+      nota.classList.toggle("alerta", Boolean(alerta));
+    }
+
+    function enviar() {
+      var texto = campo.value.trim();
+      if (!texto || boton.disabled) return;
+      boton.disabled = true;
+      boton.textContent = "Enviando…";
+      ordenar("responder", { canal: canal, sesion: sesion, texto: texto })
+        .then(function (r) {
+          if (r.ok) { abrirChat(canal, sesion); return; }
+          boton.disabled = false;
+          boton.textContent = "Enviar";
+          if (r.motivo === "ventana") {
+            avisar("No se entregó: la ventana de 24 horas ya cerró. El cliente tiene que escribirte primero.", true);
+          } else {
+            avisar("No se pudo enviar. Intenta de nuevo.", true);
+          }
+        })
+        .catch(function () {
+          boton.disabled = false;
+          boton.textContent = "Enviar";
+          avisar("Se cortó la conexión. Intenta de nuevo.", true);
+        });
+    }
+
+    boton.addEventListener("click", enviar);
+    campo.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
+    });
+    campo.addEventListener("input", function () {
+      campo.style.height = "auto";
+      campo.style.height = Math.min(campo.scrollHeight, 140) + "px";
+    });
+    campo.focus();
   }
 
   /* ──────────────────────────────────────────────────────────────── citas */

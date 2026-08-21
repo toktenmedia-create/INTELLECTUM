@@ -18,6 +18,9 @@
  *   lead            — actualiza el estado o la nota de un lead.
  *   cancelar_cita   — cancela una cita por su código (emergencias). Le avisa al
  *                     cliente por correo, con disculpa y pedido de reagendar.
+ *   responder       — manda un mensaje escrito a mano a una conversación de
+ *                     WhatsApp. Solo entra dentro de la ventana de 24 horas de
+ *                     Meta; fuera de ella se devuelve motivo "ventana".
  */
 
 import { abrirAlmacen, esPersistente, dondeSeGuarda } from "../lib/almacen.js";
@@ -29,7 +32,7 @@ import {
   invitacionICS,
 } from "../lib/calendario.js";
 import { enviarConfirmacionCita } from "../lib/leads.js";
-import { enviarCancelacionWhatsApp } from "../lib/mensajeria.js";
+import { enviarCancelacionWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
 
 export const config = { maxDuration: 30 };
 
@@ -61,6 +64,51 @@ export default async function handler(req, res) {
         const lead = await almacen.actualizarLead({ id: String(cuerpo.id ?? ""), estado, nota });
         if (!lead) return responderJson(res, 404, { error: "Ese lead no existe" });
         return responderJson(res, 200, { lead });
+      }
+
+      if (cuerpo?.accion === "responder") {
+        const canal = String(cuerpo.canal ?? "");
+        const sesion = String(cuerpo.sesion ?? "").trim();
+        const texto = String(cuerpo.texto ?? "").trim().slice(0, 3500);
+        if (canal !== "whatsapp") {
+          return responderJson(res, 400, { error: "Solo se puede responder a mano por WhatsApp" });
+        }
+        if (!sesion || !texto) {
+          return responderJson(res, 400, { error: "Falta el número o el mensaje" });
+        }
+
+        const envio = await enviarTextoWhatsApp({ para: sesion, texto });
+        if (!envio.entregado) {
+          // 131047 es el código de Meta para "fuera de la ventana de 24 horas".
+          const ventana = String(envio.detalle ?? "").includes("131047");
+          return responderJson(res, 200, { ok: false, motivo: ventana ? "ventana" : "envio" });
+        }
+
+        // Primero se envía y después se guarda: nunca queda escrito en la
+        // memoria un mensaje que la persona no recibió. Si el guardado falla,
+        // el mensaje igual salió; solo se pierde la constancia.
+        let guardado = true;
+        try {
+          const historial = await almacen.recordarConversacion({ canal, sesion });
+          await almacen.guardarConversacion({
+            canal,
+            sesion,
+            mensajes: [...historial, { role: "assistant", content: texto, via: "panel" }],
+          });
+        } catch (err) {
+          console.error("[PANEL] la respuesta salió pero no se pudo guardar:", err?.message ?? err);
+          guardado = false;
+        }
+
+        await almacen
+          .registrarEvento({
+            tipo: "herramienta_ejecutada",
+            actor: "panel",
+            detalle: { herramienta: "responder", canal, sesion, guardado },
+          })
+          .catch(() => {});
+
+        return responderJson(res, 200, { ok: true, guardado });
       }
 
       if (cuerpo?.accion === "cancelar_cita") {
