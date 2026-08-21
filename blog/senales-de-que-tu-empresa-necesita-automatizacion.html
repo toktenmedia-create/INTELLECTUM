@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#0a0a0a" />
+<meta name="theme-color" content="#08090b" />
 <title>Cinco señales de que tu empresa necesita automatización (y por dónde empezar) — Blog de Intellectum</title>
 <meta name="description" content="Cinco síntomas cotidianos que delatan procesos listos para automatizar con IA, y una guía honesta de por dónde empezar sin arriesgar de más." />
 <link rel="canonical" href="https://www.intellectum.ec/blog/senales-de-que-tu-empresa-necesita-automatizacion" />
@@ -44,10 +44,10 @@
 </script>
 <style>
 :root {
-  --bg: #0a0a0a; --bg-card: rgba(255,255,255,0.025);
-  --text: #fafaf7; --text-dim: #a8a89e; --text-muted: #6e6e66;
+  --bg: #08090b; --bg-card: rgba(255,255,255,0.02);
+  --text: #f7f8f8; --text-dim: #a6adb0; --text-muted: #737d81;
   --accent: #22d3ee; --accent-bright: #67e8f9;
-  --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.16);
+  --border: rgba(255,255,255,0.07); --border-strong: rgba(255,255,255,0.15);
   --accent-tint-bg: rgba(34,211,238,0.08); --accent-tint-border: rgba(34,211,238,0.22);
   --whatsapp: #25d366;
   --font-display: "Fraunces", "Times New Roman", serif;
@@ -55,13 +55,20 @@
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: rgba(255,255,255,0.14) transparent; }
+/* Las superficies del navegador también llevan el diseño. */
+::selection { background: var(--accent); color: #06141a; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-sans);
   font-weight: 300; font-size: 17px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
 a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-tint-border); }
 a:hover { color: var(--accent-bright); border-bottom-color: var(--accent-bright); }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
-.topbar { border-bottom: 1px solid var(--border); background: rgba(10,10,10,0.85);
+.topbar { border-bottom: 1px solid var(--border); background: rgba(8,9,11,0.8);
   backdrop-filter: saturate(140%) blur(10px); position: sticky; top: 0; z-index: 10; }
 .topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding-top: 16px; padding-bottom: 16px; }
@@ -71,8 +78,6 @@ a:hover { color: var(--accent-bright); border-bottom-color: var(--accent-bright)
 .back { font-size: 0.9rem; color: var(--text-dim); border-bottom: 0; }
 .back:hover { color: var(--accent); }
 header.hero { padding: 64px 0 36px; border-bottom: 1px solid var(--border); }
-.eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--accent); font-weight: 500; margin: 0 0 14px; }
 h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(2rem, 5.5vw, 2.9rem);
   line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 18px; }
 .lede { color: var(--text-dim); font-size: 1.08rem; margin: 0 0 20px; max-width: 62ch; }
@@ -118,10 +123,9 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: 
 
 <div class="wrap">
   <header class="hero">
-    <p class="eyebrow">Automatización</p>
-    <h1>Cinco señales de que tu empresa necesita automatización (y por dónde empezar)</h1>
+        <h1>Cinco señales de que tu empresa necesita automatización (y por dónde empezar)</h1>
     <p class="lede">La automatización no empieza por la tecnología: empieza por reconocer los síntomas. Estos cinco aparecen todos los días en empresas de cualquier tamaño.</p>
-    <p class="meta">Publicado el 20 de agosto de 2026 · Equipo Intellectum</p>
+    <p class="meta">Automatización · Publicado el 20 de agosto de 2026 · Equipo Intellectum</p>
   </header>
   <main>
     <article>

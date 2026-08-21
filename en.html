@@ -74,25 +74,26 @@
 </script>
 
 <style>
-/* DESIGN TOKENS — paleta cyan del logo */
+/* SISTEMA VISUAL — el estándar de la categoría al nivel de Linear/Vercel.
+   Oscuro, cian de marca, serif solo como acento. Decidido por Paul el 21 ago 2026. */
 :root {
-  --bg: #0a0a0a;
-  --bg-elev: #111111;
-  --bg-card: rgba(255, 255, 255, 0.025);
+  --bg: #08090b;
+  --bg-elev: #0d0f12;
+  --bg-card: rgba(255, 255, 255, 0.02);
   --bg-card-hover: rgba(255, 255, 255, 0.045);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.15);
 
-  --text: #fafaf7;
-  --text-dim: #a8a89e;
-  --text-muted: #6e6e66;
+  --text: #f7f8f8;
+  --text-dim: #a6adb0;
+  --text-muted: #737d81;
 
   --accent: #22d3ee;
   --accent-bright: #67e8f9;
   --accent-deep: #0891b2;
   --accent-glow: rgba(34, 211, 238, 0.22);
   --accent-tint-bg: rgba(34, 211, 238, 0.08);
-  --accent-tint-border: rgba(34, 211, 238, 0.22);
+  --accent-tint-border: rgba(34, 211, 238, 0.24);
 
   --whatsapp: #25d366;
 
@@ -100,15 +101,17 @@
   --font-sans: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --max-w: 1240px;
-  --pad-x: clamp(20px, 4vw, 48px);
+  --max-w: 1200px;
+  --pad-x: clamp(20px, 4vw, 44px);
+  --sec-y: clamp(84px, 11vw, 132px);
 
   --radius-sm: 8px;
-  --radius: 14px;
-  --radius-lg: 22px;
+  --radius: 12px;
+  --radius-lg: 18px;
 
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Curvas con carácter: las nativas de CSS son demasiado tibias. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 /* RESET */
@@ -120,10 +123,12 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  caret-color: var(--accent);
+  accent-color: var(--accent);
 }
 img, svg { display: block; max-width: 100%; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
@@ -131,7 +136,16 @@ a { color: inherit; text-decoration: none; }
 ul { list-style: none; padding: 0; margin: 0; }
 input, textarea { font: inherit; color: inherit; }
 
-/* Atmósfera: gradientes cyan + grain */
+/* Las superficies del navegador también llevan el diseño. */
+::selection { background: var(--accent); color: #06141a; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+html { scrollbar-color: rgba(255, 255, 255, 0.14) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 999px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Atmósfera: un solo halo cian arriba + grain sutil */
 body::before {
   content: "";
   position: fixed;
@@ -139,8 +153,8 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.10), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(34, 211, 238, 0.06), transparent 60%);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.09), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(34, 211, 238, 0.05), transparent 60%);
 }
 body::after {
   content: "";
@@ -148,7 +162,7 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.4;
+  opacity: 0.35;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -164,24 +178,7 @@ body::after {
 }
 section { position: relative; z-index: 1; }
 
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-.eyebrow::before {
-  content: "";
-  width: 24px;
-  height: 1px;
-  background: var(--accent);
-}
-
-/* TYPOGRAPHY */
+/* TIPOGRAFÍA */
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 400;
@@ -189,6 +186,7 @@ h1, h2, h3, h4 {
   line-height: 1.05;
   margin: 0;
   color: var(--text);
+  text-wrap: balance;
 }
 .serif-italic {
   font-style: italic;
@@ -196,83 +194,83 @@ h1, h2, h3, h4 {
   color: var(--accent);
 }
 .section-title {
-  font-size: clamp(36px, 5.5vw, 68px);
+  font-size: clamp(34px, 5vw, 60px);
   margin-bottom: 18px;
 }
 .section-lead {
-  max-width: 640px;
-  font-size: clamp(16px, 1.6vw, 19px);
+  max-width: 62ch;
+  font-size: clamp(16px, 1.5vw, 18px);
   color: var(--text-dim);
-  line-height: 1.6;
+  line-height: 1.65;
+  text-wrap: pretty;
 }
 
-/* BUTTONS */
+/* BOTONES — responden al tacto: se hunden al presionar. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 14px 22px;
+  padding: 13px 22px;
   border-radius: 999px;
   font-weight: 500;
   font-size: 15px;
   letter-spacing: -0.01em;
-  transition: transform 0.3s var(--ease), background 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  transition: transform 160ms var(--ease-out), background 200ms var(--ease-out),
+              color 200ms var(--ease-out), border-color 200ms var(--ease-out),
+              box-shadow 200ms var(--ease-out);
   white-space: nowrap;
 }
-.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: scale(0.97); }
 .btn-primary {
   background: var(--accent);
   color: #06141a;
   font-weight: 600;
-}
-.btn-primary:hover {
-  background: var(--accent-bright);
-  box-shadow: 0 8px 32px var(--accent-glow);
 }
 .btn-secondary {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border-strong);
 }
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--text-dim);
-}
 .btn-whatsapp {
   background: var(--whatsapp);
   color: #fff;
 }
-.btn-whatsapp:hover {
-  background: #1fb858;
-  box-shadow: 0 8px 32px rgba(37, 211, 102, 0.25);
-}
 .btn .arrow {
   width: 14px; height: 14px;
-  transition: transform 0.3s var(--ease);
+  transition: transform 200ms var(--ease-out);
 }
-.btn:hover .arrow { transform: translateX(3px); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary:hover {
+    background: var(--accent-bright);
+    box-shadow: 0 8px 28px var(--accent-glow);
+  }
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--text-dim);
+  }
+  .btn-whatsapp:hover {
+    background: #1fb858;
+    box-shadow: 0 8px 28px rgba(37, 211, 102, 0.25);
+  }
+  .btn:hover .arrow { transform: translateX(3px); }
+}
 
-/* LOGO IMAGES — PNG con transparencia real, sin filtros */
-.brand-logo {
-  height: 30px;
-  width: auto;
-}
+.brand-logo { height: 28px; width: auto; }
 
 /* NAV */
 .nav {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   z-index: 50;
-  padding: 16px 0;
-  transition: padding 0.3s var(--ease), background 0.3s var(--ease), border-color 0.3s var(--ease);
+  padding: 11px 0;
+  transition: background 250ms var(--ease-out), border-color 250ms var(--ease-out);
   border-bottom: 1px solid transparent;
 }
 .nav.scrolled {
-  padding: 10px 0;
-  background: rgba(10, 10, 10, 0.78);
+  background: rgba(8, 9, 11, 0.75);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-bottom-color: var(--border);
@@ -286,22 +284,18 @@ h1, h2, h3, h4 {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   font-family: var(--font-display);
   font-size: 19px;
   font-weight: 500;
   letter-spacing: -0.02em;
 }
 .brand-text { line-height: 1; }
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
+.nav-links { display: flex; align-items: center; gap: 28px; }
 .nav-links a {
   font-size: 14px;
   color: var(--text-dim);
-  transition: color 0.2s var(--ease);
+  transition: color 150ms var(--ease-out);
   position: relative;
 }
 .nav-links a:hover { color: var(--text); }
@@ -321,26 +315,22 @@ h1, h2, h3, h4 {
   padding: 5px 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
+  transition: border-color 150ms var(--ease-out);
 }
 .nav-lang:hover { border-color: var(--border-strong); }
-.hero-note {
-  margin-top: 14px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-@media (prefers-reduced-motion: reduce) { .ia-dot { animation: none; } }
 .nav-cta { display: flex; align-items: center; gap: 12px; }
-.nav-cta .btn { padding: 10px 18px; font-size: 14px; }
+.nav-cta .btn { padding: 9px 17px; font-size: 14px; }
 
 .nav-toggle {
   display: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 40px; height: 40px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   align-items: center;
   justify-content: center;
+  transition: transform 160ms var(--ease-out), border-color 150ms var(--ease-out);
 }
+.nav-toggle:active { transform: scale(0.94); }
 .nav-toggle svg { width: 18px; height: 18px; }
 
 @media (max-width: 880px) {
@@ -348,19 +338,19 @@ h1, h2, h3, h4 {
   .nav-toggle { display: inline-flex; }
 }
 
-/* Mobile menu */
+/* Menú móvil */
 .mobile-menu {
   position: fixed;
-  inset: 64px 0 0 0;
+  inset: 60px 0 0 0;
   z-index: 40;
-  background: rgba(10, 10, 10, 0.96);
+  background: rgba(8, 9, 11, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  padding: 32px var(--pad-x);
-  transform: translateY(-12px);
+  padding: 28px var(--pad-x);
+  transform: translateY(-10px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
 }
 .mobile-menu.open {
   opacity: 1;
@@ -369,61 +359,103 @@ h1, h2, h3, h4 {
 }
 .mobile-menu a {
   display: block;
-  padding: 18px 0;
+  padding: 17px 0;
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 27px;
   border-bottom: 1px solid var(--border);
 }
 .mobile-menu .btn { margin-top: 24px; width: 100%; }
 
 /* HERO */
 .hero {
-  padding: 160px 0 100px;
+  padding: 150px 0 96px;
   position: relative;
   overflow: hidden;
 }
 .hero-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 48px;
   align-items: center;
 }
 @media (min-width: 1024px) {
-  .hero-grid { grid-template-columns: 1.4fr 1fr; gap: 80px; }
+  .hero-grid { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 72px; }
 }
+
+/* El chip vivo: IntelliA de verdad está en línea; es un control, no una etiqueta. */
+.chip-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px 7px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-tint-border);
+  background: var(--accent-tint-bg);
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+  transition: border-color 200ms var(--ease-out), color 200ms var(--ease-out), transform 160ms var(--ease-out);
+}
+.chip-live strong { color: var(--text); font-weight: 500; }
+.chip-live:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .chip-live:hover { border-color: var(--accent); color: var(--text); }
+}
+
 .hero h1 {
-  font-size: clamp(44px, 8vw, 108px);
+  font-size: clamp(38px, 6.8vw, 84px);
   letter-spacing: -0.035em;
   line-height: 0.98;
 }
 .hero h1 .line { display: block; }
 .hero-sub {
-  margin-top: 28px;
-  max-width: 540px;
-  font-size: clamp(16px, 1.6vw, 19px);
+  margin-top: 26px;
+  max-width: 54ch;
+  font-size: clamp(16px, 1.5vw, 18px);
   color: var(--text-dim);
-  line-height: 1.55;
+  line-height: 1.6;
+  text-wrap: pretty;
 }
 .hero-ctas {
-  margin-top: 36px;
+  margin-top: 34px;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
+.hero-note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
 .hero-meta {
-  margin-top: 56px;
+  margin-top: 52px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
-  padding-top: 32px;
+  padding-top: 30px;
   border-top: 1px solid var(--border);
-  max-width: 580px;
+  max-width: 560px;
+}
+.hero-meta-item { min-width: 0; }
+/* El botón flotante de WhatsApp vive pegado a la izquierda (x 20–76). En
+   pantallas angostas las métricas se apilan y se sangran fuera de esa zona:
+   los dígitos quedan legibles a CUALQUIER altura del scroll, no solo al caer
+   la página. */
+@media (max-width: 767px) {
+  .hero-meta {
+    grid-template-columns: 1fr;
+    gap: 13px;
+    margin-top: 56px;
+    padding-left: 84px;
+  }
+  .hero-meta-item { display: flex; align-items: baseline; gap: 12px; }
 }
 .hero-meta-item .num {
   font-family: var(--font-display);
-  font-size: clamp(28px, 4vw, 40px);
+  font-size: clamp(28px, 4vw, 38px);
   letter-spacing: -0.02em;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 .hero-meta-item .num em {
   color: var(--accent);
@@ -439,11 +471,11 @@ h1, h2, h3, h4 {
   margin-top: 6px;
 }
 
-/* Hero visual — el logo grande con halo de luz cyan */
+/* Visual del hero: el isotipo con halo y anillos en rotación lenta */
 .hero-visual {
   position: relative;
   width: 100%;
-  max-width: 540px;
+  max-width: 520px;
   margin-left: auto;
   padding: 24px;
 }
@@ -454,7 +486,7 @@ h1, h2, h3, h4 {
   background: radial-gradient(circle at 50% 50%, var(--accent-glow), transparent 65%);
   filter: blur(50px);
   z-index: 0;
-  animation: pulse 6s ease-in-out infinite;
+  animation: pulse 7s ease-in-out infinite;
 }
 .hero-visual .rings {
   position: absolute;
@@ -463,102 +495,183 @@ h1, h2, h3, h4 {
   pointer-events: none;
   width: 100%;
   height: 100%;
+  animation: orbita 90s linear infinite;
+  transform-origin: 50% 50%;
 }
 .hero-visual .rings circle {
   fill: none;
   stroke: rgba(255, 255, 255, 0.06);
 }
+.hero-visual .rings circle:nth-child(2) { stroke-dasharray: 6 10; stroke: rgba(34, 211, 238, 0.14); }
 .hero-visual img {
   position: relative;
   z-index: 1;
   width: 100%;
   height: auto;
 }
+
+/* La prueba, no el discurso: una conversación de ejemplo con la voz real de
+   IntelliA, montada sobre el isotipo. Sin brillo propio: el halo del hero es
+   el único de la página. */
+.demo-chat {
+  position: relative;
+  z-index: 2;
+  margin: 4px auto 0;
+  max-width: 396px;
+  background: rgba(13, 15, 18, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 15px 16px 13px;
+  animation: rise 0.9s var(--ease-out) both;
+  animation-delay: 0.62s;
+}
+.demo-chat-cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.demo-burbuja {
+  border-radius: 12px;
+  padding: 9px 13px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  max-width: 92%;
+  width: fit-content;
+}
+.demo-burbuja.visitante {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  margin-bottom: 8px;
+  color: var(--text-dim);
+}
+.demo-burbuja.ia {
+  background: var(--accent-tint-bg);
+  border: 1px solid var(--accent-tint-border);
+  border-bottom-right-radius: 4px;
+  margin-left: auto;
+  color: var(--text);
+}
+.demo-chat-pie {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  transition: color 150ms var(--ease-out);
+}
+.demo-chat-pie:hover { color: var(--accent-bright); }
+.demo-chat-pie svg { width: 13px; height: 13px; transition: transform 200ms var(--ease-out); }
+.demo-chat-pie:hover svg { transform: translateX(3px); }
 @keyframes pulse {
   0%, 100% { opacity: 0.7; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
+  50% { opacity: 1; transform: scale(1.04); }
 }
+@keyframes orbita { to { transform: rotate(360deg); } }
 
-/* Hero entry animation */
-.hero h1 .line, .hero-sub, .hero-ctas, .hero-meta, .hero-visual {
-  animation: rise 1.1s var(--ease-out) both;
+/* Entrada del hero: sube y enfoca, en cascada corta */
+.hero h1 .line, .chip-live, .hero-sub, .hero-ctas, .hero-note, .hero-meta, .hero-visual {
+  animation: rise 0.9s var(--ease-out) both;
 }
-.hero h1 .line:nth-child(1) { animation-delay: 0.05s; }
-.hero h1 .line:nth-child(2) { animation-delay: 0.15s; }
-.hero h1 .line:nth-child(3) { animation-delay: 0.25s; }
-.hero-sub { animation-delay: 0.4s; }
-.hero-ctas { animation-delay: 0.5s; }
-.hero-meta { animation-delay: 0.6s; }
-.hero-visual { animation-delay: 0.3s; }
+.chip-live { animation-delay: 0s; }
+.hero h1 .line:nth-child(1) { animation-delay: 0.06s; }
+.hero h1 .line:nth-child(2) { animation-delay: 0.14s; }
+.hero h1 .line:nth-child(3) { animation-delay: 0.22s; }
+.hero-sub { animation-delay: 0.34s; }
+.hero-ctas { animation-delay: 0.44s; }
+.hero-note { animation-delay: 0.5s; }
+.hero-meta { animation-delay: 0.55s; }
+.hero-visual { animation-delay: 0.28s; }
 @keyframes rise {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(18px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
 /* MARQUEE */
 .marquee {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  padding: 22px 0;
+  padding: 20px 0;
   overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
 .marquee-track {
   display: flex;
   gap: 64px;
   white-space: nowrap;
-  animation: marquee 38s linear infinite;
+  animation: marquee 42s linear infinite;
   font-family: var(--font-display);
   font-style: italic;
-  font-size: clamp(18px, 2vw, 26px);
+  font-size: clamp(18px, 2vw, 24px);
   color: var(--text-dim);
 }
+.marquee:hover .marquee-track { animation-play-state: paused; }
 .marquee-track span { display: inline-flex; align-items: center; gap: 64px; }
 .marquee-track span::after {
-  content: "✦";
-  color: var(--accent);
-  font-style: normal;
+  content: "";
+  width: 13px;
+  height: 13px;
+  flex: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z' fill='%2322d3ee'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
 
-/* SERVICES */
-.services { padding: 120px 0 80px; }
+/* SERVICIOS */
+.services { padding: var(--sec-y) 0 calc(var(--sec-y) * 0.6); }
 .services-head {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  margin-bottom: 64px;
+  margin-bottom: 56px;
 }
 @media (min-width: 900px) {
-  .services-head { grid-template-columns: 1fr 1fr; align-items: end; gap: 80px; }
+  .services-head { grid-template-columns: 1fr 1fr; align-items: end; gap: 72px; }
 }
 .service-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 14px;
 }
 @media (min-width: 760px) {
   .service-grid { grid-template-columns: 1fr 1fr; }
 }
 .service-card {
   position: relative;
-  padding: 40px 32px;
+  padding: 36px 30px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-card);
-  transition: background 0.4s var(--ease), border-color 0.4s var(--ease), transform 0.4s var(--ease);
+  transition: background 300ms var(--ease-out), border-color 300ms var(--ease-out), transform 300ms var(--ease-out);
   overflow: hidden;
-  min-height: 320px;
+  min-height: 300px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
-.service-card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-strong);
-  transform: translateY(-4px);
+/* Luz que sigue al cursor: el reflector clásico de Linear/Vercel. */
+.service-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 0%), rgba(34, 211, 238, 0.07), transparent 65%);
+  opacity: 0;
+  transition: opacity 300ms var(--ease-out);
+  pointer-events: none;
 }
 .service-card::after {
   content: "";
@@ -566,37 +679,36 @@ h1, h2, h3, h4 {
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, transparent, rgba(34, 211, 238, 0.55), transparent 60%);
+  background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 0%), rgba(34, 211, 238, 0.5), transparent 70%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity 0.4s var(--ease);
+  transition: opacity 300ms var(--ease-out);
   pointer-events: none;
 }
-.service-card:hover::after { opacity: 1; }
-
-.service-num {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  color: var(--text-muted);
+@media (hover: hover) and (pointer: fine) {
+  .service-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-strong);
+    transform: translateY(-3px);
+  }
+  .service-card:hover::before, .service-card:hover::after { opacity: 1; }
 }
 .service-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 44px; height: 44px;
+  border-radius: 11px;
   background: var(--accent-tint-bg);
   border: 1px solid var(--accent-tint-border);
   display: grid;
   place-items: center;
   color: var(--accent);
-  margin-bottom: 28px;
+  margin-bottom: 26px;
 }
-.service-icon svg { width: 22px; height: 22px; stroke-width: 1.6; }
+.service-icon svg { width: 21px; height: 21px; stroke-width: 1.6; }
 .service-card h3 {
-  font-size: clamp(22px, 2.2vw, 28px);
+  font-size: clamp(22px, 2.2vw, 27px);
   font-weight: 400;
   margin-bottom: 12px;
   letter-spacing: -0.02em;
@@ -604,7 +716,7 @@ h1, h2, h3, h4 {
 .service-card p {
   color: var(--text-dim);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.6;
   margin: 0;
 }
 .service-card .tag {
@@ -623,45 +735,53 @@ h1, h2, h3, h4 {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 32px;
+  margin-bottom: 30px;
 }
 
-/* PROCESS */
-.process { padding: 80px 0 100px; }
+/* PROCESO */
+.process { padding: calc(var(--sec-y) * 0.6) 0 var(--sec-y); }
 .process-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 32px;
-  margin-top: 56px;
+  margin-top: 52px;
 }
 @media (min-width: 760px) {
   .process-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
 }
 .step {
   position: relative;
-  padding: 32px 0 0;
+  padding: 30px 0 0;
   border-top: 1px solid var(--border);
+}
+.step::before {
+  content: "";
+  position: absolute;
+  top: -1px; left: 0;
+  width: 44px; height: 1px;
+  background: var(--accent);
 }
 .step-num {
   font-family: var(--font-display);
-  font-size: 56px;
+  font-size: 52px;
   font-weight: 300;
   font-style: italic;
   color: var(--accent);
   line-height: 1;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+  font-variant-numeric: tabular-nums;
 }
 .step h3 { font-size: 22px; margin-bottom: 10px; }
 .step p {
   color: var(--text-dim);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.6;
   margin: 0;
 }
 
-/* ABOUT */
+/* NOSOTROS */
 .about {
-  padding: 100px 0;
+  padding: var(--sec-y) 0;
   border-top: 1px solid var(--border);
 }
 .about-grid {
@@ -671,61 +791,78 @@ h1, h2, h3, h4 {
   align-items: start;
 }
 @media (min-width: 900px) {
-  .about-grid { grid-template-columns: 1fr 1.2fr; gap: 80px; }
+  .about-grid { grid-template-columns: 1fr 1.2fr; gap: 72px; }
 }
 .about-quote {
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 300;
-  font-size: clamp(28px, 3.4vw, 44px);
+  font-size: clamp(28px, 3.2vw, 42px);
   line-height: 1.15;
   letter-spacing: -0.02em;
   color: var(--text);
+  text-wrap: balance;
 }
 .about-quote em { color: var(--accent); font-weight: 400; }
 .about-body p {
   color: var(--text-dim);
   font-size: 16px;
-  line-height: 1.65;
+  line-height: 1.7;
   margin: 0 0 16px;
+  max-width: 70ch;
 }
 .about-body p strong { color: var(--text); font-weight: 500; }
 
-/* WHY US */
-.why { padding: 100px 0; border-top: 1px solid var(--border); }
+/* POR QUÉ */
+.why { padding: var(--sec-y) 0; border-top: 1px solid var(--border); }
 .why-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
-  margin-top: 56px;
+  gap: 14px;
+  margin-top: 52px;
 }
 @media (min-width: 760px) {
   .why-grid { grid-template-columns: repeat(3, 1fr); }
 }
 .why-card {
-  padding: 36px 28px;
+  position: relative;
+  padding: 34px 28px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--bg-card);
-  transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
+  overflow: hidden;
+  transition: border-color 300ms var(--ease-out), background 300ms var(--ease-out);
 }
-.why-card:hover { border-color: var(--border-strong); background: var(--bg-card-hover); }
+.why-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 0%), rgba(34, 211, 238, 0.06), transparent 65%);
+  opacity: 0;
+  transition: opacity 300ms var(--ease-out);
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .why-card:hover { border-color: var(--border-strong); background: var(--bg-card-hover); }
+  .why-card:hover::before { opacity: 1; }
+}
 .why-card .icon {
   width: 36px; height: 36px;
   color: var(--accent);
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 .why-card .icon svg { width: 100%; height: 100%; stroke-width: 1.4; }
-.why-card h3 { font-size: 24px; margin-bottom: 10px; }
+.why-card h3 { font-size: 23px; margin-bottom: 10px; }
 .why-card p {
   color: var(--text-dim);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.6;
   margin: 0;
 }
 
 /* FAQ */
-.faq { padding: 100px 0; border-top: 1px solid var(--border); }
+.faq { padding: var(--sec-y) 0; border-top: 1px solid var(--border); }
 .faq-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -733,14 +870,14 @@ h1, h2, h3, h4 {
   align-items: start;
 }
 @media (min-width: 900px) {
-  .faq-grid { grid-template-columns: 1fr 1.4fr; gap: 80px; }
+  .faq-grid { grid-template-columns: 1fr 1.4fr; gap: 72px; }
 }
 .faq-list { border-top: 1px solid var(--border); }
 .faq-item { border-bottom: 1px solid var(--border); }
 .faq-q {
   width: 100%;
   text-align: left;
-  padding: 26px 0;
+  padding: 24px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -750,14 +887,18 @@ h1, h2, h3, h4 {
   font-weight: 400;
   letter-spacing: -0.01em;
   color: var(--text);
+  transition: color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .faq-q:hover { color: var(--accent-bright); }
 }
 .faq-q .plus {
-  width: 22px;
-  height: 22px;
+  width: 22px; height: 22px;
   flex-shrink: 0;
   position: relative;
-  transition: transform 0.4s var(--ease);
+  transition: transform 300ms var(--ease-out);
 }
+.faq-item.open .faq-q .plus { transform: rotate(45deg); }
 .faq-q .plus::before, .faq-q .plus::after {
   content: "";
   position: absolute;
@@ -766,25 +907,29 @@ h1, h2, h3, h4 {
   background: var(--accent);
 }
 .faq-q .plus::before { width: 100%; height: 1.5px; }
-.faq-q .plus::after { width: 1.5px; height: 100%; transition: transform 0.4s var(--ease); }
-.faq-item.open .faq-q .plus::after { transform: rotate(90deg); }
+.faq-q .plus::after { width: 1.5px; height: 100%; }
+/* Despliegue interrumpible: grid-rows en vez de max-height adivinado. */
 .faq-a {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.5s var(--ease);
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms var(--ease-out);
 }
+.faq-item.open .faq-a { grid-template-rows: 1fr; }
 .faq-a-inner {
-  padding: 0 0 26px;
+  overflow: hidden;
+  min-height: 0;
   color: var(--text-dim);
   font-size: 15px;
   line-height: 1.65;
-  max-width: 80ch;
+  max-width: 70ch;
 }
-.faq-item.open .faq-a { max-height: 400px; }
+/* El aire de abajo vive DENTRO del contenido medido: así crece y se recorta
+   con la propia fila del grid, sin animar padding. */
+.faq-a-inner::after { content: ""; display: block; height: 24px; }
 
 /* CTA */
 .cta {
-  padding: 120px 0;
+  padding: var(--sec-y) 0;
   border-top: 1px solid var(--border);
   position: relative;
 }
@@ -794,17 +939,18 @@ h1, h2, h3, h4 {
   margin: 0 auto;
 }
 .cta h2 {
-  font-size: clamp(40px, 7vw, 88px);
+  font-size: clamp(38px, 6.5vw, 84px);
   letter-spacing: -0.035em;
   line-height: 1;
   margin-bottom: 24px;
 }
 .cta-sub {
   color: var(--text-dim);
-  font-size: clamp(16px, 1.6vw, 19px);
-  max-width: 580px;
-  margin: 0 auto 40px;
-  line-height: 1.55;
+  font-size: clamp(16px, 1.5vw, 18px);
+  max-width: 52ch;
+  margin: 0 auto 38px;
+  line-height: 1.6;
+  text-wrap: pretty;
 }
 .cta-ctas {
   display: flex;
@@ -813,7 +959,7 @@ h1, h2, h3, h4 {
   justify-content: center;
 }
 .cta-channels {
-  margin-top: 56px;
+  margin-top: 52px;
   display: flex;
   flex-wrap: wrap;
   gap: 32px;
@@ -825,7 +971,7 @@ h1, h2, h3, h4 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: color 0.2s var(--ease);
+  transition: color 150ms var(--ease-out);
 }
 .cta-channels a:hover { color: var(--text); }
 .cta-channels svg { width: 16px; height: 16px; color: var(--accent); }
@@ -845,14 +991,14 @@ h1, h2, h3, h4 {
   .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
 }
 .footer-brand img {
-  max-width: 260px;
+  max-width: 240px;
   height: auto;
   margin-bottom: 18px;
 }
 .footer-brand p {
   color: var(--text-dim);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.6;
   max-width: 320px;
 }
 .footer-col h4 {
@@ -868,7 +1014,7 @@ h1, h2, h3, h4 {
 .footer-col a {
   font-size: 14px;
   color: var(--text-dim);
-  transition: color 0.2s var(--ease);
+  transition: color 150ms var(--ease-out);
 }
 .footer-col a:hover { color: var(--text); }
 
@@ -894,21 +1040,18 @@ h1, h2, h3, h4 {
   font-size: 12px;
   line-height: 1.8;
   color: var(--text-muted);
-  opacity: .78;
   /* Los dos botones flotantes viven abajo (56px + 20px de margen). Sin este
      colchón se comen justo la línea que identifica a la empresa. */
   padding-bottom: 76px;
 }
-.footer-legal a { color: inherit; text-decoration: none; }
-.footer-legal a:hover { color: var(--accent); }
+.footer-legal a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,255,255,0.2); }
+.footer-legal a:hover { color: var(--accent); text-decoration-color: var(--accent); }
 
-/* Floating WhatsApp — a la izquierda para no montarse con el chat de IntelliA */
+/* WhatsApp flotante — a la izquierda para no montarse con el chat de IntelliA */
 .fab-whatsapp {
   position: fixed;
-  bottom: 20px;
-  left: 20px;
-  width: 56px;
-  height: 56px;
+  bottom: 20px; left: 20px;
+  width: 56px; height: 56px;
   border-radius: 50%;
   background: var(--whatsapp);
   color: #fff;
@@ -916,36 +1059,58 @@ h1, h2, h3, h4 {
   place-items: center;
   z-index: 30;
   box-shadow: 0 12px 30px rgba(37, 211, 102, 0.35);
-  transition: transform 0.3s var(--ease);
+  transition: transform 160ms var(--ease-out);
 }
-.fab-whatsapp:hover { transform: scale(1.06); }
+.fab-whatsapp:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) {
+  .fab-whatsapp:hover { transform: scale(1.06); }
+}
 .fab-whatsapp svg { width: 26px; height: 26px; }
 
-/* Reveal on scroll */
+/* Aparición al hacer scroll, con cascada corta dentro de cada grilla */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+  transform: translateY(16px);
+  transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
 }
-.reveal.in {
-  opacity: 1;
-  transform: translateY(0);
-}
+.reveal.in { opacity: 1; transform: translateY(0); }
+.service-grid .reveal:nth-child(2), .why-grid .reveal:nth-child(2), .process-grid .reveal:nth-child(2) { transition-delay: 60ms; }
+.service-grid .reveal:nth-child(3), .why-grid .reveal:nth-child(3), .process-grid .reveal:nth-child(3) { transition-delay: 120ms; }
+.service-grid .reveal:nth-child(4), .process-grid .reveal:nth-child(4) { transition-delay: 180ms; }
+.service-grid .reveal:nth-child(5) { transition-delay: 60ms; }
+.service-grid .reveal:nth-child(6) { transition-delay: 120ms; }
 
-/* Reduced motion */
+/* Movimiento reducido: quedan los fundidos, se va el desplazamiento. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
   .reveal { opacity: 1; transform: none; }
+  .hero h1 .line, .chip-live, .hero-sub, .hero-ctas, .hero-note, .hero-meta, .hero-visual { animation: none; }
 }
-
-/* Selection */
-::selection { background: var(--accent); color: #06141a; }
 </style>
 </head>
 <body>
+
+<!--
+CONTRATO DE DIRECCIÓN (seed 30bd5a1d, canon elegido por el dueño, 21 ago 2026)
+THESIS: El estándar de la landing oscura de IA, ejecutado al nivel de Linear/Vercel;
+rechaza el experimento visual: la convención abrazada con oficio máximo.
+OWN-WORLD: Fondo #08090b, acento cian #22d3ee del logo, Fraunces itálica solo como
+acento, Geist como voz, mono para datos; luz que sigue al cursor en las tarjetas,
+halo cian único arriba, grain sutil.
+STORY: Un dueño de pyme entiende en segundos que Intellectum automatiza su atención,
+ve que IntelliA está en línea de verdad, y agenda la consultoría gratis.
+FIRST VIEWPORT: Chip vivo "IntelliA en línea", titular en tres líneas con acento
+itálico cian, sub, dos CTAs (primario cian: agenda), métricas con nota honesta,
+isotipo con anillos en rotación lenta. Interacción firma: el reflector cian que
+sigue al cursor por las tarjetas + el encendido en cascada del hero.
+FORM: Canon de la categoría (salida permanente), elegido sobre El Plano Vivo y
+Piloto Automático; listón: Linear + Vercel.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+-->
 
 <!-- NAV -->
 <header class="nav" id="nav">
@@ -999,7 +1164,7 @@ h1, h2, h3, h4 {
   <div class="wrap">
     <div class="hero-grid">
       <div>
-        <span class="eyebrow">Artificial Intelligence · Ecuador</span>
+        <a href="/chat" class="chip-live"><span class="ia-dot" aria-hidden="true"></span><strong>IntelliA online</strong> · replies right now</a>
         <h1 style="margin-top: 24px;">
           <span class="line">Automate the</span>
           <span class="line"><em class="serif-italic">repetitive.</em></span>
@@ -1028,19 +1193,27 @@ h1, h2, h3, h4 {
           </div>
           <div class="hero-meta-item">
             <div class="num"><em>3</em>×</div>
-            <div class="label">More sales</div>
+            <div class="label">More sales*</div>
           </div>
         </div>
-        <p class="hero-note">*Reference estimate for repetitive tasks; actual results depend on each process and are projected during the diagnostic.</p>
+        <p class="hero-note">*Reference estimates for repetitive tasks; actual results depend on each process and are projected during the diagnostic.</p>
       </div>
 
-      <div class="hero-visual" aria-hidden="true">
-        <svg class="rings" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <div class="hero-visual">
+        <svg class="rings" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
           <circle cx="240" cy="240" r="230" stroke-width="1"/>
           <circle cx="240" cy="240" r="180" stroke-width="1"/>
           <circle cx="240" cy="240" r="130" stroke-width="1"/>
         </svg>
         <img src="/logo-completo.webp" alt="Intellectum AI Solutions" width="612" height="487" fetchpriority="high" />
+        <div class="demo-chat">
+          <div class="demo-chat-cab"><span class="ia-dot" aria-hidden="true"></span>IntelliA · sample conversation</div>
+          <div class="demo-burbuja visitante">Can you answer WhatsApp orders at 11 at night?</div>
+          <div class="demo-burbuja ia">Yes. I handle your WhatsApp 24/7, reply to your customers and book appointments for you. Want to see it with your business? The consultation is free.</div>
+          <a href="/chat" class="demo-chat-pie">Try it yourself
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -1059,7 +1232,6 @@ h1, h2, h3, h4 {
   <div class="wrap">
     <div class="services-head reveal">
       <div>
-        <span class="eyebrow">Solutions</span>
         <h2 class="section-title">
           Artificial intelligence<br>
           <span class="serif-italic">applied to your business.</span>
@@ -1077,7 +1249,6 @@ h1, h2, h3, h4 {
             <div class="service-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             </div>
-            <span class="service-num">01</span>
           </div>
           <h3>AI voice calls</h3>
           <p>Voice agents that qualify leads, book appointments and serve your customers with natural conversations — no waiting, no rigid scripts, every day of the year.</p>
@@ -1091,7 +1262,6 @@ h1, h2, h3, h4 {
             <div class="service-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
-            <span class="service-num">02</span>
           </div>
           <h3>Messaging &amp; chatbots</h3>
           <p>Omnichannel service on WhatsApp, Instagram and Messenger with generative AI that understands context, answers questions and closes sales while your team rests.</p>
@@ -1105,7 +1275,6 @@ h1, h2, h3, h4 {
             <div class="service-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
             </div>
-            <span class="service-num">03</span>
           </div>
           <h3>Automated sales</h3>
           <p>Sales funnels that prospect cold, nurture contacts and close without human intervention. Your team receives only leads that are ready to sign.</p>
@@ -1119,7 +1288,6 @@ h1, h2, h3, h4 {
             <div class="service-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/></svg>
             </div>
-            <span class="service-num">04</span>
           </div>
           <h3>Custom automation</h3>
           <p>We connect your apps (CRM, ERP, spreadsheets, email, Slack) into intelligent workflows that run repetitive tasks, validate data and flag exceptions.</p>
@@ -1133,7 +1301,6 @@ h1, h2, h3, h4 {
             <div class="service-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
             </div>
-            <span class="service-num">05</span>
           </div>
           <h3>Websites and landing pages</h3>
           <p>Fast, measurable pages designed to convert, with your AI agent built in from launch — visitors find answers before they leave.</p>
@@ -1147,7 +1314,6 @@ h1, h2, h3, h4 {
             <div class="service-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
             </div>
-            <span class="service-num">06</span>
           </div>
           <h3>Online stores</h3>
           <p>Catalog, cart and payments ready to sell, with automated support that answers questions, recovers abandoned carts and follows up after the sale.</p>
@@ -1162,7 +1328,6 @@ h1, h2, h3, h4 {
 <section class="process" id="proceso">
   <div class="wrap">
     <div class="reveal">
-      <span class="eyebrow">How we work</span>
       <h2 class="section-title">
         From idea to<br>
         <span class="serif-italic">measurable results</span> in weeks.
@@ -1200,8 +1365,7 @@ h1, h2, h3, h4 {
   <div class="wrap">
     <div class="about-grid">
       <div class="reveal">
-        <span class="eyebrow">About Intellectum</span>
-        <p class="about-quote" style="margin-top: 24px;">
+        <p class="about-quote">
           We don’t sell technology for its own sake. <em>We design automations</em> that give hours, dollars and focus back to the people running the business.
         </p>
       </div>
@@ -1218,7 +1382,6 @@ h1, h2, h3, h4 {
 <section class="why">
   <div class="wrap">
     <div class="reveal">
-      <span class="eyebrow">Why Intellectum</span>
       <h2 class="section-title">
         Your partner in<br>
         <span class="serif-italic">digital transformation.</span>
@@ -1257,7 +1420,6 @@ h1, h2, h3, h4 {
   <div class="wrap">
     <div class="faq-grid">
       <div class="reveal">
-        <span class="eyebrow">Frequently asked questions</span>
         <h2 class="section-title">Before we<br><span class="serif-italic">start.</span></h2>
         <p class="section-lead">What we get asked most in the first meeting. If your question isn’t here, message us on WhatsApp.</p>
       </div>
@@ -1320,8 +1482,7 @@ h1, h2, h3, h4 {
 <!-- CTA -->
 <section class="cta" id="contacto">
   <div class="wrap cta-inner">
-    <span class="eyebrow reveal">Let’s talk</span>
-    <h2 class="reveal" style="margin-top: 16px;">
+    <h2 class="reveal">
       Ready to put AI<br>
       <span class="serif-italic">to work for you?</span>
     </h2>
@@ -1472,6 +1633,18 @@ document.querySelectorAll('.faq-item').forEach(item => {
     });
   }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
   els.forEach(el => io.observe(el));
+})();
+
+/* Reflector que sigue al cursor en las tarjetas (solo con puntero fino) */
+(function () {
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  document.querySelectorAll('.service-card, .why-card').forEach(card => {
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  });
 })();
 </script>
 

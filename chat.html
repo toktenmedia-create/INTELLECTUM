@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0a0a0a" />
+<meta name="theme-color" content="#08090b" />
 
 <title>Habla con IntelliA — Asistente de IA de Intellectum</title>
 <meta name="description" content="Conversa en línea con IntelliA, el asistente con inteligencia artificial de Intellectum. Resuelve tus dudas sobre automatización, chatbots y agentes de voz IA para tu empresa, al instante y sin compromiso." />
@@ -42,27 +42,30 @@
 </script>
 
 <style>
+/* Mismo mundo visual que la portada (ver DESIGN.md): oscuro #08090b, cian de
+   marca, Fraunces solo como acento. */
 :root {
-  --bg: #0a0a0a;
-  --bg-elev: #111111;
-  --bg-card: rgba(255, 255, 255, 0.025);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text: #fafaf7;
-  --text-dim: #a8a89e;
-  --text-muted: #6e6e66;
+  --bg: #08090b;
+  --bg-elev: #0d0f12;
+  --bg-card: rgba(255, 255, 255, 0.02);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --text: #f7f8f8;
+  --text-dim: #a6adb0;
+  --text-muted: #737d81;
   --accent: #22d3ee;
   --accent-bright: #67e8f9;
   --accent-glow: rgba(34, 211, 238, 0.22);
   --accent-tint-bg: rgba(34, 211, 238, 0.08);
-  --accent-tint-border: rgba(34, 211, 238, 0.22);
+  --accent-tint-border: rgba(34, 211, 238, 0.24);
   --whatsapp: #25d366;
   --font-display: "Fraunces", "Times New Roman", serif;
   --font-sans: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --radius: 14px;
-  --radius-lg: 22px;
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius: 12px;
+  --radius-lg: 18px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease: var(--ease-out);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -73,15 +76,26 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   height: 100dvh;
   overflow: hidden;
+  caret-color: var(--accent);
+  accent-color: var(--accent);
 }
 img, svg { display: block; max-width: 100%; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 textarea { font: inherit; color: inherit; }
+
+/* Las superficies del navegador también llevan el diseño. */
+::selection { background: var(--accent); color: #06141a; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+html { scrollbar-color: rgba(255, 255, 255, 0.14) transparent; }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 999px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
 body::before {
   content: "";
@@ -102,14 +116,14 @@ body::before {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px clamp(16px, 3vw, 32px);
-  background: rgba(10, 10, 10, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  padding: 11px clamp(16px, 3vw, 32px);
+  background: rgba(8, 9, 11, 0.75);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-bottom: 1px solid var(--border);
 }
-.brand { display: inline-flex; align-items: center; gap: 10px; }
-.brand img { height: 30px; width: auto; }
+.brand { display: inline-flex; align-items: center; gap: 11px; }
+.brand img { height: 28px; width: auto; }
 .brand-text {
   font-family: var(--font-display);
   font-size: 19px;
@@ -127,16 +141,19 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 9px 16px;
   border-radius: 999px;
   background: var(--whatsapp);
   color: #fff;
   font-weight: 500;
   font-size: 14px;
   white-space: nowrap;
-  transition: transform 0.25s var(--ease), background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  transition: transform 160ms var(--ease-out), background 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
 }
-.btn-wa:hover { background: #1fb858; transform: translateY(-1px); box-shadow: 0 8px 28px rgba(37, 211, 102, 0.25); }
+.btn-wa:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-wa:hover { background: #1fb858; transform: translateY(-1px); box-shadow: 0 8px 28px rgba(37, 211, 102, 0.25); }
+}
 .btn-wa svg { width: 17px; height: 17px; flex: none; }
 @media (max-width: 560px) {
   .btn-wa span { display: none; }
@@ -171,18 +188,21 @@ body::before {
 
 /* PORTADA (estado vacío) */
 .portada { margin: auto 0; padding: 24px 0 12px; text-align: left; }
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+/* El mismo chip vivo de la portada: aquí es el estado real del asistente. */
+.chip-live {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
+  padding: 7px 14px 7px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-tint-border);
+  background: var(--accent-tint-bg);
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
 }
-.eyebrow::before { content: ""; width: 24px; height: 1px; background: var(--accent); }
-.eyebrow .vivo {
+.chip-live strong { color: var(--text); font-weight: 500; }
+.chip-live .vivo {
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 10px var(--accent);
@@ -196,6 +216,7 @@ body::before {
   line-height: 1.05;
   font-size: clamp(34px, 6vw, 56px);
   margin: 18px 0 14px;
+  text-wrap: balance;
 }
 .portada h1 em {
   font-style: italic;
@@ -223,15 +244,17 @@ body::before {
   color: var(--text-dim);
   font-size: 14px;
   line-height: 1.4;
-  transition: border-color 0.25s var(--ease), color 0.25s var(--ease), background 0.25s var(--ease), transform 0.25s var(--ease);
+  transition: border-color 200ms var(--ease-out), color 200ms var(--ease-out), background 200ms var(--ease-out), transform 160ms var(--ease-out);
 }
-.chip:hover {
-  border-color: var(--accent-tint-border);
-  background: var(--accent-tint-bg);
-  color: var(--text);
-  transform: translateY(-1px);
+.chip:active { transform: scale(0.98); }
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover {
+    border-color: var(--accent-tint-border);
+    background: var(--accent-tint-bg);
+    color: var(--text);
+    transform: translateY(-1px);
+  }
 }
-.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* BURBUJAS */
 .msg {
@@ -286,7 +309,7 @@ body::before {
   position: relative;
   z-index: 2;
   border-top: 1px solid var(--border);
-  background: rgba(17, 17, 17, 0.9);
+  background: rgba(13, 15, 18, 0.9);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -319,10 +342,13 @@ body::before {
   color: #04222a;
   display: grid;
   place-items: center;
-  transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  transition: transform 160ms var(--ease-out), background 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
 }
-.enviar:hover { background: var(--accent-bright); box-shadow: 0 6px 24px var(--accent-glow); }
-.enviar:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+.enviar:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) {
+  .enviar:hover { background: var(--accent-bright); box-shadow: 0 6px 24px var(--accent-glow); }
+}
+.enviar:disabled { opacity: 0.4; cursor: default; box-shadow: none; transform: none; }
 .enviar:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
 .enviar svg { width: 18px; height: 18px; }
 .legal {
@@ -337,8 +363,8 @@ body::before {
 
 @media (prefers-reduced-motion: reduce) {
   .log { scroll-behavior: auto; }
-  .puntos i, .eyebrow .vivo { animation: none; opacity: 0.6; }
-  .btn-wa, .chip, .volver { transition: none; }
+  .puntos i, .chip-live .vivo { animation: none; opacity: 0.6; }
+  .btn-wa, .chip, .volver, .enviar { transition: none; }
 }
 </style>
 </head>
@@ -363,7 +389,7 @@ body::before {
     <div class="log-inner" id="logInner">
 
       <div class="portada" id="portada">
-        <span class="eyebrow"><span class="vivo" aria-hidden="true"></span>Asistente con IA · en línea</span>
+        <span class="chip-live"><span class="vivo" aria-hidden="true"></span><strong>En línea</strong> · te responde ahora mismo</span>
         <h1>Habla con <em>IntelliA.</em></h1>
         <p class="sub">
           Soy el asistente de Intellectum. Cuéntame qué proceso te consume más tiempo
