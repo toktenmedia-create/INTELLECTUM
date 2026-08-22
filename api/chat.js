@@ -97,7 +97,7 @@ export default async function handler(req, res) {
     console.error("[CHAT] error hablando con Claude:", err?.status, err?.message ?? err);
     enviar({
       t: "error",
-      v: "Se me cortó la conexión. ¿Me repites lo último? Si prefieres, escríbenos al WhatsApp +593 98 312 0003.",
+      v: "Se me cortó la conexión. ¿Me repites lo último? Si prefieres, escríbenos al WhatsApp +593 96 751 8060.",
     });
   } finally {
     res.end();

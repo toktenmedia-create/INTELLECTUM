@@ -32,6 +32,7 @@ import { waitUntil } from "@vercel/functions";
 import { responder } from "../lib/brain.js";
 import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
+import { avisarEquipoWhatsApp } from "../lib/mensajeria.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
 // tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
@@ -41,7 +42,8 @@ export const config = { maxDuration: 120, api: { bodyParser: false } };
 
 const MENSAJE_TROPIEZO =
   "Perdona, se me complicó procesar tu mensaje. ¿Me lo repites? Si prefieres, " +
-  "escríbenos a info@intellectum.ec y el equipo te ayuda directamente.";
+  "escríbenos a info@intellectum.ec o llámanos al +593 98 312 0003 y el equipo te ayuda " +
+  "directamente.";
 
 const MENSAJE_BAJA =
   "Listo, queda registrado: no te escribiremos más por este medio y tu historial " +
@@ -212,7 +214,35 @@ async function procesar(valor, mensaje) {
     // Ya le dijimos 200 a Meta, así que nadie va a reintentar por nosotros.
     // Antes que el silencio, una disculpa honesta con el contacto del equipo.
     await enviarWhatsApp(numero, MENSAJE_TROPIEZO).catch(() => {});
+    // Y que el dueño se entere HOY: desde que el WhatsApp público lo atiende
+    // IntelliA, un fallo aquí es un cliente perdido, no una línea de registro.
+    avisarDelTropiezo(numero, err);
   }
+}
+
+/**
+ * Le avisa al equipo que un mensaje no se pudo atender.
+ *
+ * Con freno de diez minutos: si algo se cae de verdad (el modelo, la base,
+ * Meta), pueden llegar decenas de mensajes seguidos y cien avisos no informan
+ * más que uno — solo consiguen que el dueño silencie el chat, que es
+ * exactamente lo contrario de lo que queremos.
+ */
+const ESPERA_ENTRE_AVISOS_MS = 10 * 60 * 1000;
+let ultimoAviso = 0;
+
+function avisarDelTropiezo(numero, err) {
+  const ahora = Date.now();
+  if (ahora - ultimoAviso < ESPERA_ENTRE_AVISOS_MS) return;
+  ultimoAviso = ahora;
+
+  const motivo = String(err?.message ?? err ?? "desconocido").slice(0, 140);
+  const ultimos = String(numero ?? "").slice(-4);
+  avisarEquipoWhatsApp({
+    texto:
+      `no pude atender un mensaje de WhatsApp (número terminado en ${ultimos}). ` +
+      `Le pedí disculpas y le di el correo y el teléfono. Motivo: ${motivo}`,
+  }).catch(() => {});
 }
 
 /**
