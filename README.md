@@ -109,15 +109,11 @@ Todo lo que IntelliA puede afirmar está en **`lib/ficha.js`**. Es la misma
 "Ficha de Configuración de Cliente" que usas con tus clientes, aplicada a
 Intellectum. Editas ese archivo, publicas de nuevo, y el bot cambia.
 
-Hay campos marcados `[PENDIENTE]` que conviene que completes:
-
-- `horario_humano` y `tiempo_respuesta_humano` — qué le prometemos al prospecto.
-- `condiciones_pago`, `metodos_pago`.
-- `ticket_promedio` y `umbral_alto_valor` — para marcar leads premium.
-- `aviso_privacidad` — enlace, si lo tienes.
-
-Mientras digan `[PENDIENTE]`, el bot trata ese dato como "no lo sé" y lo deriva
-al equipo. Es el comportamiento correcto, pero le quita precisión.
+Los campos de la ficha ya están completos (horarios, condiciones y métodos de
+pago, ticket promedio, umbral de lead premium, aviso de privacidad). Si algún
+día vuelves a marcar uno como `[PENDIENTE]`, el bot trata ese dato como "no lo
+sé" y lo deriva al equipo en vez de inventarlo: es el comportamiento correcto,
+pero le quita precisión.
 
 El **carácter** del asistente (tono, flujo, reglas duras) está en
 `lib/prompt.js`.
