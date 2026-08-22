@@ -260,7 +260,7 @@ function avisarSiLaMemoriaEsFragil() {
   if (yaAvisado || esPersistente()) return;
   yaAvisado = true;
   console.warn(
-    "[WHATSAPP] sin SUPABASE_URL/SUPABASE_SERVICE_KEY: la memoria de las " +
+    "[WHATSAPP] sin SUPABASE_URL_INTELLECTUM/SUPABASE_SERVICE_KEY_INTELLECTUM: la memoria de las " +
       "conversaciones no sobrevive a los reinicios.",
   );
 }
