@@ -43,12 +43,14 @@ export default async function handler(req, res) {
   let conversaciones = [];
   let bajas = new Set();
   let yaSeguidos = new Set();
+  let programados = [];
   try {
-    [leads, conversaciones, bajas, yaSeguidos] = await Promise.all([
+    [leads, conversaciones, bajas, yaSeguidos, programados] = await Promise.all([
       almacen.listarLeads({ limite: 500 }),
       almacen.listarConversaciones({ limite: 500 }),
       almacen.sesionesDeBaja({ canal: "whatsapp" }),
       almacen.leadsYaSeguidos({}),
+      almacen.seguimientosVencidos({}),
     ]);
   } catch (err) {
     console.error("[SEGUIMIENTOS] no se pudo leer la base:", err?.message ?? err);
@@ -60,6 +62,7 @@ export default async function handler(req, res) {
     conversaciones,
     bajas,
     yaSeguidos,
+    programados,
     ahora: new Date(),
   });
 
@@ -137,7 +140,7 @@ export default async function handler(req, res) {
 /** El correo del ensayo: qué habría salido, para poder decidir encenderlo. */
 async function avisarDelEnsayo(elegidos, razon) {
   const lista = elegidos
-    .map((e) => `· ${e.nombre} (${e.numero}) — ${e.concepto}, ${e.dias_de_silencio} días callado`)
+    .map((e) => `· ${e.nombre} (${e.numero}) — ${e.concepto}` + (e.lo_pidio ? " — LO PIDIÓ ella misma" : `, ${e.dias_de_silencio} días callado`))
     .join("\n");
   await enviarAviso({
     asunto: `Seguimiento en ensayo: ${elegidos.length} mensaje(s) NO enviados`,
@@ -159,7 +162,7 @@ async function avisarDelEnsayo(elegidos, razon) {
 /** El correo de después: a quién se le escribió de verdad. */
 async function avisarDeLoQueSalio(salieron, fallaron) {
   const lista = salieron
-    .map((e) => `· ${e.nombre} (${e.numero}) — ${e.concepto}, ${e.dias_de_silencio} días callado`)
+    .map((e) => `· ${e.nombre} (${e.numero}) — ${e.concepto}` + (e.lo_pidio ? " — LO PIDIÓ ella misma" : `, ${e.dias_de_silencio} días callado`))
     .join("\n");
   await enviarAviso({
     asunto: `Seguimiento enviado a ${salieron.length} persona(s)`,
