@@ -116,19 +116,31 @@ async function procesar(valor, mensaje) {
 
   avisarSiLaMemoriaEsFragil();
   const almacen = abrirAlmacen();
+
+  // DE QUIÉN ES ESTE MENSAJE. Meta dice en cada webhook por cuál de nuestros
+  // números entró (metadata.phone_number_id), y ese número identifica al
+  // cliente. Mientras no haya un segundo cliente dado de alta —o mientras no
+  // se aplique supabase/multicliente.sql— esto devuelve null y se atiende como
+  // Intellectum, igual que siempre.
+  const dueño = await almacen
+    .clientePorTelefono?.({ phone_number_id: valor?.metadata?.phone_number_id })
+    .catch(() => null);
+  const cliente = dueño?.slug ?? "intellectum";
+
   // Con esto viaja el contador de mensajes entregados hasta lib/mensajeria.js.
-  const bitacora = { almacen, cliente: "intellectum" };
+  const bitacora = { almacen, cliente };
 
   // ¿Esta huella ya pasó por aquí? Si la bitácora no contesta, se sigue:
   // ante la duda es mejor arriesgar un duplicado rarísimo que callar siempre.
   try {
-    if (await almacen.yaProcesado({ marcador: mensaje.id })) {
+    if (await almacen.yaProcesado({ marcador: mensaje.id, cliente })) {
       console.log("[WHATSAPP] mensaje repetido, se ignora:", mensaje.id.slice(-12));
       return;
     }
     await almacen.registrarEvento({
       tipo: "mensaje_procesado",
       actor: "sistema",
+      cliente,
       detalle: { canal: "whatsapp", marcador: mensaje.id },
     });
   } catch (err) {
@@ -146,8 +158,8 @@ async function procesar(valor, mensaje) {
   // normalidad: retomar la conversación es decisión suya.
   if (esSolicitudDeBaja(mensaje)) {
     try {
-      await almacen.registrarBaja({ canal: "whatsapp", sesion: numero });
-      await almacen.olvidarConversacion({ canal: "whatsapp", sesion: numero });
+      await almacen.registrarBaja({ canal: "whatsapp", sesion: numero, cliente });
+      await almacen.olvidarConversacion({ canal: "whatsapp", sesion: numero, cliente });
     } catch (err) {
       // La confirmación sale igual: la persona no tiene la culpa de que la
       // base tosa. Pero queda gritado en el registro para arreglarlo a mano.
@@ -172,7 +184,7 @@ async function procesar(valor, mensaje) {
   // peor que recordar, pero muchísimo mejor que dejar a alguien sin respuesta.
   let historial = [];
   try {
-    historial = await almacen.recordarConversacion({ canal: "whatsapp", sesion: numero });
+    historial = await almacen.recordarConversacion({ canal: "whatsapp", sesion: numero, cliente });
   } catch (err) {
     console.error("[WHATSAPP] no se pudo leer la memoria:", err?.message ?? err);
   }
@@ -182,6 +194,7 @@ async function procesar(valor, mensaje) {
       // El modelo recibe los bloques completos (con la foto o el PDF adentro)...
       historial: [...historial, { role: "user", content: entrada.bloques }],
       canal: "whatsapp",
+      cliente,
       meta: { origen: `whatsapp:${nombrePerfil || numero}`, sesion: numero },
     });
 
@@ -197,6 +210,7 @@ async function procesar(valor, mensaje) {
     try {
       await almacen.guardarConversacion({
         canal: "whatsapp",
+        cliente,
         sesion: numero,
         nombrePerfil,
         mensajes: [
