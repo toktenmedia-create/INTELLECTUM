@@ -703,6 +703,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 
   function filaActividad(e) {
     var x = humanizarEvento(e);
+    if (!x) return ""; // contadores y ruido de máquina: no son actividad
     return (
       '<div class="act-fila"' + (x.ir ? ' data-ir="' + x.ir + '"' : "") + ">" +
       '<span class="act-icono">' + x.icono + "</span>" +
