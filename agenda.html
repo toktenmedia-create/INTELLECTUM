@@ -239,36 +239,36 @@ input:focus, textarea:focus {
 <main class="envoltorio">
   <a class="marca" href="/" aria-label="Intellectum AI Solutions">
     <img src="/logo-nav.webp" alt="" width="120" height="34" />
-    <span>Consultoría gratuita</span>
+    <span id="rotulo">Consultoría gratuita</span>
   </a>
 
   <div id="paso-elegir">
-    <h1>Elige tu hora</h1>
-    <p class="bajada">Son <strong>30 minutos</strong>, sin compromiso y sin costo. Salimos de ahí con un mapa claro de qué se puede automatizar en tu empresa y cuánto costaría.</p>
+    <h1 id="titulo">Elige tu hora</h1>
+    <p class="bajada" id="bajada">Son <strong>30 minutos</strong>, sin compromiso y sin costo. Salimos de ahí con un mapa claro de qué se puede automatizar en tu empresa y cuánto costaría.</p>
     <div id="horarios" class="cargando">Consultando la agenda…</div>
   </div>
 
   <div id="paso-datos" class="tarjeta oculto">
     <div class="elegida">
       <span class="elegida-hora" id="elegida-hora"></span>
-      <span class="elegida-nota">hora de Ecuador · 30 min</span>
+      <span class="elegida-nota" id="elegida-nota">hora de Ecuador · 30 min</span>
       <button type="button" class="cambiar" id="cambiar">Cambiar</button>
     </div>
     <form id="formulario" novalidate>
       <div class="campo">
-        <label for="nombre">Tu nombre</label>
+        <label for="nombre" id="lbl-nombre">Tu nombre</label>
         <input id="nombre" name="nombre" autocomplete="name" required maxlength="80" placeholder="Ana Carrión" />
       </div>
       <div class="campo">
-        <label for="contacto">Correo o WhatsApp</label>
+        <label for="contacto" id="lbl-contacto">Correo o WhatsApp</label>
         <input id="contacto" name="contacto" autocomplete="email" required maxlength="120" placeholder="ana@empresa.com" />
       </div>
       <div class="campo">
-        <label for="empresa">Empresa <span style="color:var(--texto-tenue)">(opcional)</span></label>
+        <label for="empresa" id="lbl-empresa">Empresa <span style="color:var(--texto-tenue)">(opcional)</span></label>
         <input id="empresa" name="empresa" autocomplete="organization" maxlength="80" placeholder="Veterinaria Cumbayá" />
       </div>
       <div class="campo">
-        <label for="motivo">¿Qué te gustaría resolver? <span style="color:var(--texto-tenue)">(opcional)</span></label>
+        <label for="motivo" id="lbl-motivo">¿Qué te gustaría resolver? <span style="color:var(--texto-tenue)">(opcional)</span></label>
         <textarea id="motivo" name="motivo" maxlength="400" placeholder="Se nos escapan mensajes de WhatsApp y agendar citas nos consume horas."></textarea>
       </div>
       <button type="submit" class="enviar" id="enviar">Confirmar mi hora</button>
@@ -280,12 +280,14 @@ input:focus, textarea:focus {
     <div class="listo-marca">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
     </div>
-    <h2>Listo, quedó agendada</h2>
+    <h2 id="listo-titulo">Listo, quedó agendada</h2>
     <p class="cuando" id="listo-cuando"></p>
     <p id="listo-detalle"></p>
   </div>
 
-  <footer class="pie">
+  <p id="pie-nota" style="margin-top:34px;font-size:13px;color:var(--texto-tenue);">Son 30 minutos, sin costo y sin compromiso.</p>
+
+  <footer class="pie" style="margin-top:14px;">
     <a href="mailto:info@intellectum.ec">info@intellectum.ec</a>
     <a href="https://wa.me/593967518060">WhatsApp +593 96 751 8060</a>
     <a href="/">intellectum.ec</a>
@@ -299,6 +301,81 @@ input:focus, textarea:focus {
   var elegido = null;
   var horariosCache = [];
 
+  /* Dos idiomas, un solo archivo. La página en inglés enlaza aquí con ?lang=en;
+     todo lo demás —los horarios, la agenda, el correo de confirmación— es el
+     mismo sistema. Traducir la interfaz no es traducir el negocio. */
+  var params = new URLSearchParams(location.search);
+  var EN = params.get("lang") === "en";
+  var T = EN
+    ? {
+        rotulo: "Free consultation",
+        titulo: "Pick your time",
+        bajada1: "It's ", bajada2: "30 minutes", bajada3: ", no cost and no strings attached. You leave with a clear map of what can be automated in your company and what it would cost.",
+        cargando: "Checking the calendar…",
+        zona: "Ecuador time · 30 min",
+        cambiar: "Change",
+        campoNombre: "Your name", campoContacto: "Email or WhatsApp",
+        campoEmpresa: "Company", campoMotivo: "What would you like to solve?",
+        opcional: "(optional)",
+        enviar: "Confirm my time", enviando: "Booking…",
+        faltaNombre: "Please write your name so we can confirm.",
+        faltaContacto: "Leave us an email or a WhatsApp to confirm.",
+        sinRed: "The connection dropped. Check your internet and try again.",
+        errorGenerico: "We couldn't book it. Please try again.",
+        ocupada: "The time you picked in the email is taken. These are still free:",
+        sinAgenda: "We couldn't check the calendar right now. Write to us on ",
+        sinHoras: "There are no free times in the next two weeks. Write to us on ",
+        yBuscamos: " and we'll find a slot.",
+        yCoordinamos: " and we'll set it up right away.",
+        listoTitulo: "Done, you're booked",
+        listoCorreo: function (c) { return "We sent the confirmation to " + c + ", with the invitation for your calendar."; },
+        listoSinCorreo: function (c) { return "We'll write to " + c + " to confirm the details."; },
+        pie: "30 minutes, no cost and no strings attached.",
+      }
+    : {
+        rotulo: "Consultoría gratuita",
+        titulo: "Elige tu hora",
+        bajada1: "Son ", bajada2: "30 minutos", bajada3: ", sin compromiso y sin costo. Salimos de ahí con un mapa claro de qué se puede automatizar en tu empresa y cuánto costaría.",
+        cargando: "Consultando la agenda…",
+        zona: "hora de Ecuador · 30 min",
+        cambiar: "Cambiar",
+        campoNombre: "Tu nombre", campoContacto: "Correo o WhatsApp",
+        campoEmpresa: "Empresa", campoMotivo: "¿Qué te gustaría resolver?",
+        opcional: "(opcional)",
+        enviar: "Confirmar mi hora", enviando: "Agendando…",
+        faltaNombre: "Escribe tu nombre para poder confirmarte.",
+        faltaContacto: "Déjanos un correo o un WhatsApp donde confirmarte.",
+        sinRed: "Se cayó la conexión. Revisa tu internet e inténtalo otra vez.",
+        errorGenerico: "No se pudo agendar. Inténtalo otra vez.",
+        ocupada: "La hora que elegiste en el correo ya se ocupó. Estas siguen libres:",
+        sinAgenda: "No pudimos consultar la agenda ahora mismo. Escríbenos por ",
+        sinHoras: "No quedan horas libres en las próximas dos semanas. Escríbenos por ",
+        yBuscamos: " y buscamos un espacio.",
+        yCoordinamos: " y la coordinamos al momento.",
+        listoTitulo: "Listo, quedó agendada",
+        listoCorreo: function (c) { return "Te llegó la confirmación a " + c + ", con la invitación para tu calendario."; },
+        listoSinCorreo: function (c) { return "Te escribiremos a " + c + " para confirmarte los detalles."; },
+        pie: "Son 30 minutos, sin costo y sin compromiso.",
+      };
+  var LOCALE = EN ? "en-US" : "es-EC";
+
+  /* Pintar los textos fijos antes de que se vea nada. */
+  document.documentElement.lang = EN ? "en" : "es";
+  $("rotulo").textContent = T.rotulo;
+  $("titulo").textContent = T.titulo;
+  $("bajada").innerHTML = esc(T.bajada1) + "<strong>" + esc(T.bajada2) + "</strong>" + esc(T.bajada3);
+  $("horarios").textContent = T.cargando;
+  $("elegida-nota").textContent = T.zona;
+  $("cambiar").textContent = T.cambiar;
+  $("lbl-nombre").textContent = T.campoNombre;
+  $("lbl-contacto").textContent = T.campoContacto;
+  $("lbl-empresa").innerHTML = esc(T.campoEmpresa) + ' <span style="color:var(--texto-tenue)">' + esc(T.opcional) + "</span>";
+  $("lbl-motivo").innerHTML = esc(T.campoMotivo) + ' <span style="color:var(--texto-tenue)">' + esc(T.opcional) + "</span>";
+  $("enviar").textContent = T.enviar;
+  $("listo-titulo").textContent = T.listoTitulo;
+  $("pie-nota").textContent = T.pie;
+  if (EN) document.title = "Book your consultation — Intellectum AI Solutions";
+
   /* La hora puede venir ya elegida desde un botón del correo (?h=1708-1430).
      Si para cuando abren el correo ya se ocupó, no se finge: se dice y se
      ofrecen las que sí quedan. */
@@ -310,23 +387,41 @@ input:focus, textarea:focus {
     return d.innerHTML;
   }
 
+  /* La API devuelve el día y la hora ya escritos en español, y además el ISO
+     crudo. En inglés se reescriben aquí; así la API no tiene que saber idiomas
+     y el correo —que no puede formatear nada— sigue recibiendo las palabras
+     hechas. */
+  function conIdioma(h) {
+    if (!EN || !h.inicio) return h;
+    var f = new Date(h.inicio);
+    var op = { timeZone: "America/Guayaquil" };
+    return {
+      codigo: h.codigo,
+      inicio: h.inicio,
+      dia: new Intl.DateTimeFormat(LOCALE, Object.assign({ weekday: "long", day: "numeric", month: "long" }, op)).format(f),
+      hora: new Intl.DateTimeFormat(LOCALE, Object.assign({ hour: "2-digit", minute: "2-digit", hour12: false }, op)).format(f),
+      etiqueta: new Intl.DateTimeFormat(LOCALE, Object.assign({ weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", hour12: false }, op)).format(f),
+    };
+  }
+
   function cargar() {
     fetch("/api/agenda")
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function (d) {
-        horariosCache = d.horarios || [];
+        horariosCache = (d.horarios || []).map(conIdioma);
         pintar(horariosCache);
         if (pedida) {
           var hay = horariosCache.filter(function (h) { return h.codigo === pedida; })[0];
           if (hay) elegir(hay);
-          else avisarArriba("La hora que elegiste en el correo ya se ocupó. Estas siguen libres:");
+          else avisarArriba(T.ocupada);
         }
       })
       .catch(function () {
         $("horarios").className = "vacio";
         $("horarios").innerHTML =
-          "No pudimos consultar la agenda ahora mismo. Escríbenos por " +
-          '<a href="https://wa.me/593967518060" style="color:var(--cian-claro)">WhatsApp</a> y la coordinamos al momento.';
+          esc(T.sinAgenda) +
+          '<a href="https://wa.me/593967518060" style="color:var(--cian-claro)">WhatsApp</a>' +
+          esc(T.yCoordinamos);
       });
   }
 
@@ -343,8 +438,9 @@ input:focus, textarea:focus {
     if (!horarios.length) {
       caja.className = "vacio";
       caja.innerHTML =
-        "No quedan horas libres en las próximas dos semanas. Escríbenos por " +
-        '<a href="https://wa.me/593967518060" style="color:var(--cian-claro)">WhatsApp</a> y buscamos un espacio.';
+        esc(T.sinHoras) +
+        '<a href="https://wa.me/593967518060" style="color:var(--cian-claro)">WhatsApp</a>' +
+        esc(T.yBuscamos);
       return;
     }
 
@@ -406,12 +502,12 @@ input:focus, textarea:focus {
 
     var nombre = $("nombre").value.trim();
     var contacto = $("contacto").value.trim();
-    if (!nombre) return mostrarError("Escribe tu nombre para poder confirmarte.");
-    if (!contacto) return mostrarError("Déjanos un correo o un WhatsApp donde confirmarte.");
+    if (!nombre) return mostrarError(T.faltaNombre);
+    if (!contacto) return mostrarError(T.faltaContacto);
 
     var boton = $("enviar");
     boton.disabled = true;
-    boton.textContent = "Agendando…";
+    boton.textContent = T.enviando;
     $("error").classList.add("oculto");
 
     fetch("/api/agenda", {
@@ -429,29 +525,29 @@ input:focus, textarea:focus {
       .then(function (res) {
         if (!res.ok) {
           boton.disabled = false;
-          boton.textContent = "Confirmar mi hora";
-          mostrarError(res.d.error || "No se pudo agendar. Inténtalo otra vez.");
+          boton.textContent = T.enviar;
+          mostrarError(res.d.error || T.errorGenerico);
           if (res.d.recargar) {
             $("paso-datos").classList.add("oculto");
             $("paso-elegir").classList.remove("oculto");
             $("horarios").className = "cargando";
-            $("horarios").textContent = "Actualizando la agenda…";
+            $("horarios").textContent = T.cargando;
             elegido = null;
             cargar();
           }
           return;
         }
         $("paso-datos").classList.add("oculto");
-        $("listo-cuando").textContent = res.d.cuando;
+        $("listo-cuando").textContent = elegido ? elegido.etiqueta : res.d.cuando;
         $("listo-detalle").textContent = res.d.correoLlego
-          ? "Te llegó la confirmación a " + res.d.contacto + ", con la invitación para tu calendario."
-          : "Te escribiremos a " + res.d.contacto + " para confirmarte los detalles.";
+          ? T.listoCorreo(res.d.contacto)
+          : T.listoSinCorreo(res.d.contacto);
         $("paso-listo").classList.remove("oculto");
       })
       .catch(function () {
         boton.disabled = false;
-        boton.textContent = "Confirmar mi hora";
-        mostrarError("Se cayó la conexión. Revisa tu internet e inténtalo otra vez.");
+        boton.textContent = T.enviar;
+        mostrarError(T.sinRed);
       });
   });
 

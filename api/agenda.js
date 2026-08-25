@@ -141,7 +141,10 @@ function presentar(slot) {
   const hora = new Intl.DateTimeFormat("es-EC", {
     timeZone: "America/Guayaquil", hour: "2-digit", minute: "2-digit", hour12: false,
   }).format(fecha);
-  return { codigo: slot.codigo, dia, hora, etiqueta: slot.etiqueta };
+  // El ISO va además de lo ya escrito: el correo no puede formatear fechas y
+  // necesita las palabras hechas, pero la página sí puede, y así escribe el día
+  // en el idioma de quien mira sin que la API tenga que saber de idiomas.
+  return { codigo: slot.codigo, dia, hora, etiqueta: slot.etiqueta, inicio: slot.inicio };
 }
 
 function limpiar(valor, tope) {
