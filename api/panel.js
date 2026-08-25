@@ -37,7 +37,7 @@ import {
   inicioDesdeCodigo,
   invitacionICS,
 } from "../lib/calendario.js";
-import { enviarConfirmacionCita } from "../lib/leads.js";
+import { enviarConfirmacionCita, enviarHorariosPorCorreo } from "../lib/leads.js";
 import { enviarCancelacionWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
 import { claveCorrecta } from "../lib/acceso.js";
 
@@ -293,6 +293,25 @@ export default async function handler(req, res) {
 
         const [correoEnviado, whatsappEnviado] = await Promise.all([promesaCorreo, promesaWhatsApp]);
 
+        // Encima de la disculpa, la solución: las horas libres de verdad, cada
+        // una a un clic. Cancelarle la cita a alguien y dejarlo con un
+        // "escríbenos para reagendar" es devolverle el trabajo que le causamos.
+        if (String(cita.contacto ?? "").includes("@")) {
+          horariosLibres({ maximo: 12, diasMaximos: 3 })
+            .then((libres) =>
+              enviarHorariosPorCorreo({
+                para: cita.contacto,
+                nombre: cita.nombre,
+                horarios: libres.map(paraCorreo),
+                asunto: "Repongamos tu consultoría — elige la hora que te sirva",
+                intro:
+                  "Como tuvimos que cancelar la hora que tenías, aquí están las que están " +
+                  "libres ahora mismo. Toca la que te sirva y queda agendada al instante.",
+              }),
+            )
+            .catch((err) => console.error("[PANEL] no se pudieron mandar horarios:", err?.message ?? err));
+        }
+
         await almacen
           .registrarEvento({
             tipo: "herramienta_ejecutada",
@@ -443,4 +462,23 @@ async function leerJson(req) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Un horario tal como lo necesita el correo: el día y la hora ya escritos para
+ * Ecuador. Un correo no corre código, así que no puede formatear una fecha: le
+ * tienen que llegar las palabras hechas.
+ */
+function paraCorreo(slot) {
+  const f = new Date(slot.inicio);
+  return {
+    codigo: slot.codigo,
+    etiqueta: slot.etiqueta,
+    dia: new Intl.DateTimeFormat("es-EC", {
+      timeZone: "America/Guayaquil", weekday: "long", day: "numeric", month: "long",
+    }).format(f),
+    hora: new Intl.DateTimeFormat("es-EC", {
+      timeZone: "America/Guayaquil", hour: "2-digit", minute: "2-digit", hour12: false,
+    }).format(f),
+  };
 }

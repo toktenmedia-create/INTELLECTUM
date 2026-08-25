@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Agenda tu consultoría — Intellectum AI Solutions</title>
+<meta name="description" content="Elige la hora de tu consultoría gratuita de 30 minutos con Intellectum AI Solutions." />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Geist:wght@300..600&display=swap" rel="stylesheet" />
+<style>
+/* La misma paleta del sitio. Si cambia allá, cambia aquí. */
+:root {
+  --bg: #08090b;
+  --bg-elev: #0d0f12;
+  --card: rgba(255, 255, 255, 0.025);
+  --card-hover: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-fuerte: rgba(255, 255, 255, 0.16);
+  --texto: #f7f8f8;
+  --texto-dim: #a6adb0;
+  --texto-tenue: #737d81;
+  --cian: #22d3ee;
+  --cian-claro: #67e8f9;
+  --cian-hondo: #0891b2;
+  --cian-tinte: rgba(34, 211, 238, 0.08);
+  --cian-borde: rgba(34, 211, 238, 0.28);
+  --rojo: #f87171;
+  --display: "Fraunces", "Times New Roman", serif;
+  --sans: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* Las curvas nativas de CSS son demasiado tibias para que una interfaz
+     se sienta viva. Estas son las mismas que usa el resto del sitio. */
+  --salida: cubic-bezier(0.23, 1, 0.32, 1);
+  --entre: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--texto);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(20px, 5vw, 56px) clamp(16px, 4vw, 32px) 48px;
+}
+
+/* Un resplandor detrás de la tarjeta: la marca sin robarle atención al contenido. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20% 0 auto 50%;
+  width: min(900px, 130vw);
+  height: 620px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(34, 211, 238, 0.13), transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.envoltorio { position: relative; z-index: 1; width: 100%; max-width: 620px; }
+
+/* ── Encabezado ───────────────────────────────────────────────────────────── */
+.marca { display: flex; align-items: center; gap: 11px; margin-bottom: clamp(28px, 6vw, 44px); }
+.marca img { height: 34px; width: auto; }
+.marca span {
+  font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--texto-tenue); font-weight: 500;
+}
+
+h1 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(30px, 6.5vw, 44px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin-bottom: 12px;
+}
+.bajada { color: var(--texto-dim); font-size: clamp(15px, 3.4vw, 16.5px); max-width: 46ch; }
+.bajada strong { color: var(--texto); font-weight: 500; }
+
+/* ── Horarios ─────────────────────────────────────────────────────────────── */
+.dia { margin-top: 30px; }
+.dia-titulo {
+  font-size: 11.5px; letter-spacing: 0.11em; text-transform: uppercase;
+  color: var(--texto-tenue); font-weight: 500; margin-bottom: 11px;
+}
+.horas { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.hora {
+  appearance: none;
+  font: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 11px 18px;
+  cursor: pointer;
+  /* Propiedades exactas, nunca "all": lo demás son fotogramas tirados. */
+  transition:
+    background-color 160ms var(--salida),
+    border-color 160ms var(--salida),
+    color 160ms var(--salida),
+    transform 130ms var(--salida);
+  /* Entran escalonadas: --i lo pone el JS. Nunca desde scale(0): nada en el
+     mundo real aparece de la nada. */
+  opacity: 0;
+  animation: asomar 320ms var(--salida) forwards;
+  animation-delay: calc(var(--i, 0) * 42ms);
+}
+
+@keyframes asomar {
+  from { opacity: 0; transform: translateY(7px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* El hover solo donde hay ratón de verdad: en pantallas táctiles se dispara
+   al tocar y deja el botón "pegado" en estado hover. */
+@media (hover: hover) and (pointer: fine) {
+  .hora:hover { background: var(--card-hover); border-color: var(--border-fuerte); }
+}
+.hora:active { transform: scale(0.97); }
+.hora:focus-visible { outline: 2px solid var(--cian); outline-offset: 2px; }
+
+.hora[aria-pressed="true"] {
+  background: var(--cian-tinte);
+  border-color: var(--cian-borde);
+  color: var(--cian-claro);
+}
+
+/* ── Formulario ───────────────────────────────────────────────────────────── */
+.tarjeta {
+  margin-top: 30px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: clamp(20px, 4.5vw, 28px);
+}
+.elegida {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.elegida-hora { font-family: var(--display); font-size: 20px; color: var(--cian-claro); }
+.elegida-nota { font-size: 13.5px; color: var(--texto-tenue); }
+.cambiar {
+  appearance: none; background: none; border: none; font: inherit; font-size: 13.5px;
+  color: var(--texto-dim); text-decoration: underline; text-underline-offset: 3px;
+  cursor: pointer; padding: 0; margin-left: auto;
+  transition: color 140ms var(--salida);
+}
+.cambiar:hover { color: var(--texto); }
+
+.campo { margin-bottom: 15px; }
+label { display: block; font-size: 12.5px; color: var(--texto-dim); margin-bottom: 6px; }
+input, textarea {
+  width: 100%; font: inherit; font-size: 15.5px; color: var(--texto);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 13px;
+  transition: border-color 150ms var(--salida), background-color 150ms var(--salida);
+}
+textarea { resize: vertical; min-height: 74px; line-height: 1.5; }
+input::placeholder, textarea::placeholder { color: var(--texto-tenue); }
+input:focus, textarea:focus {
+  outline: none; border-color: var(--cian-borde); background: rgba(255, 255, 255, 0.05);
+}
+
+.enviar {
+  appearance: none; font: inherit; font-size: 15.5px; font-weight: 500;
+  width: 100%; margin-top: 6px; padding: 14px 20px;
+  color: #04191d; background: var(--cian); border: none; border-radius: 11px;
+  cursor: pointer;
+  transition: background-color 160ms var(--salida), transform 130ms var(--salida), opacity 160ms var(--salida);
+}
+@media (hover: hover) and (pointer: fine) { .enviar:hover { background: var(--cian-claro); } }
+.enviar:active { transform: scale(0.985); }
+.enviar:disabled { opacity: 0.55; cursor: default; transform: none; }
+.enviar:focus-visible { outline: 2px solid var(--cian-claro); outline-offset: 3px; }
+
+/* ── Estados ──────────────────────────────────────────────────────────────── */
+.aviso {
+  margin-top: 18px; padding: 13px 15px; border-radius: 11px; font-size: 14.5px;
+  background: rgba(248, 113, 113, 0.09); border: 1px solid rgba(248, 113, 113, 0.28);
+  color: #fca5a5;
+}
+.cargando, .vacio { margin-top: 30px; color: var(--texto-tenue); font-size: 15px; }
+
+.listo { text-align: center; padding: clamp(28px, 6vw, 44px) 0; }
+.listo-marca {
+  width: 54px; height: 54px; margin: 0 auto 22px;
+  border-radius: 50%; border: 1.5px solid var(--cian-borde); background: var(--cian-tinte);
+  display: grid; place-items: center;
+  /* Desde 0.9, no desde 0, y con la curva de entrada. */
+  animation: sellar 420ms var(--salida) both;
+}
+@keyframes sellar {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.listo-marca svg { width: 24px; height: 24px; stroke: var(--cian-claro); }
+.listo h2 { font-family: var(--display); font-weight: 500; font-size: clamp(24px, 5.5vw, 30px); margin-bottom: 10px; }
+.listo p { color: var(--texto-dim); max-width: 40ch; margin: 0 auto 8px; }
+.listo .cuando { color: var(--cian-claro); font-size: 18px; font-family: var(--display); }
+
+.pie {
+  margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--texto-tenue); display: flex; flex-wrap: wrap; gap: 6px 18px;
+}
+.pie a { color: var(--texto-dim); text-decoration: none; }
+.pie a:hover { color: var(--cian-claro); }
+
+.oculto { display: none !important; }
+
+/* Menos movimiento no es cero movimiento: se conservan los cambios de opacidad,
+   que ayudan a entender qué apareció, y se quita el desplazamiento. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .hora { opacity: 1; animation: none; }
+}
+</style>
+</head>
+<body>
+<main class="envoltorio">
+  <a class="marca" href="/" aria-label="Intellectum AI Solutions">
+    <img src="/logo-nav.webp" alt="" width="120" height="34" />
+    <span>Consultoría gratuita</span>
+  </a>
+
+  <div id="paso-elegir">
+    <h1>Elige tu hora</h1>
+    <p class="bajada">Son <strong>30 minutos</strong>, sin compromiso y sin costo. Salimos de ahí con un mapa claro de qué se puede automatizar en tu empresa y cuánto costaría.</p>
+    <div id="horarios" class="cargando">Consultando la agenda…</div>
+  </div>
+
+  <div id="paso-datos" class="tarjeta oculto">
+    <div class="elegida">
+      <span class="elegida-hora" id="elegida-hora"></span>
+      <span class="elegida-nota">hora de Ecuador · 30 min</span>
+      <button type="button" class="cambiar" id="cambiar">Cambiar</button>
+    </div>
+    <form id="formulario" novalidate>
+      <div class="campo">
+        <label for="nombre">Tu nombre</label>
+        <input id="nombre" name="nombre" autocomplete="name" required maxlength="80" placeholder="Ana Carrión" />
+      </div>
+      <div class="campo">
+        <label for="contacto">Correo o WhatsApp</label>
+        <input id="contacto" name="contacto" autocomplete="email" required maxlength="120" placeholder="ana@empresa.com" />
+      </div>
+      <div class="campo">
+        <label for="empresa">Empresa <span style="color:var(--texto-tenue)">(opcional)</span></label>
+        <input id="empresa" name="empresa" autocomplete="organization" maxlength="80" placeholder="Veterinaria Cumbayá" />
+      </div>
+      <div class="campo">
+        <label for="motivo">¿Qué te gustaría resolver? <span style="color:var(--texto-tenue)">(opcional)</span></label>
+        <textarea id="motivo" name="motivo" maxlength="400" placeholder="Se nos escapan mensajes de WhatsApp y agendar citas nos consume horas."></textarea>
+      </div>
+      <button type="submit" class="enviar" id="enviar">Confirmar mi hora</button>
+      <div id="error" class="aviso oculto" role="alert"></div>
+    </form>
+  </div>
+
+  <div id="paso-listo" class="listo oculto">
+    <div class="listo-marca">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+    </div>
+    <h2>Listo, quedó agendada</h2>
+    <p class="cuando" id="listo-cuando"></p>
+    <p id="listo-detalle"></p>
+  </div>
+
+  <footer class="pie">
+    <a href="mailto:info@intellectum.ec">info@intellectum.ec</a>
+    <a href="https://wa.me/593967518060">WhatsApp +593 96 751 8060</a>
+    <a href="/">intellectum.ec</a>
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var elegido = null;
+  var horariosCache = [];
+
+  /* La hora puede venir ya elegida desde un botón del correo (?h=1708-1430).
+     Si para cuando abren el correo ya se ocupó, no se finge: se dice y se
+     ofrecen las que sí quedan. */
+  var pedida = new URLSearchParams(location.search).get("h");
+
+  function esc(t) {
+    var d = document.createElement("div");
+    d.textContent = t == null ? "" : String(t);
+    return d.innerHTML;
+  }
+
+  function cargar() {
+    fetch("/api/agenda")
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (d) {
+        horariosCache = d.horarios || [];
+        pintar(horariosCache);
+        if (pedida) {
+          var hay = horariosCache.filter(function (h) { return h.codigo === pedida; })[0];
+          if (hay) elegir(hay);
+          else avisarArriba("La hora que elegiste en el correo ya se ocupó. Estas siguen libres:");
+        }
+      })
+      .catch(function () {
+        $("horarios").className = "vacio";
+        $("horarios").innerHTML =
+          "No pudimos consultar la agenda ahora mismo. Escríbenos por " +
+          '<a href="https://wa.me/593967518060" style="color:var(--cian-claro)">WhatsApp</a> y la coordinamos al momento.';
+      });
+  }
+
+  function avisarArriba(texto) {
+    var p = document.createElement("p");
+    p.className = "aviso";
+    p.textContent = texto;
+    p.style.marginTop = "18px";
+    $("paso-elegir").insertBefore(p, $("horarios"));
+  }
+
+  function pintar(horarios) {
+    var caja = $("horarios");
+    if (!horarios.length) {
+      caja.className = "vacio";
+      caja.innerHTML =
+        "No quedan horas libres en las próximas dos semanas. Escríbenos por " +
+        '<a href="https://wa.me/593967518060" style="color:var(--cian-claro)">WhatsApp</a> y buscamos un espacio.';
+      return;
+    }
+
+    /* Agrupadas por día: una lista de doce horas sueltas no se puede leer. */
+    var porDia = [];
+    horarios.forEach(function (h) {
+      var grupo = porDia.filter(function (g) { return g.dia === h.dia; })[0];
+      if (!grupo) { grupo = { dia: h.dia, horas: [] }; porDia.push(grupo); }
+      grupo.horas.push(h);
+    });
+
+    var n = 0;
+    caja.className = "";
+    caja.innerHTML = porDia
+      .map(function (g) {
+        return (
+          '<div class="dia"><div class="dia-titulo">' + esc(g.dia) + "</div><div class=\"horas\">" +
+          g.horas
+            .map(function (h) {
+              return (
+                '<button type="button" class="hora" data-codigo="' + esc(h.codigo) +
+                '" aria-pressed="false" style="--i:' + n++ + '">' + esc(h.hora) + "</button>"
+              );
+            })
+            .join("") +
+          "</div></div>"
+        );
+      })
+      .join("");
+
+    caja.querySelectorAll(".hora").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var h = horariosCache.filter(function (x) { return x.codigo === b.dataset.codigo; })[0];
+        if (h) elegir(h);
+      });
+    });
+  }
+
+  function elegir(h) {
+    elegido = h;
+    $("elegida-hora").textContent = h.etiqueta;
+    $("paso-elegir").classList.add("oculto");
+    $("paso-datos").classList.remove("oculto");
+    $("error").classList.add("oculto");
+    /* El foco va al primer campo: quien llega por teclado no debería tener que
+       buscar dónde escribir. */
+    setTimeout(function () { $("nombre").focus(); }, 60);
+  }
+
+  $("cambiar").addEventListener("click", function () {
+    elegido = null;
+    $("paso-datos").classList.add("oculto");
+    $("paso-elegir").classList.remove("oculto");
+  });
+
+  $("formulario").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (!elegido) return;
+
+    var nombre = $("nombre").value.trim();
+    var contacto = $("contacto").value.trim();
+    if (!nombre) return mostrarError("Escribe tu nombre para poder confirmarte.");
+    if (!contacto) return mostrarError("Déjanos un correo o un WhatsApp donde confirmarte.");
+
+    var boton = $("enviar");
+    boton.disabled = true;
+    boton.textContent = "Agendando…";
+    $("error").classList.add("oculto");
+
+    fetch("/api/agenda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        codigo: elegido.codigo,
+        nombre: nombre,
+        contacto: contacto,
+        empresa: $("empresa").value.trim(),
+        motivo: $("motivo").value.trim(),
+      }),
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok) {
+          boton.disabled = false;
+          boton.textContent = "Confirmar mi hora";
+          mostrarError(res.d.error || "No se pudo agendar. Inténtalo otra vez.");
+          if (res.d.recargar) {
+            $("paso-datos").classList.add("oculto");
+            $("paso-elegir").classList.remove("oculto");
+            $("horarios").className = "cargando";
+            $("horarios").textContent = "Actualizando la agenda…";
+            elegido = null;
+            cargar();
+          }
+          return;
+        }
+        $("paso-datos").classList.add("oculto");
+        $("listo-cuando").textContent = res.d.cuando;
+        $("listo-detalle").textContent = res.d.correoLlego
+          ? "Te llegó la confirmación a " + res.d.contacto + ", con la invitación para tu calendario."
+          : "Te escribiremos a " + res.d.contacto + " para confirmarte los detalles.";
+        $("paso-listo").classList.remove("oculto");
+      })
+      .catch(function () {
+        boton.disabled = false;
+        boton.textContent = "Confirmar mi hora";
+        mostrarError("Se cayó la conexión. Revisa tu internet e inténtalo otra vez.");
+      });
+  });
+
+  function mostrarError(texto) {
+    $("error").textContent = texto;
+    $("error").classList.remove("oculto");
+  }
+
+  cargar();
+})();
+</script>
+</body>
+</html>
