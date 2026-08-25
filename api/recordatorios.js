@@ -42,12 +42,14 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "No autorizado" });
   }
 
+  const almacen = abrirAlmacen();
+
   // 0. El reloj de retención: borra de la base lo que ya venció su plazo.
   // Corre aunque la agenda no esté conectada — cumplir el aviso de privacidad
   // no puede depender de que Google Calendar esté de buenas. Y si falla, se
   // anota y se sigue: mañana vuelve a intentar, que para eso es diario.
   try {
-    const barrido = await abrirAlmacen().limpiarVencidos();
+    const barrido = await almacen.limpiarVencidos();
     const borrados = (barrido ?? []).filter((f) => f.borrados > 0);
     if (borrados.length > 0) console.log("[RETENCION]", JSON.stringify(borrados));
   } catch (err) {
@@ -64,7 +66,7 @@ export default async function handler(req, res) {
     new URL(req.url ?? "/", "http://interno").searchParams.get("respaldo") === "ahora";
   if (hoyEnEcuador.getUTCDay() === 0 || respaldoForzado) {
     try {
-      const foto = await abrirAlmacen().respaldo();
+      const foto = await almacen.respaldo();
       const { entregado } = await enviarRespaldo({
         fecha: hoyEnEcuador.toISOString().slice(0, 10),
         contenido: foto,
@@ -105,6 +107,7 @@ export default async function handler(req, res) {
           nombre: cita.nombre,
           cuando: cita.etiqueta,
           codigo: cita.codigo,
+          bitacora: { almacen, cliente: "intellectum" },
         }));
       }
 

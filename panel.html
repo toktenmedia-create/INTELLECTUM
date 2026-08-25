@@ -613,6 +613,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
           (s.contacto ? '<div class="contacto">' + esc(s.contacto) + "</div>" : "") +
           "</div>"
         : "") +
+      bloqueConsumo(d.consumo) +
       '<h2 class="seccion">Última actividad</h2>' +
       ((d.eventos || []).map(filaActividad).join("") ||
         '<div class="vacio">Sin actividad todavía.</div>') +
@@ -621,6 +622,44 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     v.querySelectorAll("[data-ir]").forEach(function (el) {
       el.addEventListener("click", function () { irA(el.dataset.ir); });
     });
+  }
+
+  /* CUÁNTOS MENSAJES CUESTA UNA CONVERSACIÓN.
+     Desde el 1 de octubre de 2026 Meta cobra por mensaje entregado, no por
+     conversación. Los topes de cada plan se calcularon sobre una estimación;
+     este bloque la reemplaza por la cuenta real. Sin conversaciones todavía
+     lo dice con todas sus letras, en vez de enseñar un cero que parece dato. */
+  function bloqueConsumo(c) {
+    if (!c) return "";
+    var titulo = '<h2 class="seccion">Mensajes de WhatsApp (últimos 30 días)</h2>';
+
+    if (!c.entregados || !c.entregados.total)
+      return titulo + '<div class="vacio">Todavía no ha salido ningún mensaje. ' +
+        'Cuando IntelliA empiece a atender por WhatsApp, aquí verás cuántos ' +
+        'mensajes entrega en cada conversación.</div>';
+
+    if (!c.conversaciones)
+      return titulo + '<div class="vacio">' + esc(c.entregados.al_equipo) +
+        ' aviso' + (c.entregados.al_equipo === 1 ? "" : "s") + ' interno' +
+        (c.entregados.al_equipo === 1 ? "" : "s") + ', ninguna conversación con clientes.</div>';
+
+    return titulo +
+      '<div class="stats">' +
+      stat(Number(c.por_conversacion).toLocaleString("es-EC"), "mensajes por conversación") +
+      stat(c.conversaciones, "conversaciones") +
+      stat(c.entregados.a_clientes, "mensajes a clientes") +
+      stat(c.por_tipo.plantilla, "con plantilla") +
+      "</div>" +
+      (c.entregados.al_equipo
+        ? '<div class="vacio">Aparte, ' + esc(c.entregados.al_equipo) +
+          ' aviso' + (c.entregados.al_equipo === 1 ? "" : "s") +
+          ' interno' + (c.entregados.al_equipo === 1 ? "" : "s") +
+          ' al equipo (no cuentan como atención al cliente).</div>'
+        : "") +
+      (c.truncado
+        ? '<div class="vacio">⚠ Hay más mensajes de los que se alcanzaron a leer: ' +
+          'el promedio es de una muestra, no del total.</div>'
+        : "");
   }
 
   function stat(n, label, ir) {

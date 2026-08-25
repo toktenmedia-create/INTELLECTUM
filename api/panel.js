@@ -130,7 +130,12 @@ export default async function handler(req, res) {
           return responderJson(res, 400, { error: "Falta el número o el mensaje" });
         }
 
-        const envio = await enviarTextoWhatsApp({ para: sesion, texto });
+        const envio = await enviarTextoWhatsApp({
+          para: sesion,
+          texto,
+          bitacora: { almacen, cliente: "intellectum" },
+          motivo: "panel",
+        });
         if (!envio.entregado) {
           // 131047 es el código de Meta para "fuera de la ventana de 24 horas".
           const ventana = String(envio.detalle ?? "").includes("131047");
@@ -208,6 +213,8 @@ export default async function handler(req, res) {
             `movida del ${cita.etiqueta} al ${movida.etiqueta} (hora de Ecuador). La invitación ` +
             `nueva ya va en camino a tu correo. Si esa hora no te sirve, respóndenos por aquí y ` +
             `buscamos otra.`,
+          bitacora: { almacen, cliente: "intellectum" },
+          motivo: "cita_movida",
         })
           .then((r) => Boolean(r?.entregado))
           .catch(() => false);
@@ -280,6 +287,7 @@ export default async function handler(req, res) {
           para: cita.telefono || cita.contacto,
           nombre: cita.nombre,
           cuando: cita.etiqueta,
+          bitacora: { almacen, cliente: "intellectum" },
         }).then((r) => Boolean(r?.entregado));
 
         const [correoEnviado, whatsappEnviado] = await Promise.all([promesaCorreo, promesaWhatsApp]);
@@ -316,11 +324,15 @@ export default async function handler(req, res) {
     const vista = url.searchParams.get("vista") ?? "resumen";
 
     if (vista === "resumen") {
-      const [leads, conversaciones, eventos, citas] = await Promise.all([
+      const [leads, conversaciones, eventos, citas, consumo] = await Promise.all([
         almacen.listarLeads({ limite: 200 }),
         almacen.listarConversaciones({ limite: 100 }),
         almacen.listarEventos({ limite: 10 }),
         agendaConfigurada() ? citasProximas().catch(() => []) : Promise.resolve([]),
+        // Cuántos mensajes se entregan por conversación: el número del que
+        // depende el margen desde que Meta cobra por mensaje. Si falla, el
+        // panel entero no puede caerse por un contador.
+        almacen.consumoDeMensajes?.({ dias: 30 }).catch(() => null) ?? null,
       ]);
 
       const hace = (dias) => new Date(Date.now() - dias * 86_400_000).toISOString();
@@ -329,6 +341,7 @@ export default async function handler(req, res) {
       return responderJson(res, 200, {
         persistente: esPersistente(),
         guardadoEn: dondeSeGuarda(),
+        consumo,
         leads: {
           total: leads.length,
           ultimos7: leads.filter((l) => l.creado_en >= d7).length,

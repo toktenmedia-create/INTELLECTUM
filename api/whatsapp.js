@@ -32,7 +32,7 @@ import { waitUntil } from "@vercel/functions";
 import { responder } from "../lib/brain.js";
 import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
-import { avisarEquipoWhatsApp } from "../lib/mensajeria.js";
+import { avisarEquipoWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
 // tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
@@ -116,6 +116,8 @@ async function procesar(valor, mensaje) {
 
   avisarSiLaMemoriaEsFragil();
   const almacen = abrirAlmacen();
+  // Con esto viaja el contador de mensajes entregados hasta lib/mensajeria.js.
+  const bitacora = { almacen, cliente: "intellectum" };
 
   // ¿Esta huella ya pasó por aquí? Si la bitácora no contesta, se sigue:
   // ante la duda es mejor arriesgar un duplicado rarísimo que callar siempre.
@@ -151,7 +153,7 @@ async function procesar(valor, mensaje) {
       // base tosa. Pero queda gritado en el registro para arreglarlo a mano.
       console.error("[BAJA] ¡no se pudo registrar la baja de", numero + "!:", err?.message ?? err);
     }
-    await enviarWhatsApp(numero, MENSAJE_BAJA).catch((err) =>
+    await enviarWhatsApp(numero, MENSAJE_BAJA, { bitacora, motivo: "baja" }).catch((err) =>
       console.error("[BAJA] no se pudo confirmar:", err?.message ?? err),
     );
     return;
@@ -187,7 +189,7 @@ async function procesar(valor, mensaje) {
 
     // Primero se envía y después se guarda: si fallara el orden inverso,
     // quedaría escrita una respuesta que la persona nunca recibió.
-    await enviarWhatsApp(numero, respuesta);
+    await enviarWhatsApp(numero, respuesta, { bitacora, motivo: "respuesta" });
 
     // ...pero la memoria guarda solo texto. Guardar la foto en el historial
     // la volvería a mandar al modelo en cada mensaje siguiente, pagándola
@@ -213,10 +215,10 @@ async function procesar(valor, mensaje) {
     console.error("[WHATSAPP] error procesando el mensaje:", err?.message ?? err);
     // Ya le dijimos 200 a Meta, así que nadie va a reintentar por nosotros.
     // Antes que el silencio, una disculpa honesta con el contacto del equipo.
-    await enviarWhatsApp(numero, MENSAJE_TROPIEZO).catch(() => {});
+    await enviarWhatsApp(numero, MENSAJE_TROPIEZO, { bitacora, motivo: "tropiezo" }).catch(() => {});
     // Y que el dueño se entere HOY: desde que el WhatsApp público lo atiende
     // IntelliA, un fallo aquí es un cliente perdido, no una línea de registro.
-    avisarDelTropiezo(numero, err);
+    avisarDelTropiezo(numero, err, bitacora);
   }
 }
 
@@ -231,7 +233,7 @@ async function procesar(valor, mensaje) {
 const ESPERA_ENTRE_AVISOS_MS = 10 * 60 * 1000;
 let ultimoAviso = 0;
 
-function avisarDelTropiezo(numero, err) {
+function avisarDelTropiezo(numero, err, bitacora) {
   const ahora = Date.now();
   if (ahora - ultimoAviso < ESPERA_ENTRE_AVISOS_MS) return;
   ultimoAviso = ahora;
@@ -242,6 +244,7 @@ function avisarDelTropiezo(numero, err) {
     texto:
       `no pude atender un mensaje de WhatsApp (número terminado en ${ultimos}). ` +
       `Le pedí disculpas y le di el correo y el teléfono. Motivo: ${motivo}`,
+    bitacora,
   }).catch(() => {});
 }
 
@@ -348,22 +351,21 @@ async function marcarLeido(idMensaje) {
   });
 }
 
-async function enviarWhatsApp(numero, texto) {
-  const respuesta = await fetch(`${GRAPH}/${process.env.META_PHONE_NUMBER_ID}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.META_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: numero,
-      type: "text",
-      text: { body: texto.slice(0, 4000) },
-    }),
+/**
+ * Manda texto por el camino común de lib/mensajeria.js, que es el único que
+ * cuenta lo entregado. Lanza si no salió: quien llama decide si eso es fatal
+ * (la respuesta al cliente) o cosmético (una disculpa que ya venía de un
+ * error). Antes esto era un fetch propio — un segundo camino a Meta que
+ * ningún contador veía.
+ */
+async function enviarWhatsApp(numero, texto, { bitacora, motivo } = {}) {
+  const envio = await enviarTextoWhatsApp({
+    para: numero,
+    texto: texto.slice(0, 4000),
+    bitacora,
+    motivo,
   });
-
-  if (!respuesta.ok) {
-    throw new Error(`Meta respondió ${respuesta.status}: ${await respuesta.text()}`);
+  if (!envio.entregado) {
+    throw new Error(`Meta no entregó el mensaje: ${envio.detalle ?? "sin detalle"}`);
   }
 }
