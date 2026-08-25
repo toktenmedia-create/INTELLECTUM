@@ -44,6 +44,13 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/lib/:archivo*",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "cleanUrls": true,
   "trailingSlash": false,
   "crons": [
