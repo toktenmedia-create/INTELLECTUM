@@ -15,6 +15,7 @@
 
 import { responder } from "../lib/brain.js";
 import { esPersistente, dondeSeGuarda } from "../lib/almacen.js";
+import { claveCorrecta } from "../lib/acceso.js";
 
 export const config = { maxDuration: 60 };
 
@@ -91,22 +92,6 @@ export default async function handler(req, res) {
   } finally {
     res.end();
   }
-}
-
-/**
- * Comparación en tiempo constante: evita que alguien deduzca la clave midiendo
- * cuánto tarda en fallar.
- */
-function claveCorrecta(req, esperado) {
-  const cabecera = req.headers.authorization || "";
-  const recibido = cabecera.startsWith("Bearer ") ? cabecera.slice(7).trim() : "";
-  if (recibido.length !== esperado.length) return false;
-
-  let diferencia = 0;
-  for (let i = 0; i < esperado.length; i++) {
-    diferencia |= recibido.charCodeAt(i) ^ esperado.charCodeAt(i);
-  }
-  return diferencia === 0;
 }
 
 async function leerJson(req) {

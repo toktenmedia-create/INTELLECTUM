@@ -56,12 +56,38 @@ async function atenderApi(url, req, res) {
     const modulo = await import(`${archivo}?v=${Date.now()}`); // recarga en cada petición
     // Misma firma que usa Vercel: (req, res) de Node, sin envoltorios.
     if (!req.headers["x-forwarded-for"]) req.headers["x-forwarded-for"] = "127.0.0.1";
-    await modulo.default(req, res);
+    await modulo.default(req, conAyudantesDeVercel(res));
   } catch (err) {
     console.error("[dev] error en la función:", err);
     if (!res.headersSent) res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: String(err?.message ?? err) }));
   }
+}
+
+/**
+ * Vercel le cuelga al `res` de Node unos ayudantes de estilo Express que Node
+ * NO trae: res.status(), res.json(), res.send(). Sin ellos, una función escrita
+ * con res.status(200).json(...) —como las dos tareas diarias— funciona en
+ * producción y revienta en local, que es exactamente lo que este servidor
+ * existe para evitar.
+ */
+function conAyudantesDeVercel(res) {
+  res.status = (codigo) => {
+    res.statusCode = codigo;
+    return res;
+  };
+  res.json = (cuerpo) => {
+    if (!res.headersSent) res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.end(JSON.stringify(cuerpo));
+    return res;
+  };
+  res.send = (cuerpo) => {
+    if (typeof cuerpo === "object" && cuerpo !== null) return res.json(cuerpo);
+    if (!res.headersSent) res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.end(String(cuerpo ?? ""));
+    return res;
+  };
+  return res;
 }
 
 function servirArchivo(ruta, res) {

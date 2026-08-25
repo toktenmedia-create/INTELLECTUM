@@ -39,6 +39,7 @@ import {
 } from "../lib/calendario.js";
 import { enviarConfirmacionCita } from "../lib/leads.js";
 import { enviarCancelacionWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
+import { claveCorrecta } from "../lib/acceso.js";
 
 export const config = { maxDuration: 30 };
 
@@ -424,17 +425,6 @@ export default async function handler(req, res) {
     console.error("[PANEL] error:", err?.message ?? err);
     return responderJson(res, 500, { error: "No se pudo leer la información" });
   }
-}
-
-function claveCorrecta(req, esperado) {
-  const cabecera = req.headers.authorization || "";
-  const recibido = cabecera.startsWith("Bearer ") ? cabecera.slice(7).trim() : "";
-  if (recibido.length !== esperado.length) return false;
-  let diferencia = 0;
-  for (let i = 0; i < esperado.length; i++) {
-    diferencia |= recibido.charCodeAt(i) ^ esperado.charCodeAt(i);
-  }
-  return diferencia === 0;
 }
 
 function responderJson(res, codigo, datos) {

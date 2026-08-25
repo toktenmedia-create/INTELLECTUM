@@ -29,6 +29,7 @@ import {
 import { enviarRecordatorioCita, enviarAviso, enviarRespaldo } from "../lib/leads.js";
 import { enviarRecordatorioWhatsApp, whatsappSalidaConfigurada } from "../lib/mensajeria.js";
 import { abrirAlmacen } from "../lib/almacen.js";
+import { claveCorrecta } from "../lib/acceso.js";
 
 export default async function handler(req, res) {
   const esperado = process.env.CRON_SECRET;
@@ -151,16 +152,4 @@ export default async function handler(req, res) {
     console.error("[RECORDATORIOS] error:", err?.message ?? err);
     return res.status(500).json({ error: "Falló la tarea" });
   }
-}
-
-/** Comparación en tiempo constante, igual que en el agente privado. */
-function claveCorrecta(req, esperado) {
-  const cabecera = req.headers.authorization || "";
-  const recibido = cabecera.startsWith("Bearer ") ? cabecera.slice(7).trim() : "";
-  if (recibido.length !== esperado.length) return false;
-  let diferencia = 0;
-  for (let i = 0; i < esperado.length; i++) {
-    diferencia |= recibido.charCodeAt(i) ^ esperado.charCodeAt(i);
-  }
-  return diferencia === 0;
 }
