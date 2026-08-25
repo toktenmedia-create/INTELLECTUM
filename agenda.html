@@ -71,7 +71,11 @@ body::before {
 .envoltorio { position: relative; z-index: 1; width: 100%; max-width: 620px; }
 
 /* ── Encabezado ───────────────────────────────────────────────────────────── */
-.marca { display: flex; align-items: center; gap: 11px; margin-bottom: clamp(28px, 6vw, 44px); }
+.marca {
+  display: flex; align-items: center; gap: 11px;
+  margin-bottom: clamp(28px, 6vw, 44px);
+  text-decoration: none; /* es un enlace, pero el rótulo no debe verse subrayado */
+}
 .marca img { height: 34px; width: auto; }
 .marca span {
   font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
