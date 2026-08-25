@@ -51,6 +51,11 @@
       "permanent": false
     }
   ],
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": "{lib/fuentes/**,logo.png}"
+    }
+  },
   "cleanUrls": true,
   "trailingSlash": false,
   "crons": [
