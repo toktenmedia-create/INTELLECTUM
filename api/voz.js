@@ -159,11 +159,14 @@ function extraer(cuerpo) {
   // aplanan las dos cosas: los contenedores típicos de la llamada y, dentro de
   // cada uno, los contenedores típicos de las variables. Sin esto, el nombre y
   // la empresa que el agente extrajo llegarían y no los veríamos.
-  const CONTENEDORES = ["call", "data", "payload", "event", "body", "result"];
+  // "call_analysis" está CONFIRMADO en la documentación de Dapta: ahí viven
+  // call_summary y el objeto con las variables extraídas.
+  const CONTENEDORES = ["call", "data", "payload", "event", "body", "result", "call_analysis", "callAnalysis"];
   const CONTENEDORES_VARIABLES = [
     "extracted_data", "extractedData", "extracted_variables", "variables",
     "post_call_data", "postCallData", "analysis", "insights", "retrieved_data",
-    "custom_data", "metadata", "datos", "resultados",
+    "custom_data", "custom_analysis_data", "customAnalysisData",
+    "metadata", "datos", "resultados",
   ];
 
   const capas = [];
@@ -176,11 +179,19 @@ function extraer(cuerpo) {
     for (const nombre of CONTENEDORES_VARIABLES) agregar(base?.[nombre]);
   }
 
+  // El orden importa y es al revés de lo intuitivo: primero se prueba la CLAVE
+  // en todas las capas, y después se pasa a la clave siguiente. Así el nombre
+  // más preciso gana sobre el más superficial. Al revés —capa por capa— un
+  // "call_summary" genérico de la capa de arriba le ganaba al "summary" que el
+  // agente redactó siguiendo nuestras instrucciones, que es el que queremos.
+  // Y nunca se devuelve un objeto: si el valor no es un dato, no es la respuesta.
   const buscar = (...claves) => {
-    for (const capa of capas) {
-      for (const clave of claves) {
+    for (const clave of claves) {
+      for (const capa of capas) {
         const valor = capa[clave];
-        if (valor !== undefined && valor !== null && valor !== "") return valor;
+        if (valor === undefined || valor === null || valor === "") continue;
+        if (typeof valor === "object" && !Array.isArray(valor)) continue;
+        return valor;
       }
     }
     return null;
@@ -208,7 +219,7 @@ function extraer(cuerpo) {
     telefono: normalizarTelefono(telefonoCrudo) || (telefonoCrudo ? String(telefonoCrudo).slice(0, 24) : null),
     duracionSegundos: Number.isFinite(duracion) && duracion > 0 ? Math.round(duracion) : null,
     resultado: texto(buscar("outcome", "status", "result", "disposition", "call_status", "resultado")),
-    resumen: texto(buscar("summary", "resumen", "call_summary", "notes", "call_analysis", "summary_text")),
+    resumen: texto(buscar("summary", "resumen", "call_summary", "summary_text", "notes")),
     transcripcion: transcripcion || null,
     nombre: texto(buscar("name", "contact_name", "customer_name", "nombre", "lead_name")),
     empresa: texto(buscar("company", "empresa", "organization", "business")),
