@@ -154,9 +154,27 @@ export default async function handler(req, res) {
  * integrarse contra un formato no documentado sin inventárselo.
  */
 function extraer(cuerpo) {
-  // Los proveedores suelen anidar la llamada en un objeto; se aplana lo típico.
-  const capas = [cuerpo, cuerpo?.call, cuerpo?.data, cuerpo?.payload, cuerpo?.event, cuerpo?.body]
-    .filter((x) => x && typeof x === "object");
+  // Los proveedores anidan la llamada en un objeto, y las variables extraídas
+  // en OTRO objeto adentro ("Recuperación de datos post-llamada" en Dapta). Se
+  // aplanan las dos cosas: los contenedores típicos de la llamada y, dentro de
+  // cada uno, los contenedores típicos de las variables. Sin esto, el nombre y
+  // la empresa que el agente extrajo llegarían y no los veríamos.
+  const CONTENEDORES = ["call", "data", "payload", "event", "body", "result"];
+  const CONTENEDORES_VARIABLES = [
+    "extracted_data", "extractedData", "extracted_variables", "variables",
+    "post_call_data", "postCallData", "analysis", "insights", "retrieved_data",
+    "custom_data", "metadata", "datos", "resultados",
+  ];
+
+  const capas = [];
+  const agregar = (x) => { if (x && typeof x === "object" && !Array.isArray(x)) capas.push(x); };
+
+  agregar(cuerpo);
+  for (const nombre of CONTENEDORES) agregar(cuerpo?.[nombre]);
+  // Las variables pueden colgar del cuerpo o de cualquier contenedor de arriba.
+  for (const base of [...capas]) {
+    for (const nombre of CONTENEDORES_VARIABLES) agregar(base?.[nombre]);
+  }
 
   const buscar = (...claves) => {
     for (const capa of capas) {
@@ -190,7 +208,7 @@ function extraer(cuerpo) {
     telefono: normalizarTelefono(telefonoCrudo) || (telefonoCrudo ? String(telefonoCrudo).slice(0, 24) : null),
     duracionSegundos: Number.isFinite(duracion) && duracion > 0 ? Math.round(duracion) : null,
     resultado: texto(buscar("outcome", "status", "result", "disposition", "call_status", "resultado")),
-    resumen: texto(buscar("summary", "analysis", "resumen", "call_summary", "notes")),
+    resumen: texto(buscar("summary", "resumen", "call_summary", "notes", "call_analysis", "summary_text")),
     transcripcion: transcripcion || null,
     nombre: texto(buscar("name", "contact_name", "customer_name", "nombre", "lead_name")),
     empresa: texto(buscar("company", "empresa", "organization", "business")),
