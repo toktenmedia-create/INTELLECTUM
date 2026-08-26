@@ -247,7 +247,12 @@ async function escribirTrasLlamada({ almacen, llamada }) {
     // El número que confirmó en voz alta manda sobre el identificador de
     // llamada: si pidió que le escriban a otro, es a otro.
     const destino = llamada.whatsapp || llamada.telefono;
-    if (!destino) return { entregado: false, motivo: "sin_numero" };
+    if (!destino) {
+      const roto = llamada.whatsappCrudo || llamada.telefonoCrudo;
+      return roto
+        ? { entregado: false, motivo: "numero_invalido", numero: roto }
+        : { entregado: false, motivo: "sin_numero" };
+    }
 
     // DOS PREGUNTAS ANTES DE ESCRIBIR, Y SI NO SE PUEDEN RESPONDER, NO SE
     // ESCRIBE. No mandar el mensaje se arregla solo: el correo de esta misma
@@ -332,6 +337,14 @@ function lineaDeWhatsApp(escrito) {
     return `WhatsApp: ENVIADO a ${escrito.destino} (plantilla ${escrito.plantilla}).`;
   }
   if (CALLADOS.has(escrito.motivo)) return "";
+  // Este motivo lleva los dígitos dentro, así que no cabe en la tabla de arriba.
+  if (escrito.motivo === "numero_invalido") {
+    return (
+      `WhatsApp: NO se envió — se anotó "${escrito.numero}", que no es un número ` +
+      `de celular válido, y a un número mal oído no se le escribe. ` +
+      `Escúchalo en la grabación y escríbele tú.`
+    );
+  }
   return `WhatsApp: NO se envió — ${MOTIVOS[escrito.motivo] ?? `${escrito.motivo}. Escríbele tú.`}`;
 }
 
@@ -339,6 +352,7 @@ const vacia = () => ({
   telefono: null,
   telefonoCrudo: null,
   whatsapp: null,
+  whatsappCrudo: null,
   duracionSegundos: null,
   resultado: null,
   resumen: null,
@@ -522,11 +536,18 @@ function extraer(cuerpo) {
   // otro es escribirle a nadie. Si el flujo de Dapta todavía no manda esta
   // variable, queda nulo y se escribe al que llamó, que es lo de siempre.
   let whatsapp = null;
+  // El que NO pasó el filtro también se guarda. Un número con un dígito de más
+  // es inservible para escribir —y por eso no se escribe—, pero decirle al
+  // equipo "no llegó ningún número" cuando sí llegó uno mal oído es mentirle:
+  // con los dígitos delante, una persona ve el error en dos segundos.
+  let whatsappCrudo = null;
   for (const c of candidatos(
     "whatsapp", "whatsapp_number", "whatsappNumber", "numero_whatsapp",
     "whatsapp_numero", "telefono_whatsapp", "contact_whatsapp",
   ).map((v) => (Array.isArray(v) ? v[0] : v))) {
     if (c === null || c === undefined || typeof c === "object") continue;
+    const bruto = String(c).replace(/\s+/g, " ").trim();
+    if (bruto && !whatsappCrudo) whatsappCrudo = bruto.slice(0, 24);
     const n = normalizarTelefono(typeof c === "number" ? `0${c}` : c) ?? normalizarTelefono(c);
     if (n && n !== propio) { whatsapp = n; break; }
   }
@@ -578,6 +599,7 @@ function extraer(cuerpo) {
     telefono,
     telefonoCrudo: telefonoCrudo ? telefonoCrudo.slice(0, 24) : null,
     whatsapp,
+    whatsappCrudo,
     duracionSegundos:
       duracion !== null && duracion <= TOPE_DURACION ? Math.max(1, Math.round(duracion)) : null,
     resultado: texto(

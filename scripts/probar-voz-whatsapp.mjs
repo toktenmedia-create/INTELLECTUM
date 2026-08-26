@@ -109,6 +109,12 @@ await caso("pidió SALIR antes → no se escribe nunca", base({ outcome: "agendo
 console.log("\nQUE NO SE PIERDA LA LLAMADA");
 await caso("si Meta rechaza, la llamada igual se guarda (200)", base({ outcome: "agendo_diagnostico", from_number: "0999990011" }), (e, codigo) => igual(codigo, 200, "código"));
 
+console.log("\nEL NÚMERO MAL OÍDO (caso real del 26 ago 2026)");
+await caso("11 dígitos → no se escribe, pero el correo dice cuál llegó", base({ outcome: "agendo_diagnostico", from_number: "", to_number: "", whatsapp: "09840414129" }), (e) => igual(e.length, 0, "mensajes"));
+await caso("10 dígitos bien dictados → sí se escribe", base({ outcome: "agendo_diagnostico", from_number: "", to_number: "", whatsapp: "0984014129" }), (e) => {
+  igual(e.length, 1, "mensajes"); igual(e[0].to, "593984014129", "destino");
+});
+
 console.log("\nEL INTERRUPTOR");
 process.env.WHATSAPP_TRAS_LLAMADA = "no";
 await caso("apagado desde Vercel → no se escribe", base({ outcome: "agendo_diagnostico", from_number: "0991010101" }), (e) => igual(e.length, 0, "mensajes"));
