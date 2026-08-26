@@ -105,6 +105,9 @@ export default async function handler(req, res) {
         resultado: sano(llamada.resultado, 120),
         resumen: sano(llamada.resumen, 500),
         transcripcion: sano(llamada.transcripcion, TOPE_TRANSCRIPCION),
+        grabacion: llamada.grabacion,
+        corte: llamada.corte,
+        buzon: llamada.buzon,
         crudo: crudo.slice(0, TOPE_CRUDO),
       },
     });
@@ -201,6 +204,9 @@ const vacia = () => ({
   transcripcion: null,
   nombre: null,
   empresa: null,
+  grabacion: null,
+  corte: null,
+  buzon: false,
 });
 
 // ─── EL MAPEO ────────────────────────────────────────────────────────────────
@@ -328,15 +334,20 @@ function extraer(cuerpo) {
   };
 
   // ── EL TELÉFONO, que es la llave del lead y el dato que no se puede errar ──
-  // Nuestro propio número JAMÁS es el del prospecto: en una llamada saliente el
-  // "from" es el agente, y guardarlo fundiría a todos los prospectos en un solo
-  // lead. Por eso "to" y "customer_phone" van ANTES que "from", y por eso gana
-  // el primer candidato que sea un teléfono DE VERDAD, no el primero que exista.
+  // Dapta DICE si la llamada fue entrante o saliente, así que no hay que
+  // adivinar: en una entrante el prospecto es quien llama (from_number); en una
+  // saliente es a quien llamamos (to_number). Confundirlos en una saliente
+  // guardaría NUESTRO número y fundiría a todos los prospectos en un lead.
+  const direccion = String(buscar("direction") ?? "").toLowerCase();
+  const clavesTelefono =
+    direccion === "outbound"
+      ? ["to_number", "to", "customer_phone", "contact_phone", "phone", "phone_number", "phoneNumber", "telefono", "number"]
+      : ["from_number", "from", "caller", "customer_phone", "contact_phone", "phone", "phone_number", "phoneNumber", "telefono", "number"];
+
+  // Cinturón por si algún día no viene "direction": nuestro propio número nunca
+  // es el del prospecto.
   const propio = normalizarTelefono(process.env.DAPTA_NUMERO_SALIDA || "");
-  const telCandidatos = candidatos(
-    "phone", "phone_number", "phoneNumber", "telefono", "teléfono",
-    "customer_phone", "contact_phone", "caller", "to", "from", "number",
-  ).map((v) => (Array.isArray(v) ? v[0] : v));
+  const telCandidatos = candidatos(...clavesTelefono).map((v) => (Array.isArray(v) ? v[0] : v));
 
   let telefono = null;
   for (const c of telCandidatos) {
@@ -355,21 +366,27 @@ function extraer(cuerpo) {
     telefono ??
     telCandidatos
       .map((c) => (c === null || c === undefined || typeof c === "object" ? "" : String(c)))
-      .map((s) => s.replace(/\s+/g, " ").trim())
-      .find((s) => s.length > 0) ??
+      .map((x) => x.replace(/\s+/g, " ").trim())
+      .find((x) => x.length > 0) ??
     null;
 
   // ── LA DURACIÓN, con la que se va a medir el costo real por minuto ──
+  // Dapta manda DOS: total_duration_seconds (limpia) y duration_ms. La de
+  // milisegundos va primero en la lista de nadie: leída como segundos, once
+  // segundos de llamada se guardarían como tres horas y arruinarían cualquier
+  // promedio de costo. Por eso la clave decide la unidad, no el valor.
   let duracion = null;
-  for (const c of candidatos(
-    "duration", "duration_seconds", "durationSeconds", "call_duration",
-    "duracion", "call_length", "seconds",
-  )) {
-    const s = segundos(c);
-    if (s !== null && s > 0) {
-      duracion = s;
-      break;
+  for (const clave of [
+    "total_duration_seconds", "duration_seconds", "durationSeconds", "duration",
+    "call_duration", "duracion", "call_length", "seconds", "duration_ms", "durationMs",
+  ]) {
+    for (const c of candidatos(clave)) {
+      const bruto = segundos(c);
+      if (bruto === null) continue;
+      const s = clave.toLowerCase().endsWith("_ms") || clave.endsWith("Ms") ? bruto / 1000 : bruto;
+      if (s > 0) { duracion = s; break; }
     }
+    if (duracion !== null) break;
   }
 
   // ── LA TRANSCRIPCIÓN ──
@@ -408,6 +425,13 @@ function extraer(cuerpo) {
     transcripcion: texto(transcripcion),
     nombre: texto(buscar("name", "contact_name", "customer_name", "nombre", "lead_name")),
     empresa: texto(buscar("company", "empresa", "organization", "business")),
+    // La grabación es de lo más útil que manda Dapta: deja escuchar la llamada
+    // entera desde el panel en vez de leer una transcripción.
+    grabacion: texto(buscar("recording_url", "recordingUrl", "audio_url")),
+    // Por qué terminó y si fue a un buzón: distingue "colgó a los dos segundos"
+    // de "conversó cinco minutos", y eso cambia si vale la pena perseguir.
+    corte: texto(buscar("disconnection_reason", "end_reason")),
+    buzon: buscar("voicemail_detected", "in_voicemail") === true,
   };
 }
 
