@@ -339,10 +339,14 @@ function extraer(cuerpo) {
   // saliente es a quien llamamos (to_number). Confundirlos en una saliente
   // guardaría NUESTRO número y fundiría a todos los prospectos en un lead.
   const direccion = String(buscar("direction") ?? "").toLowerCase();
+  // El sentido contrario va AL FINAL de la lista, no fuera: si algún día no
+  // viniera "direction" y el primer candidato resultara ser nuestro número, hay
+  // adónde caer en vez de quedarse sin teléfono.
+  const COMUNES = ["customer_phone", "contact_phone", "phone", "phone_number", "phoneNumber", "telefono", "number"];
   const clavesTelefono =
     direccion === "outbound"
-      ? ["to_number", "to", "customer_phone", "contact_phone", "phone", "phone_number", "phoneNumber", "telefono", "number"]
-      : ["from_number", "from", "caller", "customer_phone", "contact_phone", "phone", "phone_number", "phoneNumber", "telefono", "number"];
+      ? ["to_number", "to", ...COMUNES, "from_number", "from", "caller"]
+      : ["from_number", "from", "caller", ...COMUNES, "to_number", "to"];
 
   // Cinturón por si algún día no viene "direction": nuestro propio número nunca
   // es el del prospecto.
