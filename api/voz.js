@@ -31,7 +31,7 @@
 
 import { abrirAlmacen } from "../lib/almacen.js";
 import { enviarAviso } from "../lib/leads.js";
-import { normalizarTelefono } from "../lib/mensajeria.js";
+import { enviarSeguimientoDeLlamada, normalizarTelefono } from "../lib/mensajeria.js";
 
 /** Cuánto del mensaje crudo se guarda. Suficiente para leerlo; no infinito. */
 const TOPE_CRUDO = 8_000;
@@ -162,7 +162,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // 3. El aviso al equipo. Una llamada es de lo más valioso que entra: se
+  // 3. EL WHATSAPP QUE SE PROMETIÓ EN VOZ ALTA. Va antes del correo a
+  // propósito: así el correo puede decir si salió o no, y el equipo sabe de un
+  // vistazo si tiene que escribir a mano.
+  const escrito = await escribirTrasLlamada({ almacen, llamada });
+
+  // 4. El aviso al equipo. Una llamada es de lo más valioso que entra: se
   // avisa siempre, falle lo que falle arriba. El asunto va recortado y sin
   // saltos de línea porque un asunto gigante hace que Resend rechace el correo
   // entero — y ahí se perdería el aviso de esa llamada.
@@ -174,6 +179,7 @@ export default async function handler(req, res) {
       `Teléfono: ${llamada.telefono || llamada.telefonoCrudo || "no identificado"}`,
       `Duración: ${formatearDuracion(llamada.duracionSegundos)}`,
       llamada.resultado ? `Resultado: ${sano(llamada.resultado, 120)}` : "",
+      lineaDeWhatsApp(escrito),
       llamada.resumen ? `` : "",
       llamada.resumen ? `Resumen: ${sano(llamada.resumen, 600)}` : "",
       llamada.transcripcion ? `` : "",
@@ -195,9 +201,144 @@ export default async function handler(req, res) {
   return responder(res, 200, { ok: true, lead: leadId });
 }
 
+// ─── EL WHATSAPP DE DESPUÉS DE LA LLAMADA ────────────────────────────────────
+
+/**
+ * De los seis finales que puede tener una llamada, SOLO DOS terminan en un
+ * mensaje automático, y son los dos en los que la persona dijo que sí a que le
+ * escribieran. Los otros cuatro (no le interesa, solo información, pidió que le
+ * llame una persona, no es prospecto) no llevan mensaje: en tres de ellos nadie
+ * lo pidió, y en el cuarto lo que se prometió fue una llamada, no un chat.
+ *
+ * Escribirle a quien no lo pidió es lo que hace que un número comercial acabe
+ * bloqueado, y un número bloqueado se lleva por delante TODOS los canales de la
+ * casa, no solo este. Por eso esta lista se amplía leyendo el guion de voz, no
+ * por corazonada.
+ */
+const CIERRES_QUE_ESCRIBEN = new Map([
+  ["agendo_diagnostico", "agenda"], // aceptó: se le manda el botón para elegir hora
+  ["pidio_whatsapp", "info"], // no aceptó, pero pidió que le escriban
+]);
+
+/**
+ * Decide y manda. Devuelve SIEMPRE un motivo legible, incluso cuando no manda:
+ * el correo al equipo lo repite, y "no se envió y por qué" es justo lo que
+ * evita que alguien crea que el sistema escribió cuando no lo hizo.
+ *
+ * Nunca lanza: esto corre entre el lead y el correo, y una excepción aquí
+ * borraría el aviso de una llamada real por un mensaje que no salió.
+ */
+async function escribirTrasLlamada({ almacen, llamada }) {
+  try {
+    // ENCENDIDO POR DEFECTO, a diferencia del seguimiento nocturno. Aquí callar
+    // no es prudencia: es dejar sin cumplir una promesa que ya se dijo en voz
+    // alta, en cada llamada, sin que nadie se entere. El interruptor existe
+    // para apagarlo en un minuto desde Vercel si algo sale mal, no para que
+    // haya que acordarse de encenderlo.
+    if (String(process.env.WHATSAPP_TRAS_LLAMADA ?? "").toLowerCase() === "no") {
+      return { entregado: false, motivo: "apagado" };
+    }
+    const modo = CIERRES_QUE_ESCRIBEN.get(normalizarCierre(llamada.resultado));
+    if (!modo) {
+      return { entregado: false, motivo: llamada.resultado ? "cierre_sin_mensaje" : "sin_cierre" };
+    }
+    if (llamada.buzon) return { entregado: false, motivo: "buzon" };
+
+    // El número que confirmó en voz alta manda sobre el identificador de
+    // llamada: si pidió que le escriban a otro, es a otro.
+    const destino = llamada.whatsapp || llamada.telefono;
+    if (!destino) return { entregado: false, motivo: "sin_numero" };
+
+    // DOS PREGUNTAS ANTES DE ESCRIBIR, Y SI NO SE PUEDEN RESPONDER, NO SE
+    // ESCRIBE. No mandar el mensaje se arregla solo: el correo de esta misma
+    // llamada le dice al equipo que lo haga a mano. Escribirle a quien pidió
+    // SALIR, o escribirle dos veces porque Dapta reintentó, no se arregla.
+    const bajas = await almacen.sesionesDeBaja?.({ canal: "whatsapp" });
+    if (bajas?.has(destino)) return { entregado: false, motivo: "pidio_salir" };
+    if (await almacen.yaEscritoTrasLlamada?.({ sesion: destino })) {
+      return { entregado: false, motivo: "ya_escrito" };
+    }
+
+    const r = await enviarSeguimientoDeLlamada({
+      para: destino,
+      nombre: primerNombre(llamada.nombre),
+      // Lo que va tras "el tema de": se arma con el negocio para que la frase
+      // salga entera sí o sí. Meterle ahí el resumen del modelo daría textos
+      // largos y a medio cocer dentro de una plantilla que no se puede editar.
+      asunto: `automatizar la atención de ${sano(llamada.empresa, 60) || "tu negocio"}`,
+      agendo: modo === "agenda",
+      bitacora: { almacen, cliente: "intellectum" },
+    });
+    return {
+      entregado: r.entregado,
+      destino,
+      plantilla: r.plantilla,
+      // "Meta lo rechazó" y "no hay con qué mandar" piden cosas distintas de
+      // quien lee el correo, así que no se dicen igual.
+      motivo: r.entregado ? null : r.detalle === "sin_configurar" ? "sin_whatsapp" : "meta_no_lo_acepto",
+    };
+  } catch (err) {
+    console.error("[VOZ] no se pudo escribir tras la llamada:", err?.message ?? err);
+    return { entregado: false, motivo: "fallo_inesperado" };
+  }
+}
+
+/**
+ * Las etiquetas las escribe un modelo, y un modelo escribe "agendó
+ * diagnóstico" tan fácil como "agendo_diagnostico". Se comparan sin tildes, sin
+ * mayúsculas y sin puntuación, pero SIEMPRE enteras: dar por bueno un parecido
+ * haría que "no_agendo_diagnostico" disparara justo el mensaje contrario.
+ */
+function normalizarCierre(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // las tildes, ya sueltas por NFD
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * "Paul Castillo" → "Paul". Cuando el nombre llega partido en campos distintos,
+ * texto() los une para no perder ninguno, y eso está bien en el CRM: ahí se
+ * quiere el nombre completo. En un saludo de WhatsApp es al revés, "Hola Paul
+ * Castillo" suena a carta del banco.
+ *
+ * El precio de quedarse con la primera palabra lo paga María José, que recibe
+ * un "Hola María". Se acepta a sabiendas: es más raro que un nombre compuesto
+ * llegue entero desde una llamada que el que llegue nombre y apellido.
+ */
+function primerNombre(valor) {
+  return (sano(valor, 120) || "").trim().split(/\s+/)[0].slice(0, 40);
+}
+
+/** Lo que NO merece una línea en el correo: es el curso normal de las cosas. */
+const CALLADOS = new Set(["sin_cierre", "cierre_sin_mensaje", "buzon"]);
+// Cada motivo trae ADEMÁS qué hacer, y no un "escríbele tú" pegado al final
+// para todos: al que pidió SALIR justamente NO hay que escribirle, y un correo
+// que se contradice en la misma línea no lo lee nadie dos veces.
+const MOTIVOS = {
+  sin_numero: "no quedó ningún número al que escribir. Está la grabación, por si vale la pena.",
+  pidio_salir: "esta persona pidió no recibir más mensajes. No le escribas tú tampoco.",
+  ya_escrito: "ya se le escribió tras otra llamada de hoy. No hace falta insistir.",
+  sin_whatsapp: "el WhatsApp de salida no está configurado. Escríbele tú.",
+  apagado: "el envío automático está apagado. Escríbele tú.",
+  meta_no_lo_acepto: "Meta no aceptó el envío. Escríbele tú y avisa que hay que revisarlo.",
+  fallo_inesperado: "falló algo al intentarlo. Escríbele tú y avisa que hay que revisarlo.",
+};
+
+function lineaDeWhatsApp(escrito) {
+  if (escrito.entregado) {
+    return `WhatsApp: ENVIADO a ${escrito.destino} (plantilla ${escrito.plantilla}).`;
+  }
+  if (CALLADOS.has(escrito.motivo)) return "";
+  return `WhatsApp: NO se envió — ${MOTIVOS[escrito.motivo] ?? `${escrito.motivo}. Escríbele tú.`}`;
+}
+
 const vacia = () => ({
   telefono: null,
   telefonoCrudo: null,
+  whatsapp: null,
   duracionSegundos: null,
   resultado: null,
   resumen: null,
@@ -374,6 +515,22 @@ function extraer(cuerpo) {
       .find((x) => x.length > 0) ??
     null;
 
+  // ── EL WHATSAPP QUE LA PERSONA CONFIRMÓ EN VOZ ALTA ──
+  // NO es lo mismo que el identificador de llamada: el guion manda pedir otro
+  // número cuando desde el que llama no tiene WhatsApp ("Si el número desde el
+  // que llama no sirve, pide otro"). Escribirle al identificador cuando dijo
+  // otro es escribirle a nadie. Si el flujo de Dapta todavía no manda esta
+  // variable, queda nulo y se escribe al que llamó, que es lo de siempre.
+  let whatsapp = null;
+  for (const c of candidatos(
+    "whatsapp", "whatsapp_number", "whatsappNumber", "numero_whatsapp",
+    "whatsapp_numero", "telefono_whatsapp", "contact_whatsapp",
+  ).map((v) => (Array.isArray(v) ? v[0] : v))) {
+    if (c === null || c === undefined || typeof c === "object") continue;
+    const n = normalizarTelefono(typeof c === "number" ? `0${c}` : c) ?? normalizarTelefono(c);
+    if (n && n !== propio) { whatsapp = n; break; }
+  }
+
   // ── LA DURACIÓN, con la que se va a medir el costo real por minuto ──
   // Dapta manda DOS: total_duration_seconds (limpia) y duration_ms. La de
   // milisegundos va primero en la lista de nadie: leída como segundos, once
@@ -420,6 +577,7 @@ function extraer(cuerpo) {
   return {
     telefono,
     telefonoCrudo: telefonoCrudo ? telefonoCrudo.slice(0, 24) : null,
+    whatsapp,
     duracionSegundos:
       duracion !== null && duracion <= TOPE_DURACION ? Math.max(1, Math.round(duracion)) : null,
     resultado: texto(

@@ -698,6 +698,21 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       return { icono: "🛑", texto: "IntelliA intentó algo fuera de su alcance y se bloqueó", ir: null };
     if (e.tipo === "accion_pendiente_de_confirmacion")
       return { icono: "✋", texto: "Hay una acción esperando tu visto bueno", ir: null };
+    if (e.tipo === "llamada_registrada")
+      return { icono: "📞", texto: "IntelliA atendió una llamada", ir: "leads" };
+    if (e.tipo === "cotizacion_entregada")
+      return { icono: "🧾", texto: "IntelliA entregó una cotización", ir: "leads" };
+    if (e.tipo === "seguimiento_programado")
+      return { icono: "⏰", texto: "IntelliA dejó programado un seguimiento", ir: "leads" };
+    if (e.tipo === "seguimiento_enviado")
+      return { icono: "📨", texto: "Salió un seguimiento por WhatsApp", ir: "leads" };
+    /* Cada WhatsApp que sale deja su evento, y son muchos: aquí solo se muestra
+       el que responde a una promesa hecha por teléfono, porque ese sí es algo
+       que pasó. El resto es el contador de consumo, que se lee en su bloque. */
+    if (e.tipo === "mensaje_entregado") {
+      if (det.motivo !== "tras_llamada") return null;
+      return { icono: "📲", texto: "Se le escribió por WhatsApp tras la llamada", ir: "leads" };
+    }
     return { icono: "·", texto: e.tipo.replace(/_/g, " "), ir: null };
   }
 
