@@ -170,7 +170,27 @@ function extraer(cuerpo) {
   ];
 
   const capas = [];
-  const agregar = (x) => { if (x && typeof x === "object" && !Array.isArray(x)) capas.push(x); };
+
+  /**
+   * Agrega una capa donde buscar. Acepta también un OBJETO SERIALIZADO como
+   * texto: si en el flujo de Dapta un parámetro se declara de tipo texto en vez
+   * de objeto, lo que llega es la cadena '{"from":"099..."}' y no el objeto. Sin
+   * esto, el dato llegaría íntegro y se ignoraría por completo — el peor de los
+   * fallos, porque todo parece bien configurado y el lead llega vacío.
+   */
+  const agregar = (x) => {
+    let v = x;
+    if (typeof v === "string") {
+      const podado = v.trim();
+      if (!podado.startsWith("{")) return;
+      try {
+        v = JSON.parse(podado);
+      } catch {
+        return;
+      }
+    }
+    if (v && typeof v === "object" && !Array.isArray(v)) capas.push(v);
+  };
 
   agregar(cuerpo);
 
