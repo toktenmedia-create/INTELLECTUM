@@ -173,7 +173,24 @@ function extraer(cuerpo) {
   const agregar = (x) => { if (x && typeof x === "object" && !Array.isArray(x)) capas.push(x); };
 
   agregar(cuerpo);
-  for (const nombre of CONTENEDORES) agregar(cuerpo?.[nombre]);
+
+  // ENVOLTORIO DESCONOCIDO: si quien configura el flujo mete todo dentro de una
+  // llave inventada —{"todo": {...}}, {"payload_llamada": {...}}—, ningún nombre
+  // de la lista la reconocería. Cuando el cuerpo trae UNA sola llave y adentro
+  // hay un objeto, se entra: no hay ambigüedad posible y ahorra una tarde de
+  // "pero si lo configuré bien". Se hace dos niveles por si viene envuelto dos
+  // veces, que pasa más de lo que uno creería.
+  let sonda = cuerpo;
+  for (let vuelta = 0; vuelta < 2; vuelta++) {
+    const llaves = sonda && typeof sonda === "object" ? Object.keys(sonda) : [];
+    if (llaves.length !== 1) break;
+    sonda = sonda[llaves[0]];
+    agregar(sonda);
+  }
+
+  for (const base of [...capas]) {
+    for (const nombre of CONTENEDORES) agregar(base?.[nombre]);
+  }
   // Las variables pueden colgar del cuerpo o de cualquier contenedor de arriba.
   for (const base of [...capas]) {
     for (const nombre of CONTENEDORES_VARIABLES) agregar(base?.[nombre]);
