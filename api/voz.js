@@ -8,22 +8,25 @@
  * chats, y cambiar de proveedor de voz algún día es cambiar este archivo, no
  * rehacer el CRM.
  *
- * DECISIÓN DE DISEÑO, y conviene entenderla: Dapta NO documenta públicamente
- * el formato exacto de su aviso. En vez de fingir que lo conocemos, este
- * receptor es TOLERANTE: guarda el mensaje crudo COMPLETO en la bitácora
- * (recortado a un tope sano) y encima extrae lo que reconoce probando los
- * nombres de campo habituales. Si la primera llamada real trae un formato
- * sorpresa, no se pierde nada: queda el crudo para leerlo y afinar el mapeo.
+ * DECISIÓN DE DISEÑO: Dapta NO documenta públicamente el formato exacto de su
+ * aviso. En vez de fingir que lo conocemos, este receptor es TOLERANTE: guarda
+ * el mensaje crudo COMPLETO y encima extrae lo que reconoce probando los
+ * nombres de campo habituales en cualquier nivel de anidado. Ningún cuerpo raro
+ * se rechaza: rechazar algo inesperado sería peor que guardarlo a medias.
  *
- * Seguridad: exige un secreto (DAPTA_WEBHOOK_TOKEN). De preferencia en la
- * cabecera Authorization; si el panel de Dapta no deja configurar cabeceras,
- * se acepta ?token= en la URL — no es lo ideal (las URL quedan en los
- * registros de Vercel, que solo ve el dueño), pero un webhook sin secreto es
- * peor: cualquiera podría inventarle llamadas al CRM. Sin la variable
- * configurada, el endpoint duerme: la regla de toda la casa.
+ * TRES COSAS QUE NUNCA PUEDEN PASAR, y que dictan casi todo lo de abajo:
+ *   1. Que el endpoint responda 500 y la llamada desaparezca sin dejar rastro.
+ *      Por eso el crudo va a los registros ANTES de tocar nada, y el mapeo
+ *      entero vive dentro de un try.
+ *   2. Que se pierda un dato que SÍ venía. Por eso se recorre el anidado en
+ *      cola hasta agotarlo, y las claves se comparan sin distinguir mayúsculas.
+ *   3. Que dos personas distintas terminen en el mismo lead. Perder un dato se
+ *      recupera del crudo; fundir dos prospectos no se recupera nunca. Por eso
+ *      la llave de deduplicación es SOLO un teléfono normalizado de verdad.
  *
- * La duración se guarda SIEMPRE que venga: es el dato con el que se va a medir
- * el costo real por minuto antes de vender el módulo de voz en serio.
+ * Seguridad: exige un secreto (DAPTA_WEBHOOK_TOKEN), de preferencia en la
+ * cabecera Authorization; se acepta ?token= porque el panel de Dapta no siempre
+ * deja configurar cabeceras. Sin la variable, el endpoint duerme.
  */
 
 import { abrirAlmacen } from "../lib/almacen.js";
@@ -33,6 +36,8 @@ import { normalizarTelefono } from "../lib/mensajeria.js";
 /** Cuánto del mensaje crudo se guarda. Suficiente para leerlo; no infinito. */
 const TOPE_CRUDO = 8_000;
 const TOPE_TRANSCRIPCION = 4_000;
+/** Cuatro horas: ninguna llamada comercial dura más, y "no sé" es más honesto. */
+const TOPE_DURACION = 4 * 3600;
 
 export default async function handler(req, res) {
   const esperado = process.env.DAPTA_WEBHOOK_TOKEN;
@@ -40,7 +45,6 @@ export default async function handler(req, res) {
     console.warn("[VOZ] sin DAPTA_WEBHOOK_TOKEN: el endpoint está dormido.");
     return responder(res, 503, { error: "No configurado" });
   }
-
   if (!tokenCorrecto(req, esperado)) {
     return responder(res, 401, { error: "No autorizado" });
   }
@@ -54,90 +58,124 @@ export default async function handler(req, res) {
     return responder(res, 405, { error: "Método no permitido" });
   }
 
+  // Leer y entender son dos cosas distintas, y merecen respuestas distintas:
+  // un 4xx le dice a Dapta "no reintentes", y eso solo es verdad si el cuerpo
+  // llegó entero y no se pudo interpretar.
+  let crudo;
+  try {
+    crudo = await leerCrudo(req);
+  } catch (err) {
+    console.error("[VOZ] no se pudo leer el cuerpo:", err?.message ?? err);
+    return responder(res, 503, { error: "No se pudo leer el cuerpo; reintenta" });
+  }
   let cuerpo;
   try {
-    cuerpo = JSON.parse(await leerCrudo(req));
+    cuerpo = JSON.parse(crudo);
   } catch {
     return responder(res, 400, { error: "El cuerpo no es JSON" });
   }
 
-  const llamada = extraer(cuerpo);
+  // El crudo, a los registros de Vercel ANTES que nada. Si la base está caída o
+  // el mapeo revienta, esta línea es lo único que queda de la llamada.
+  console.log("[VOZ_CRUDO]", crudo.slice(0, TOPE_CRUDO));
+
+  let llamada;
+  try {
+    llamada = extraer(cuerpo);
+  } catch (err) {
+    // Que una clave nueva del proveedor cueste una llamada entera sería
+    // absurdo: se sigue con lo que haya y el crudo ya quedó arriba.
+    console.error("[VOZ] no se pudo mapear el cuerpo:", err?.message ?? err);
+    llamada = vacia();
+  }
+
   const almacen = abrirAlmacen();
 
-  // 1. La bitácora, SIEMPRE, con el crudo adentro. Es lo que garantiza que la
-  // primera llamada real se pueda estudiar aunque el mapeo no reconozca nada.
+  // 1. La bitácora, con el crudo adentro. Es lo que garantiza que la primera
+  // llamada real se pueda estudiar aunque el mapeo no reconozca nada.
+  let enBitacora = false;
   try {
     await almacen.registrarEvento({
       tipo: "llamada_registrada",
       actor: "agente_voz",
       detalle: {
         canal: "voz",
-        telefono: llamada.telefono,
+        telefono: llamada.telefono ?? llamada.telefonoCrudo,
         duracion_segundos: llamada.duracionSegundos,
-        resultado: llamada.resultado,
-        resumen: llamada.resumen?.slice(0, 500) ?? null,
-        transcripcion: llamada.transcripcion?.slice(0, TOPE_TRANSCRIPCION) ?? null,
-        crudo: JSON.stringify(cuerpo).slice(0, TOPE_CRUDO),
+        resultado: sano(llamada.resultado, 120),
+        resumen: sano(llamada.resumen, 500),
+        transcripcion: sano(llamada.transcripcion, TOPE_TRANSCRIPCION),
+        crudo: crudo.slice(0, TOPE_CRUDO),
       },
     });
+    enBitacora = true;
   } catch (err) {
     console.error("[VOZ] no se pudo anotar la llamada:", err?.message ?? err);
   }
 
-  // 2. El lead. Solo si la llamada trae con qué: sin teléfono no hay a quién
-  // seguir. Si esta persona ya llamó hace poco, no se parte en dos.
+  // 2. El lead. Se crea si hay a quién seguir O si el agente reconoció algo
+  // útil: un prospecto con identificador oculto sigue siendo un prospecto.
   let leadId = null;
-  if (llamada.telefono) {
+  if (llamada.telefono || llamada.telefonoCrudo || llamada.nombre || llamada.resumen) {
     try {
-      const previo = await almacen.leadDeSesion?.({
-        canal: "voz",
-        sesion: llamada.telefono,
-      });
+      // LA LLAVE DE DEDUPLICACIÓN ES SOLO UN TELÉFONO NORMALIZADO DE VERDAD.
+      // Con "anonymous" o "unknown" como sesión, todo identificador oculto de
+      // treinta días caería en el mismo lead y cada uno borraría la nota del
+      // anterior. Sin teléfono, sesion queda nula: lead propio, nadie se funde.
+      const sesion = llamada.telefono || null;
+      const previo = sesion ? await almacen.leadDeSesion?.({ canal: "voz", sesion }) : null;
       const edadDias = previo
         ? (Date.now() - new Date(previo.creado_en ?? 0).getTime()) / 86_400_000
         : Infinity;
 
-      if (previo && edadDias <= 30) {
+      // Fecha ilegible: se trata al previo como vigente. Ante la duda, no duplicar.
+      if (previo && (!Number.isFinite(edadDias) || edadDias <= 30)) {
         leadId = previo.id;
         await almacen.actualizarLead?.({
           id: previo.id,
-          nota: `Volvió a llamar${llamada.resumen ? `: ${llamada.resumen.slice(0, 180)}` : "."}`,
+          nota: sano(`Volvió a llamar${llamada.resumen ? `: ${llamada.resumen}` : "."}`, 500),
         });
       } else {
         const guardado = await almacen.guardarLead(
           {
-            nombre: llamada.nombre || "",
-            contacto: llamada.telefono,
-            empresa: llamada.empresa || "",
-            necesidad: llamada.resumen || "Llamó al agente de voz.",
+            nombre: sano(llamada.nombre, 120) || "",
+            contacto: llamada.telefono || llamada.telefonoCrudo || "",
+            empresa: sano(llamada.empresa, 120) || "",
+            necesidad: sano(llamada.resumen, 2_000) || "Llamó al agente de voz.",
             urgencia: "media",
-            resumen:
+            resumen: sano(
               `Llamada de ${formatearDuracion(llamada.duracionSegundos)}` +
-              (llamada.resultado ? ` (${llamada.resultado})` : "") +
-              (llamada.resumen ? `: ${llamada.resumen.slice(0, 300)}` : "."),
+                (llamada.resultado ? ` (${sano(llamada.resultado, 60)})` : "") +
+                (llamada.resumen ? `: ${llamada.resumen}` : "."),
+              1_000,
+            ),
           },
-          { cliente: "intellectum", canal: "voz", sesion: llamada.telefono, origen: "dapta" },
+          { cliente: "intellectum", canal: "voz", sesion, origen: "dapta" },
         );
         leadId = guardado?.id ?? null;
       }
     } catch (err) {
-      console.error("[VOZ] la llamada quedó en bitácora pero sin lead:", err?.message ?? err);
+      console.error("[VOZ] no se pudo guardar el lead:", err?.message ?? err);
     }
   }
 
   // 3. El aviso al equipo. Una llamada es de lo más valioso que entra: se
-  // avisa siempre, falle lo que falle arriba.
+  // avisa siempre, falle lo que falle arriba. El asunto va recortado y sin
+  // saltos de línea porque un asunto gigante hace que Resend rechace el correo
+  // entero — y ahí se perdería el aviso de esa llamada.
   await enviarAviso({
-    asunto: `Llamada atendida por el agente de voz${llamada.nombre ? `: ${llamada.nombre}` : ""}`,
+    asunto: `Llamada atendida por el agente de voz${
+      llamada.nombre ? `: ${sano(llamada.nombre, 60)}` : ""
+    }`,
     cuerpo: [
-      `Teléfono: ${llamada.telefono || "no identificado"}`,
+      `Teléfono: ${llamada.telefono || llamada.telefonoCrudo || "no identificado"}`,
       `Duración: ${formatearDuracion(llamada.duracionSegundos)}`,
-      llamada.resultado ? `Resultado: ${llamada.resultado}` : "",
+      llamada.resultado ? `Resultado: ${sano(llamada.resultado, 120)}` : "",
       llamada.resumen ? `` : "",
-      llamada.resumen ? `Resumen: ${llamada.resumen.slice(0, 600)}` : "",
+      llamada.resumen ? `Resumen: ${sano(llamada.resumen, 600)}` : "",
       llamada.transcripcion ? `` : "",
       llamada.transcripcion ? `— Transcripción (inicio) —` : "",
-      llamada.transcripcion ? llamada.transcripcion.slice(0, 900) : "",
+      llamada.transcripcion ? sano(llamada.transcripcion, 900) : "",
       ``,
       `El detalle completo quedó en el panel: www.intellectum.ec/panel`,
     ]
@@ -145,40 +183,62 @@ export default async function handler(req, res) {
       .join("\n"),
   }).catch((err) => console.error("[VOZ] sin correo de aviso:", err?.message ?? err));
 
+  // Si NADA sobrevivió, no se le miente a Dapta: un 503 invita a reintentar, y
+  // ese reintento es la única oportunidad de no perder la llamada. Un 200 con
+  // la base caída la borra del mundo sin que nadie se entere.
+  if (!enBitacora && !leadId) {
+    return responder(res, 503, { error: "No se pudo guardar; reintenta" });
+  }
   return responder(res, 200, { ok: true, lead: leadId });
 }
 
+const vacia = () => ({
+  telefono: null,
+  telefonoCrudo: null,
+  duracionSegundos: null,
+  resultado: null,
+  resumen: null,
+  transcripcion: null,
+  nombre: null,
+  empresa: null,
+});
+
+// ─── EL MAPEO ────────────────────────────────────────────────────────────────
+
+const CONTENEDORES = [
+  "call", "data", "payload", "event", "body", "result",
+  "call_analysis", "callAnalysis",
+];
+const CONTENEDORES_VARIABLES = [
+  "extracted_data", "extractedData", "extracted_variables", "variables",
+  "post_call_data", "postCallData", "analysis", "insights", "retrieved_data",
+  "custom_data", "custom_analysis_data", "customAnalysisData",
+  "metadata", "datos", "resultados",
+];
+
 /**
- * Saca lo que se reconozca del mensaje, probando los nombres habituales.
- * Cada dato se busca en varias claves y en varios niveles: es lo que cuesta
- * integrarse contra un formato no documentado sin inventárselo.
+ * Saca lo que se reconozca del mensaje, probando los nombres habituales en
+ * cualquier nivel de anidado. Es lo que cuesta integrarse contra un formato no
+ * documentado sin inventárselo.
  */
 function extraer(cuerpo) {
-  // Los proveedores anidan la llamada en un objeto, y las variables extraídas
-  // en OTRO objeto adentro ("Recuperación de datos post-llamada" en Dapta). Se
-  // aplanan las dos cosas: los contenedores típicos de la llamada y, dentro de
-  // cada uno, los contenedores típicos de las variables. Sin esto, el nombre y
-  // la empresa que el agente extrajo llegarían y no los veríamos.
-  // "call_analysis" está CONFIRMADO en la documentación de Dapta: ahí viven
-  // call_summary y el objeto con las variables extraídas.
-  const CONTENEDORES = ["call", "data", "payload", "event", "body", "result", "call_analysis", "callAnalysis"];
-  const CONTENEDORES_VARIABLES = [
-    "extracted_data", "extractedData", "extracted_variables", "variables",
-    "post_call_data", "postCallData", "analysis", "insights", "retrieved_data",
-    "custom_data", "custom_analysis_data", "customAnalysisData",
-    "metadata", "datos", "resultados",
-  ];
-
-  const capas = [];
+  const capas = []; // { indice, especifica }
+  const vistos = new Set();
 
   /**
-   * Agrega una capa donde buscar. Acepta también un OBJETO SERIALIZADO como
-   * texto: si en el flujo de Dapta un parámetro se declara de tipo texto en vez
-   * de objeto, lo que llega es la cadena '{"from":"099..."}' y no el objeto. Sin
-   * esto, el dato llegaría íntegro y se ignoraría por completo — el peor de los
-   * fallos, porque todo parece bien configurado y el lead llega vacío.
+   * Agrega una capa donde buscar.
+   *
+   * Acepta un OBJETO SERIALIZADO como texto: si en el flujo de Dapta el
+   * parámetro se declara de tipo texto (que a veces es la única opción), lo que
+   * llega es la cadena '{"from":"099..."}' y no el objeto. Sin esto el dato
+   * llegaría íntegro y se ignoraría — el peor fallo posible, porque todo parece
+   * bien configurado y el lead llega vacío.
+   *
+   * El índice va en minúsculas porque los nombres de las variables se escriben
+   * a mano en el panel de Dapta, y "Name" o "Summary" es tan probable como
+   * "name". Perder el nombre por una mayúscula sería absurdo.
    */
-  const agregar = (x) => {
+  const agregar = (x, especifica = false) => {
     let v = x;
     if (typeof v === "string") {
       const podado = v.trim();
@@ -189,91 +249,238 @@ function extraer(cuerpo) {
         return;
       }
     }
-    if (v && typeof v === "object" && !Array.isArray(v)) capas.push(v);
+    if (!v || typeof v !== "object" || Array.isArray(v)) return;
+    if (vistos.has(v)) return;
+    vistos.add(v);
+    const indice = Object.create(null);
+    for (const [k, valor] of Object.entries(v)) {
+      const bajo = k.toLowerCase();
+      if (!(bajo in indice)) indice[bajo] = valor;
+    }
+    capas.push({ indice, especifica });
   };
 
   agregar(cuerpo);
 
-  // ENVOLTORIO DESCONOCIDO: si quien configura el flujo mete todo dentro de una
-  // llave inventada —{"todo": {...}}, {"payload_llamada": {...}}—, ningún nombre
-  // de la lista la reconocería. Cuando el cuerpo trae UNA sola llave y adentro
-  // hay un objeto, se entra: no hay ambigüedad posible y ahorra una tarde de
-  // "pero si lo configuré bien". Se hace dos niveles por si viene envuelto dos
-  // veces, que pasa más de lo que uno creería.
+  // ENVOLTORIO DESCONOCIDO: si quien arma el flujo mete todo dentro de una
+  // llave inventada, ningún nombre de la lista la reconocería. Con UNA sola
+  // llave no hay ambigüedad posible, así que se entra. Dos niveles, porque
+  // venir envuelto dos veces pasa más de lo que uno creería.
   let sonda = cuerpo;
   for (let vuelta = 0; vuelta < 2; vuelta++) {
-    const llaves = sonda && typeof sonda === "object" ? Object.keys(sonda) : [];
+    const llaves =
+      sonda && typeof sonda === "object" && !Array.isArray(sonda) ? Object.keys(sonda) : [];
     if (llaves.length !== 1) break;
     sonda = sonda[llaves[0]];
     agregar(sonda);
   }
 
-  for (const base of [...capas]) {
-    for (const nombre of CONTENEDORES) agregar(base?.[nombre]);
-  }
-  // Las variables pueden colgar del cuerpo o de cualquier contenedor de arriba.
-  for (const base of [...capas]) {
-    for (const nombre of CONTENEDORES_VARIABLES) agregar(base?.[nombre]);
+  // Un arreglo en la raíz: cada elemento es una capa.
+  if (Array.isArray(cuerpo)) for (const x of cuerpo) agregar(x);
+
+  // RECORRIDO EN COLA. Los contenedores anidan MÁS DE UN SALTO: el envoltorio
+  // típico {"event":"call_ended","data":{"call_analysis":{...}}} deja las
+  // variables que Dapta documenta dos niveles abajo, y con una sola pasada
+  // nunca se llegaba. Se sigue bajando mientras aparezcan capas nuevas.
+  for (let vuelta = 0; vuelta < 4; vuelta++) {
+    const antes = capas.length;
+    for (const capa of [...capas]) {
+      for (const n of CONTENEDORES) agregar(capa.indice[n.toLowerCase()]);
+      for (const n of CONTENEDORES_VARIABLES) agregar(capa.indice[n.toLowerCase()], true);
+    }
+    if (capas.length === antes) break;
   }
 
-  // El orden importa y es al revés de lo intuitivo: primero se prueba la CLAVE
-  // en todas las capas, y después se pasa a la clave siguiente. Así el nombre
-  // más preciso gana sobre el más superficial. Al revés —capa por capa— un
-  // "call_summary" genérico de la capa de arriba le ganaba al "summary" que el
-  // agente redactó siguiendo nuestras instrucciones, que es el que queremos.
-  // Y nunca se devuelve un objeto: si el valor no es un dato, no es la respuesta.
-  const buscar = (...claves) => {
+  // Lo que el AGENTE extrajo gana sobre lo que trae el envoltorio del
+  // proveedor: su "summary" sigue nuestras instrucciones; el del proveedor es
+  // genérico. El sort es estable, así que dentro de cada grupo manda el orden
+  // de llegada.
+  capas.sort((a, b) => Number(b.especifica) - Number(a.especifica));
+
+  /** Todos los valores no vacíos para esas claves, en orden de preferencia. */
+  const candidatos = (...claves) => {
+    const salida = [];
     for (const clave of claves) {
+      const bajo = clave.toLowerCase();
       for (const capa of capas) {
-        const valor = capa[clave];
+        const valor = capa.indice[bajo];
         if (valor === undefined || valor === null || valor === "") continue;
-        if (typeof valor === "object" && !Array.isArray(valor)) continue;
-        return valor;
+        salida.push(valor);
       }
     }
-    return null;
+    return salida;
   };
 
-  const telefonoCrudo = buscar(
+  /**
+   * El primer valor que sea un dato suelto. Si NINGUNO lo es, se devuelve el
+   * primer objeto encontrado para que texto() lo aplane: un nombre que llega
+   * como {first, last} o como ["Paul","Fernández"] es un nombre, y perderlo por
+   * venir estructurado sería tirar a la basura un dato que sí vino. Lo escalar
+   * gana siempre; el objeto es el último recurso, no la primera opción.
+   */
+  const buscar = (...claves) => {
+    const todos = candidatos(...claves);
+    for (const v of todos) {
+      if (typeof v === "object") continue;
+      return v;
+    }
+    return todos.length ? todos[0] : null;
+  };
+
+  // ── EL TELÉFONO, que es la llave del lead y el dato que no se puede errar ──
+  // Nuestro propio número JAMÁS es el del prospecto: en una llamada saliente el
+  // "from" es el agente, y guardarlo fundiría a todos los prospectos en un solo
+  // lead. Por eso "to" y "customer_phone" van ANTES que "from", y por eso gana
+  // el primer candidato que sea un teléfono DE VERDAD, no el primero que exista.
+  const propio = normalizarTelefono(process.env.DAPTA_NUMERO_SALIDA || "");
+  const telCandidatos = candidatos(
     "phone", "phone_number", "phoneNumber", "telefono", "teléfono",
-    "from", "to", "caller", "customer_phone", "contact_phone", "number",
-  );
+    "customer_phone", "contact_phone", "caller", "to", "from", "number",
+  ).map((v) => (Array.isArray(v) ? v[0] : v));
 
-  const duracion = Number(
-    buscar("duration", "duration_seconds", "durationSeconds", "call_duration", "duracion", "call_length", "seconds"),
-  );
-
-  let transcripcion = buscar("transcript", "transcription", "call_transcript", "transcripcion", "messages");
-  if (Array.isArray(transcripcion)) {
-    // Algunos proveedores mandan la charla como lista de turnos.
-    transcripcion = transcripcion
-      .map((t) => `${t.role ?? t.speaker ?? "?"}: ${t.content ?? t.text ?? t.message ?? ""}`)
-      .join("\n");
+  let telefono = null;
+  for (const c of telCandidatos) {
+    if (c === null || c === undefined || typeof c === "object") continue;
+    // Un número JSON pierde el cero inicial: 991111111 vuelve a ser "0991111111".
+    const n = normalizarTelefono(typeof c === "number" ? `0${c}` : c) ?? normalizarTelefono(c);
+    if (n && n !== propio) {
+      telefono = n;
+      break;
+    }
   }
-  if (transcripcion && typeof transcripcion !== "string") transcripcion = JSON.stringify(transcripcion);
+
+  // El crudo se conserva para que el vendedor lo vea, pero NUNCA se usa como
+  // llave de deduplicación (eso pasa en el handler).
+  const telefonoCrudo =
+    telefono ??
+    telCandidatos
+      .map((c) => (c === null || c === undefined || typeof c === "object" ? "" : String(c)))
+      .map((s) => s.replace(/\s+/g, " ").trim())
+      .find((s) => s.length > 0) ??
+    null;
+
+  // ── LA DURACIÓN, con la que se va a medir el costo real por minuto ──
+  let duracion = null;
+  for (const c of candidatos(
+    "duration", "duration_seconds", "durationSeconds", "call_duration",
+    "duracion", "call_length", "seconds",
+  )) {
+    const s = segundos(c);
+    if (s !== null && s > 0) {
+      duracion = s;
+      break;
+    }
+  }
+
+  // ── LA TRANSCRIPCIÓN ──
+  // La LISTA se mira primero: si se dejara que buscar() la resolviera, la
+  // aplanaría como un dato suelto y se perderían los turnos que sí son objetos.
+  let transcripcion = null;
+  const lista = candidatos(
+    "transcript", "transcription", "messages", "turns", "conversation",
+  ).find((v) => Array.isArray(v));
+  if (lista) {
+    // Un turno nulo NO puede costar la llamada entera, y una lista de frases
+    // sueltas es tan válida como una de objetos.
+    transcripcion = lista
+      .map((t) => {
+        if (t === null || t === undefined) return "";
+        if (typeof t !== "object") return String(t);
+        const quien = t.role ?? t.speaker ?? t.from ?? "?";
+        const dice = t.content ?? t.text ?? t.message ?? "";
+        return dice ? `${quien}: ${dice}` : "";
+      })
+      .filter(Boolean)
+      .join("\n");
+  } else {
+    transcripcion = buscar("transcript", "transcription", "call_transcript", "transcripcion");
+  }
 
   return {
-    telefono: normalizarTelefono(telefonoCrudo) || (telefonoCrudo ? String(telefonoCrudo).slice(0, 24) : null),
-    duracionSegundos: Number.isFinite(duracion) && duracion > 0 ? Math.round(duracion) : null,
-    resultado: texto(buscar("outcome", "status", "result", "disposition", "call_status", "resultado")),
+    telefono,
+    telefonoCrudo: telefonoCrudo ? telefonoCrudo.slice(0, 24) : null,
+    duracionSegundos:
+      duracion !== null && duracion <= TOPE_DURACION ? Math.max(1, Math.round(duracion)) : null,
+    resultado: texto(
+      buscar("outcome", "status", "result", "disposition", "call_status", "resultado"),
+    ),
     resumen: texto(buscar("summary", "resumen", "call_summary", "summary_text", "notes")),
-    transcripcion: transcripcion || null,
+    transcripcion: texto(transcripcion),
     nombre: texto(buscar("name", "contact_name", "customer_name", "nombre", "lead_name")),
     empresa: texto(buscar("company", "empresa", "organization", "business")),
   };
 }
 
-function texto(v) {
-  if (v === null || v === undefined) return null;
-  return (typeof v === "string" ? v : JSON.stringify(v)).trim() || null;
+// ─── LIMPIEZA ────────────────────────────────────────────────────────────────
+
+/** Lo que un modelo escribe cuando NO consiguió extraer la variable. */
+const VACIOS = new Set([
+  "null", "undefined", "n/a", "na", "none", "ninguno", "no aplica", "desconocido", "-",
+]);
+const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g;
+const SUELTO = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+
+/**
+ * Recorta sin dejar restos: primero limpia los caracteres de control, DESPUÉS
+ * corta, y al final barre el medio emoji que el corte dejó huérfano. Postgres
+ * no admite el carácter nulo ni sustitutos sueltos, y un rechazo ahí se lo
+ * tragaría el catch: la llamada desaparecería en silencio.
+ */
+function sano(s, tope) {
+  if (s === null || s === undefined) return null;
+  return String(s).replace(CONTROL, " ").slice(0, tope).replace(SUELTO, "").trim() || null;
 }
 
-function formatearDuracion(segundos) {
-  if (!segundos) return "duración desconocida";
-  const m = Math.floor(segundos / 60);
-  const s = segundos % 60;
+function texto(v) {
+  if (v === null || v === undefined) return null;
+  let s;
+  if (Array.isArray(v)) {
+    // ["Paul","Fernández"] es una persona, no un JSON que enseñarle al vendedor.
+    s = v.filter((x) => x !== null && x !== undefined && typeof x !== "object").join(" ");
+  } else if (typeof v === "object") {
+    // {first:"Paul", last:"Fernández"} → "Paul Fernández". Imperfecto, pero
+    // infinitamente mejor que perder el nombre en silencio.
+    s = Object.values(v)
+      .filter((x) => x !== null && x !== undefined && typeof x !== "object")
+      .join(" ");
+  } else if (typeof v === "boolean") {
+    return null; // "true" no es el nombre de nadie
+  } else {
+    s = String(v);
+  }
+  s = s.replace(CONTROL, " ").trim();
+  if (!s || VACIOS.has(s.toLowerCase())) return null;
+  return s;
+}
+
+/** Acepta 225, "225", "225s", "3:45" y "00:03:45". Lo que no entienda, null. */
+function segundos(v) {
+  if (typeof v === "boolean" || v === null || v === undefined) return null;
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (s.includes(":")) {
+      const partes = s.split(":").map(Number);
+      if (partes.some((n) => !Number.isFinite(n))) return null;
+      return partes.reduce((total, n) => total * 60 + n, 0);
+    }
+    const m = s.match(/^([\d.]+)\s*(s|seg|segundos|m|min|minutos|h)?$/i);
+    if (!m) return null;
+    const n = Number(m[1]);
+    if (!Number.isFinite(n)) return null;
+    const u = (m[2] || "s").toLowerCase();
+    return u.startsWith("h") ? n * 3600 : u.startsWith("m") ? n * 60 : n;
+  }
+  return Number.isFinite(Number(v)) ? Number(v) : null;
+}
+
+function formatearDuracion(segs) {
+  if (!segs) return "duración desconocida";
+  const m = Math.floor(segs / 60);
+  const s = segs % 60;
   return m > 0 ? `${m} min ${s} s` : `${s} s`;
 }
+
+// ─── PUERTA Y PLOMERÍA ───────────────────────────────────────────────────────
 
 /**
  * El secreto: cabecera primero, URL como salida de emergencia. La comparación
@@ -299,6 +506,11 @@ function tokenCorrecto(req, esperado) {
 async function leerCrudo(req) {
   const trozos = [];
   for await (const t of req) trozos.push(t);
+  // Si algún día el runtime pre-interpreta el cuerpo, el flujo llega vacío y sin
+  // esto TODAS las llamadas responderían 400. Mismo patrón que api/whatsapp.js.
+  if (trozos.length === 0 && req.body !== undefined && req.body !== null) {
+    return typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+  }
   return Buffer.concat(trozos).toString("utf8");
 }
 

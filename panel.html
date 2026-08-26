@@ -556,7 +556,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   function esc(t) {
     var d = document.createElement("span");
     d.textContent = t == null ? "" : String(t);
-    return d.innerHTML;
+    return d.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function haceCuanto(iso) {
