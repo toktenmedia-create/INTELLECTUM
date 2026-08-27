@@ -246,6 +246,10 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 .etiquetas-zona { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
 .pastilla.etiqueta { display: inline-flex; align-items: center; gap: 4px;
   border: 1px solid var(--border-strong); color: var(--text-dim); }
+.pastilla.etiqueta .texto { padding: 0; background: none; border: none; font: inherit; color: inherit;
+  cursor: pointer; }
+.pastilla.etiqueta .texto:hover { color: var(--accent); }
+.pastilla.etiqueta .texto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .pastilla.etiqueta .quitar { padding: 0 2px; color: var(--text-muted); font-size: 13px; line-height: 1; }
 .pastilla.etiqueta .quitar:hover { color: var(--rojo); }
 .etiqueta-nueva { width: 110px; padding: 4px 10px; border-radius: 999px; font-size: 12px;
@@ -760,7 +764,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   function cargarLeads(texto) {
     var v = document.getElementById("vista-leads");
     v.innerHTML =
-      '<input class="buscador" id="buscaLeads" placeholder="Buscar por nombre, empresa o necesidad…" value="' + esc(texto) + '" />' +
+      '<input class="buscador" id="buscaLeads" placeholder="Buscar por nombre, empresa, necesidad o etiqueta…" value="' + esc(texto) + '" />' +
       '<div id="listaLeads"><div class="cargando">Cargando…</div></div>';
 
     montarFiltros(v);
@@ -796,6 +800,9 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         });
         zona.querySelectorAll("[data-quitar-etiqueta]").forEach(function (b) {
           b.addEventListener("click", function () { quitarEtiqueta(b); });
+        });
+        zona.querySelectorAll("[data-buscar-etiqueta]").forEach(function (b) {
+          b.addEventListener("click", function () { buscarPorEtiqueta(b); });
         });
         zona.querySelectorAll("[data-nueva-etiqueta]").forEach(function (i) {
           i.addEventListener("keydown", function (e) {
@@ -839,7 +846,8 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       (l.necesidad || l.resumen ? '<div class="detalle">' + esc(l.necesidad || l.resumen) + "</div>" : "") +
       '<div class="etiquetas-zona">' +
       (Array.isArray(l.etiquetas) ? l.etiquetas : []).map(function (e) {
-        return '<span class="pastilla etiqueta" data-etiqueta="' + esc(e) + '">' + esc(e) +
+        return '<span class="pastilla etiqueta" data-etiqueta="' + esc(e) + '">' +
+          '<button class="texto" data-buscar-etiqueta title="Ver todos los de esta etiqueta">' + esc(e) + '</button>' +
           '<button class="quitar" data-quitar-etiqueta title="Quitar etiqueta">×</button></span>';
       }).join("") +
       '<input class="etiqueta-nueva" data-nueva-etiqueta placeholder="+ etiqueta" maxlength="30" />' +
@@ -924,6 +932,19 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     cerrar.textContent = "Omitir";
     cerrar.addEventListener("click", function () { zona.remove(); });
     opciones.appendChild(cerrar);
+  }
+
+  /* Un clic en la etiqueta busca por ella. Existe porque la búsqueda de
+     etiquetas es por palabra ENTERA (son jsonb y Postgres no sabe buscar
+     pedazos dentro de un array), y pedirle a alguien que teclee la etiqueta
+     completa y sin errata es pedirle que se acuerde de una regla. Un clic no
+     se equivoca. */
+  function buscarPorEtiqueta(boton) {
+    var chip = boton.closest("[data-etiqueta]");
+    if (!chip) return;
+    var caja = document.getElementById("buscaLeads");
+    if (caja) { caja.value = chip.dataset.etiqueta; caja.focus(); }
+    pintaListaLeads(chip.dataset.etiqueta);
   }
 
   function etiquetasDe(tarjeta) {
