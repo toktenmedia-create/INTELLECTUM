@@ -476,11 +476,19 @@ body::before {
      botón de agendar (?intencion=agendar), la conversación arranca sola
      pidiendo las fechas disponibles: nadie debería teclear para eso. */
   (function () {
-    var intencion = new URLSearchParams(location.search).get("intencion");
+    var params = new URLSearchParams(location.search);
+    var intencion = params.get("intencion");
     if (!intencion || enviando) return;
+    /* La referencia viene en el enlace del correo de la cita, para que nadie
+       tenga que entender ni teclear un código. Se limpia a letras y números
+       porque va directa al mensaje que se envía. */
+    var cita = (params.get("cita") || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 24);
     var arranques = {
       reagendar: "Hola, me avisaron que mi cita quedó cancelada, así que necesito agendar una nueva. ¿Qué fechas tienes disponibles?",
       agendar: "Hola, quiero agendar una consultoría gratuita. ¿Qué fechas tienes disponibles?",
+      mover: cita
+        ? "Hola, necesito mover o cancelar mi consultoría. La referencia de mi cita es " + cita + "."
+        : "Hola, necesito mover o cancelar mi consultoría.",
     };
     var mensaje = arranques[intencion];
     if (!mensaje) return;
