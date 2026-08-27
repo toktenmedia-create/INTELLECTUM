@@ -702,6 +702,8 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       return { icono: "🛑", texto: "IntelliA intentó algo fuera de su alcance y se bloqueó", ir: null };
     if (e.tipo === "accion_pendiente_de_confirmacion")
       return { icono: "✋", texto: "Hay una acción esperando tu visto bueno", ir: null };
+    if (e.tipo === "aviso_fallido")
+      return { icono: "📭", texto: "NO se pudo avisar por correo — revísalo tú", ir: "leads" };
     if (e.tipo === "llamada_registrada")
       return { icono: "📞", texto: "IntelliA atendió una llamada", ir: "leads" };
     if (e.tipo === "cotizacion_entregada")

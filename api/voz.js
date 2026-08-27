@@ -171,7 +171,7 @@ export default async function handler(req, res) {
   // avisa siempre, falle lo que falle arriba. El asunto va recortado y sin
   // saltos de línea porque un asunto gigante hace que Resend rechace el correo
   // entero — y ahí se perdería el aviso de esa llamada.
-  await enviarAviso({
+  const aviso = await enviarAviso({
     asunto: `Llamada atendida por el agente de voz${
       llamada.nombre ? `: ${sano(llamada.nombre, 60)}` : ""
     }`,
@@ -190,7 +190,34 @@ export default async function handler(req, res) {
     ]
       .filter((l, i, todas) => l !== "" || todas[i + 1] !== "")
       .join("\n"),
-  }).catch((err) => console.error("[VOZ] sin correo de aviso:", err?.message ?? err));
+  }).catch((err) => {
+    console.error("[VOZ] sin correo de aviso:", err?.message ?? err);
+    return { entregado: false };
+  });
+
+  // SI EL CORREO NO SALIÓ, QUE SE VEA.
+  //
+  // Hasta hoy un aviso perdido solo dejaba una línea en un registro que nadie
+  // lee, así que era indistinguible de uno entregado: el equipo se enteraba
+  // cuando el cliente no aparecía. Y descubrimos que había pasado seis veces.
+  //
+  // Anotarlo en la bitácora lo pone en el panel, que sí se mira. No arregla el
+  // correo perdido —eso ya no tiene vuelta—, pero convierte un fallo invisible
+  // en uno que se puede perseguir mientras la llamada todavía está fresca.
+  if (!aviso?.entregado) {
+    await almacen
+      .registrarEvento({
+        tipo: "aviso_fallido",
+        actor: "sistema",
+        detalle: {
+          canal: "voz",
+          telefono: llamada.telefono ?? llamada.telefonoCrudo,
+          lead_id: leadId,
+          motivo: "no se pudo mandar el correo de la llamada",
+        },
+      })
+      .catch((err) => console.error("[VOZ] ni siquiera se pudo anotar el fallo:", err?.message ?? err));
+  }
 
   // Si NADA sobrevivió, no se le miente a Dapta: un 503 invita a reintentar, y
   // ese reintento es la única oportunidad de no perder la llamada. Un 200 con
