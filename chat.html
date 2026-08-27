@@ -15,7 +15,7 @@
 <meta property="og:site_name" content="Intellectum AI Solutions" />
 <meta property="og:title" content="Habla con IntelliA — Asistente de IA de Intellectum" />
 <meta property="og:description" content="Pregunta lo que quieras sobre automatización con IA para tu empresa. IntelliA te responde al instante, 24/7." />
-<meta property="og:image" content="https://www.intellectum.ec/logo.png" />
+<meta property="og:image" content="https://www.intellectum.ec/og.png" />
 <meta property="og:locale" content="es_EC" />
 
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -513,6 +513,8 @@ body::before {
     if (instante) log.style.scrollBehavior = "";
   }
 
+  var anotadoElPrimerMensaje = false;
+
   function enviar(texto) {
     texto = (texto || "").trim();
     if (!texto || enviando) return;
@@ -520,6 +522,15 @@ body::before {
     if (portada.isConnected) portada.remove();
     entrada.value = "";
     entrada.style.height = "auto";
+
+    // El primer mensaje que ESCRIBE la persona, no el hecho de llegar a esta
+    // página. Abrir el chat y no decir nada es curiosidad; escribir es
+    // intención, y es lo que la pauta tiene que aprender a buscar. Solo el
+    // primero: una conversación de quince mensajes es una intención, no quince.
+    if (!anotadoElPrimerMensaje) {
+      anotadoElPrimerMensaje = true;
+      if (window.medir) window.medir("Contact", { canal: "chat_web" });
+    }
 
     pintar("yo", texto);
     historial.push({ role: "user", content: texto });
@@ -653,5 +664,6 @@ body::before {
 </script>
 
 <script defer src="/_vercel/insights/script.js"></script>
+  <script src="/medicion.js" defer></script>
 </body>
 </html>

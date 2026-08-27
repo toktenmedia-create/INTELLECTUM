@@ -543,6 +543,11 @@ input:focus, textarea:focus {
           ? T.listoCorreo(res.d.contacto)
           : T.listoSinCorreo(res.d.contacto);
         $("paso-listo").classList.remove("oculto");
+        /* Reserva confirmada de verdad, no "le dio al botón". Es el único
+           momento de toda la web en que alguien pasa de curioso a cita en la
+           agenda, así que es el que la pauta tiene que aprender a buscar.
+           Si el visitante no dio permiso para medir, medir() no hace nada. */
+        if (window.medir) window.medir("Schedule", { canal: "web" });
       })
       .catch(function () {
         boton.disabled = false;
@@ -559,5 +564,6 @@ input:focus, textarea:focus {
   cargar();
 })();
 </script>
+  <script src="/medicion.js" defer></script>
 </body>
 </html>

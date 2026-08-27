@@ -183,9 +183,19 @@
 
   var saludoPintado = false;
 
+  var anotadaLaApertura = false;
+
   function abrir() {
     if (abierto) return;
     abierto = true;
+    // Abrir el chat es el primer gesto de intención real de un visitante, y por
+    // eso se anota. UNA sola vez por visita: abrir y cerrar tres veces no son
+    // tres intenciones, y contarlas así le enseñaría a la pauta a buscar gente
+    // indecisa. Si el visitante no dio permiso para medir, medir() no existe.
+    if (!anotadaLaApertura) {
+      anotadaLaApertura = true;
+      if (window.medir) window.medir("Contact", { canal: "chat_web" });
+    }
     panel.classList.add("abierto");
     launcher.hidden = true;
     if (!saludoPintado) {
