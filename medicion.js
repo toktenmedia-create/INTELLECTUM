@@ -27,7 +27,7 @@
  */
 
 /** El identificador del píxel de Meta. Vacío = todo esto duerme. */
-var PIXEL = "1365926822276759";
+var PIXEL = "";
 
 (function () {
   "use strict";
