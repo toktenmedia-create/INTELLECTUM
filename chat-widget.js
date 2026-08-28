@@ -356,12 +356,19 @@
 
   /* ------------------------------------------------------------------ sesión */
 
+  /* En localStorage y con la misma clave que chat.html: la sesión es la llave
+     de la memoria del servidor y debe sobrevivir al cierre de la pestaña —
+     si muriera con ella, el visitante que vuelve mañana sería un desconocido. */
   function obtenerSesion() {
     try {
-      var guardada = sessionStorage.getItem("iachat_sesion");
+      var guardada = localStorage.getItem("iachat_sesion");
+      if (!guardada) {
+        guardada = sessionStorage.getItem("iachat_sesion");
+        if (guardada) localStorage.setItem("iachat_sesion", guardada);
+      }
       if (guardada) return guardada;
       var nueva = "s_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-      sessionStorage.setItem("iachat_sesion", nueva);
+      localStorage.setItem("iachat_sesion", nueva);
       return nueva;
     } catch (e) {
       return "s_" + Date.now().toString(36);

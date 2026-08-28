@@ -133,11 +133,10 @@ export default async function handler(req, res) {
 
       // Fecha ilegible: se trata al previo como vigente. Ante la duda, no duplicar.
       if (previo && (!Number.isFinite(edadDias) || edadDias <= 30)) {
+        // Sin tocar `nota`: ese campo es del dueño y el "Volvió a llamar" le
+        // borraba su apunte. La rellamada ya queda entera en el evento
+        // llamada_registrada que se apuntó arriba, con resumen incluido.
         leadId = previo.id;
-        await almacen.actualizarLead?.({
-          id: previo.id,
-          nota: sano(`Volvió a llamar${llamada.resumen ? `: ${llamada.resumen}` : "."}`, 500),
-        });
       } else {
         const guardado = await almacen.guardarLead(
           {
@@ -724,8 +723,16 @@ function formatearDuracion(segs) {
 function tokenCorrecto(req, esperado) {
   const cabecera = req.headers?.authorization || "";
   const deCabecera = cabecera.startsWith("Bearer ") ? cabecera.slice(7).trim() : "";
-  const url = new URL(req.url ?? "/", "http://interno");
-  const deUrl = url.searchParams.get("token") || "";
+
+  // El token en la URL es un mal menor heredado: las direcciones acaban en
+  // logs de terceros (Vercel, proxies) y un token ahí ya no es secreto. Se
+  // mantiene SOLO mientras el panel de Dapta no confirme la cabecera; el día
+  // que se confirme, VOZ_TOKEN_POR_URL=no cierra esta puerta sin tocar código.
+  let deUrl = "";
+  if (String(process.env.VOZ_TOKEN_POR_URL ?? "").toLowerCase() !== "no") {
+    const url = new URL(req.url ?? "/", "http://interno");
+    deUrl = url.searchParams.get("token") || "";
+  }
 
   for (const recibido of [deCabecera, deUrl]) {
     if (!recibido || recibido.length !== esperado.length) continue;

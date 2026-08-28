@@ -95,18 +95,44 @@ export default async function handler(req, res) {
     return;
   }
 
-  const valor = datos?.entry?.[0]?.changes?.[0]?.value;
-  const mensaje = valor?.messages?.[0];
+  // Meta AGRUPA: un webhook puede traer varios entry, varios changes y varios
+  // messages (pasa siempre que la persona escribe dos mensajes seguidos).
+  // Quedarse con el primero pierde los demás en silencio, así que aquí se
+  // recogen todos y se atienden en orden.
+  const paquetes = [];
+  for (const entrada of datos?.entry ?? []) {
+    for (const cambio of entrada?.changes ?? []) {
+      const valor = cambio?.value;
+      for (const mensaje of valor?.messages ?? []) {
+        // Confirmaciones de entrega, cambios de estado... no son conversación.
+        if (mensaje?.from && mensaje?.id) paquetes.push({ valor, mensaje });
+      }
+    }
+  }
 
-  // Confirmaciones de entrega, cambios de estado... no son conversación.
-  if (!mensaje?.from || !mensaje?.id) {
+  if (paquetes.length === 0) {
     res.writeHead(200).end("OK");
     return;
   }
 
   // 3. El 200 sale YA; el trabajo de verdad sigue en segundo plano.
   res.writeHead(200).end("OK");
-  enSegundoPlano(procesar(valor, mensaje));
+  enSegundoPlano(procesarEnOrden(paquetes));
+}
+
+/**
+ * Uno tras otro, nunca en paralelo: dos mensajes del mismo número procesados
+ * a la vez se pisan la memoria y cruzan las respuestas. Y si uno falla, los
+ * siguientes se atienden igual — ya tienen su propia disculpa si hace falta.
+ */
+async function procesarEnOrden(paquetes) {
+  for (const { valor, mensaje } of paquetes) {
+    try {
+      await procesar(valor, mensaje);
+    } catch (err) {
+      console.error("[WHATSAPP] fallo con un mensaje del lote:", err?.message ?? err);
+    }
+  }
 }
 
 /** El trabajo de verdad. Corre después de haberle respondido a Meta. */

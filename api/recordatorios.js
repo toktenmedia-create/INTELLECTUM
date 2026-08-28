@@ -27,7 +27,11 @@ import {
   marcarRecordada,
 } from "../lib/calendario.js";
 import { enviarRecordatorioCita, enviarAviso, enviarRespaldo } from "../lib/leads.js";
-import { enviarRecordatorioWhatsApp, whatsappSalidaConfigurada } from "../lib/mensajeria.js";
+import {
+  enviarRecordatorioWhatsApp,
+  whatsappSalidaConfigurada,
+  normalizarTelefono,
+} from "../lib/mensajeria.js";
 import { abrirAlmacen } from "../lib/almacen.js";
 import { claveCorrecta } from "../lib/acceso.js";
 
@@ -90,6 +94,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ citas: 0, recordadas: 0 });
     }
 
+    // La lista de bajas manda también aquí: quien pidió SALIR no recibe ni
+    // recordatorios. Su cita sigue en pie y el correo (si dejó uno) la cubre;
+    // lo que no puede pasar es que el número que pidió silencio reciba un
+    // WhatsApp del negocio. Si la lista no se puede leer, se asume vacía:
+    // un recordatorio de una cita que la persona pidió es el menor de los males.
+    let bajas = new Set();
+    try {
+      bajas = (await almacen.sesionesDeBaja?.({ canal: "whatsapp" })) ?? new Set();
+    } catch (err) {
+      console.error("[RECORDATORIOS] no se pudo leer la lista de bajas:", err?.message ?? err);
+    }
+
     let recordadas = 0;
     let porWhatsAppTotal = 0;
     let porCorreoTotal = 0;
@@ -102,7 +118,8 @@ export default async function handler(req, res) {
       // Sirve el número guardado al agendar o, si no hay, lo que la persona
       // haya dejado como contacto (si resulta ser un teléfono).
       let porWhatsApp = false;
-      if (whatsappSalidaConfigurada()) {
+      const destinoWhatsApp = normalizarTelefono(cita.telefono || cita.contacto);
+      if (whatsappSalidaConfigurada() && destinoWhatsApp && !bajas.has(destinoWhatsApp)) {
         ({ entregado: porWhatsApp } = await enviarRecordatorioWhatsApp({
           para: cita.telefono || cita.contacto,
           nombre: cita.nombre,

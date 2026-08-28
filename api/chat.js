@@ -10,6 +10,8 @@
  */
 
 import { responder } from "../lib/brain.js";
+import { abrirAlmacen } from "../lib/almacen.js";
+import { enviarAviso } from "../lib/leads.js";
 
 export const config = { maxDuration: 60 };
 
@@ -19,6 +21,18 @@ const MAX_MENSAJES = 40;
 const MAX_CARACTERES = 2000;
 const LIMITE_POR_IP = 30; // peticiones
 const VENTANA_MS = 10 * 60 * 1000; // por cada 10 minutos
+
+// El freno DURABLE, contado en la base y no en la memoria de una instancia:
+// Vercel levanta instancias a demanda y cada una nace con el contador en
+// cero, así que el Map de abajo solo frena al atacante perezoso. Estos dos
+// topes son la defensa del bolsillo — cada mensaje cuesta dinero en Anthropic.
+// Ajustables por variable de entorno, sin tocar código (regla del modelo madre).
+const LIMITE_IP_HORA = Math.max(1, Number(process.env.CHAT_LIMITE_IP_HORA) || 60);
+const TOPE_DIARIO = Math.max(1, Number(process.env.CHAT_TOPE_DIARIO) || 400);
+
+const MENSAJE_TOPE_DIARIO =
+  "El asistente alcanzó su tope de conversaciones por hoy. Escríbenos al WhatsApp " +
+  "+593 96 751 8060 o a info@intellectum.ec y te atendemos ahí mismo.";
 
 const ORIGENES_PERMITIDOS = (
   process.env.ALLOWED_ORIGINS ||
@@ -69,6 +83,31 @@ export default async function handler(req, res) {
   if (!historial) {
     responderJson(res, cors, 400, { error: "Historial inválido" });
     return;
+  }
+
+  // El freno durable, ya con la petición validada (los tanteos malformados no
+  // gastan cupo). Si la base no contesta, se deja pasar: el Map por instancia
+  // sigue cubriendo, y castigar a un cliente real por un tropiezo nuestro
+  // sería pagar el ahorro con ventas.
+  const almacen = abrirAlmacen();
+  const sesionId = typeof cuerpo?.sessionId === "string" ? cuerpo.sessionId.slice(0, 64) : null;
+  try {
+    const freno = await frenoDurable(almacen, ip);
+    if (freno === "ip") {
+      responderJson(res, cors, 429, {
+        error: "Demasiados mensajes. Intenta de nuevo en unos minutos.",
+      });
+      return;
+    }
+    if (freno === "dia") {
+      responderJson(res, cors, 429, { error: MENSAJE_TOPE_DIARIO });
+      return;
+    }
+    almacen
+      .registrarEvento({ tipo: "chat_web", actor: "visitante", detalle: { ip, sesion: sesionId } })
+      .catch(() => {});
+  } catch (err) {
+    console.error("[CHAT] el freno durable no pudo contar:", err?.message ?? err);
   }
 
   res.writeHead(200, {
@@ -171,6 +210,53 @@ function origenPermitido(req) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Dos preguntas a la base: ¿esta IP se pasó en la última hora? ¿el sitio
+ * entero se pasó en el día? La segunda es el techo de gasto: aunque roten mil
+ * IPs, el día tiene un máximo de mensajes que estamos dispuestos a pagar.
+ * Cuando el techo se alcanza, el equipo se entera UNA vez (con candado en la
+ * bitácora, no en la memoria de la instancia).
+ */
+async function frenoDurable(almacen, ip) {
+  const [porIp, delDia] = await Promise.all([
+    almacen.contarEventos({
+      tipo: "chat_web",
+      desde: new Date(Date.now() - 3_600_000).toISOString(),
+      ip,
+      tope: LIMITE_IP_HORA + 1,
+    }),
+    almacen.contarEventos({
+      tipo: "chat_web",
+      desde: new Date(Date.now() - 24 * 3_600_000).toISOString(),
+      tope: TOPE_DIARIO + 1,
+    }),
+  ]);
+
+  if (delDia >= TOPE_DIARIO) {
+    avisarDelTope(almacen, delDia).catch(() => {});
+    return "dia";
+  }
+  return porIp >= LIMITE_IP_HORA ? "ip" : null;
+}
+
+async function avisarDelTope(almacen, cuantos) {
+  const marcador = `tope-chat-${new Date().toISOString().slice(0, 10)}`;
+  if (await almacen.yaProcesado({ marcador })) return;
+  await almacen.registrarEvento({
+    tipo: "mensaje_procesado",
+    actor: "sistema",
+    detalle: { marcador, motivo: "tope_diario_chat" },
+  });
+  await enviarAviso({
+    asunto: "El chat web llegó a su tope diario",
+    cuerpo:
+      `El chat del sitio alcanzó ${cuantos} mensajes en 24 horas y dejó de responder ` +
+      `hasta que baje la marea (los visitantes reciben el WhatsApp y el correo como salida).\n\n` +
+      `Si es tráfico real, sube CHAT_TOPE_DIARIO en Vercel. Si no lo es, era un abuso y el ` +
+      `freno hizo su trabajo.`,
+  });
 }
 
 function superaLimite(ip) {

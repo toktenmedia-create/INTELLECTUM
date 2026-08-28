@@ -646,12 +646,22 @@ body::before {
 
   /* ------------------------------------------------------------------ sesión */
 
+  /* La sesión vive en localStorage, no en sessionStorage: es la llave con la
+     que el servidor recuerda a la persona (su lead, su cotización, su cita).
+     Guardarla en sessionStorage la mataba al cerrar la pestaña y el visitante
+     que volvía al día siguiente era un desconocido. El historial visible sí
+     es de la visita; la memoria de la relación la pone el servidor. */
   function obtenerSesion() {
     try {
-      var guardada = sessionStorage.getItem(CLAVE_SESION);
+      var guardada = localStorage.getItem(CLAVE_SESION);
+      if (!guardada) {
+        // Quien esté a mitad de conversación conserva su sesión de antes.
+        guardada = sessionStorage.getItem(CLAVE_SESION);
+        if (guardada) localStorage.setItem(CLAVE_SESION, guardada);
+      }
       if (guardada) return guardada;
       var nueva = "s_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-      sessionStorage.setItem(CLAVE_SESION, nueva);
+      localStorage.setItem(CLAVE_SESION, nueva);
       return nueva;
     } catch (e) {
       return "s_" + Date.now().toString(36);
