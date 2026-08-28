@@ -33,6 +33,7 @@ import { responder } from "../lib/brain.js";
 import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
 import { avisarEquipoWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
+import { calificarConversacion, tocoUnLead } from "../lib/calificar.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
 // tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
@@ -216,7 +217,7 @@ async function procesar(valor, mensaje) {
   }
 
   try {
-    const { texto: respuesta } = await responder({
+    const { texto: respuesta, acciones } = await responder({
       // El modelo recibe los bloques completos (con la foto o el PDF adentro)...
       historial: [...historial, { role: "user", content: entrada.bloques }],
       canal: "whatsapp",
@@ -250,6 +251,23 @@ async function procesar(valor, mensaje) {
         "[WHATSAPP] la respuesta salió pero no se pudo guardar la memoria:",
         err?.message ?? err,
       );
+    }
+
+    // La ficha que se escribe sola: si la vuelta tocó un lead, se califica.
+    // Ya estamos en segundo plano, así que se espera sin apuro; y si falla,
+    // calificar se lo traga y lo deja en el registro.
+    if (tocoUnLead(acciones)) {
+      await calificarConversacion({
+        almacen,
+        cliente,
+        canal: "whatsapp",
+        sesion: numero,
+        historial: [
+          ...historial,
+          { role: "user", content: entrada.memoria },
+          { role: "assistant", content: respuesta },
+        ],
+      });
     }
   } catch (err) {
     console.error("[WHATSAPP] error procesando el mensaje:", err?.message ?? err);

@@ -177,6 +177,11 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 .pastilla.media { border-color: rgba(251,191,36,0.4); color: var(--ambar); }
 .pastilla.canal { border-color: var(--accent-tint-border); color: var(--accent); }
 .pastilla.riesgo { border-color: rgba(251,191,36,0.5); color: var(--ambar); background: rgba(251,191,36,0.06); }
+.pastilla.temp-caliente { border-color: rgba(248,113,113,0.5); color: #f87171; background: rgba(248,113,113,0.07); }
+.pastilla.temp-tibio { border-color: rgba(251,191,36,0.45); color: var(--ambar); background: rgba(251,191,36,0.05); }
+.pastilla.temp-frio { border-color: rgba(148,163,184,0.4); color: var(--text-dim); background: rgba(148,163,184,0.06); }
+.tarjeta .resumen-ia { border-left: 2px solid var(--cyan); padding-left: 10px; }
+.tarjeta .proximo-paso { color: var(--cyan); margin-top: 4px; font-size: 13px; }
 
 .alerta-riesgo {
   display: flex; align-items: center; gap: 10px; margin-top: 12px;
@@ -833,6 +838,16 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     return Math.floor((Date.now() - new Date(l.creado_en).getTime()) / 86400000);
   }
 
+  /* La temperatura que dejó el calificador automático. Sin calificar no se
+     muestra nada: una pastilla vacía solo ensuciaría la tarjeta. */
+  function pastillaTemperatura(l) {
+    var icono = { caliente: "🔥", tibio: "🌤", frio: "❄️" }[l.temperatura];
+    if (!icono) return "";
+    var puntos = l.puntaje == null ? "" : " " + l.puntaje;
+    return '<span class="pastilla temp-' + esc(l.temperatura) + '" title="Calificación automática de la conversación">' +
+      icono + " " + esc(l.temperatura) + puntos + "</span>";
+  }
+
   function tarjetaLead(l) {
     var estado = l.estado || "nuevo";
     return (
@@ -842,10 +857,18 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       '<span class="cuando">' + haceCuanto(l.creado_en) + "</span></div>" +
       '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">' +
       '<span class="pastilla canal">' + esc(etiquetaCanal(l.canal)) + "</span>" +
+      pastillaTemperatura(l) +
       (l.urgencia ? '<span class="pastilla ' + esc(l.urgencia) + '">' + esc(l.urgencia) + "</span>" : "") +
       (leadEnRiesgo(l) ? '<span class="pastilla riesgo">🧊 ' + diasSinTocar(l) + " días sin atención</span>" : "") +
       "</div>" +
-      (l.necesidad || l.resumen ? '<div class="detalle">' + esc(l.necesidad || l.resumen) + "</div>" : "") +
+      (l.resumen_ia
+        ? '<div class="detalle resumen-ia" title="Resumen escrito por la IA al cerrar la conversación">' +
+          esc(l.resumen_ia) +
+          (l.proximo_paso ? '<div class="proximo-paso">→ ' + esc(l.proximo_paso) + "</div>" : "") +
+          "</div>"
+        : l.necesidad || l.resumen
+          ? '<div class="detalle">' + esc(l.necesidad || l.resumen) + "</div>"
+          : "") +
       '<div class="etiquetas-zona">' +
       (Array.isArray(l.etiquetas) ? l.etiquetas : []).map(function (e) {
         return '<span class="pastilla etiqueta" data-etiqueta="' + esc(e) + '">' +

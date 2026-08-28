@@ -9,9 +9,11 @@
  * dentro del index.html.
  */
 
+import { waitUntil } from "@vercel/functions";
 import { responder } from "../lib/brain.js";
 import { abrirAlmacen } from "../lib/almacen.js";
 import { enviarAviso } from "../lib/leads.js";
+import { calificarConversacion, tocoUnLead } from "../lib/calificar.js";
 
 export const config = { maxDuration: 60 };
 
@@ -120,18 +122,36 @@ export default async function handler(req, res) {
   const enviar = (dato) => res.write(`data: ${JSON.stringify(dato)}\n\n`);
 
   try {
-    const { lead } = await responder({
+    let textoCompleto = "";
+    const { lead, acciones } = await responder({
       historial,
       canal: "web",
-      onTexto: (fragmento) => enviar({ t: "delta", v: fragmento }),
+      onTexto: (fragmento) => {
+        textoCompleto += fragmento;
+        enviar({ t: "delta", v: fragmento });
+      },
       meta: {
         origen: req.headers.referer || "sitio web",
-        sesion: typeof cuerpo?.sessionId === "string" ? cuerpo.sessionId.slice(0, 64) : null,
+        sesion: sesionId,
       },
     });
 
     if (lead) enviar({ t: "lead" });
     enviar({ t: "done" });
+
+    // La ficha que se escribe sola: si esta vuelta tocó un lead, un modelo
+    // barato la califica y la resume — en segundo plano, cuando la persona ya
+    // tiene su respuesta.
+    if (tocoUnLead(acciones)) {
+      enSegundoPlano(
+        calificarConversacion({
+          almacen,
+          canal: "web",
+          sesion: sesionId,
+          historial: [...historial, { role: "assistant", content: textoCompleto }],
+        }),
+      );
+    }
   } catch (err) {
     console.error("[CHAT] error hablando con Claude:", err?.status, err?.message ?? err);
     enviar({
@@ -140,6 +160,15 @@ export default async function handler(req, res) {
     });
   } finally {
     res.end();
+  }
+}
+
+/** En Vercel, waitUntil deja terminar la tarea aunque la respuesta ya salió. */
+function enSegundoPlano(promesa) {
+  try {
+    waitUntil(promesa);
+  } catch {
+    promesa.catch((err) => console.error("[CHAT] tarea de fondo:", err?.message ?? err));
   }
 }
 
