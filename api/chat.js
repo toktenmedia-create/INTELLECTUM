@@ -11,7 +11,7 @@
 
 import { waitUntil } from "@vercel/functions";
 import { responder } from "../lib/brain.js";
-import { abrirAlmacen } from "../lib/almacen.js";
+import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { enviarAviso } from "../lib/leads.js";
 import { calificarConversacion, tocoUnLead } from "../lib/calificar.js";
 
@@ -102,14 +102,19 @@ export default async function handler(req, res) {
       return;
     }
     if (freno === "dia") {
+      topeVisto = Date.now(); // las próximas peticiones ya no pagan las consultas
       responderJson(res, cors, 429, { error: MENSAJE_TOPE_DIARIO });
       return;
     }
-    almacen
-      .registrarEvento({ tipo: "chat_web", actor: "visitante", detalle: { ip, sesion: sesionId } })
-      .catch(() => {});
+    // Se espera de verdad: si el evento no se puede escribir, el contador
+    // durable queda vacío y hay que ENTERARSE, no degradar en silencio.
+    await almacen.registrarEvento({
+      tipo: "chat_web",
+      actor: "visitante",
+      detalle: { ip, sesion: sesionId },
+    });
   } catch (err) {
-    console.error("[CHAT] el freno durable no pudo contar:", err?.message ?? err);
+    console.error("[CHAT] el freno durable no pudo contar (sigue el de instancia):", err?.message ?? err);
   }
 
   res.writeHead(200, {
@@ -248,7 +253,25 @@ function origenPermitido(req) {
  * Cuando el techo se alcanza, el equipo se entera UNA vez (con candado en la
  * bitácora, no en la memoria de la instancia).
  */
+let topeVisto = 0; // cuándo esta instancia vio el tope por última vez
+const REPOSO_TRAS_TOPE_MS = 5 * 60 * 1000;
+let avisadaDegradacion = false;
+
 async function frenoDurable(almacen, ip) {
+  // Con el tope ya visto, no se paga una consulta por cada golpe del abuso:
+  // esta instancia responde 429 de memoria durante unos minutos y recién
+  // después vuelve a preguntar (por si el día rotó o subieron el tope).
+  if (topeVisto && Date.now() - topeVisto < REPOSO_TRAS_TOPE_MS) return "dia";
+  topeVisto = 0;
+
+  if (!esPersistente() && !avisadaDegradacion) {
+    avisadaDegradacion = true;
+    console.warn(
+      "[CHAT] sin Supabase el freno durable cuenta en /tmp por instancia: " +
+        "el único freno real es el de memoria.",
+    );
+  }
+
   const [porIp, delDia] = await Promise.all([
     almacen.contarEventos({
       tipo: "chat_web",
@@ -264,7 +287,12 @@ async function frenoDurable(almacen, ip) {
   ]);
 
   if (delDia >= TOPE_DIARIO) {
-    avisarDelTope(almacen, delDia).catch(() => {});
+    topeVisto = Date.now();
+    enSegundoPlano(
+      avisarDelTope(almacen, delDia).catch((err) =>
+        console.error("[CHAT] aviso del tope:", err?.message ?? err),
+      ),
+    );
     return "dia";
   }
   return porIp >= LIMITE_IP_HORA ? "ip" : null;
@@ -273,18 +301,25 @@ async function frenoDurable(almacen, ip) {
 async function avisarDelTope(almacen, cuantos) {
   const marcador = `tope-chat-${new Date().toISOString().slice(0, 10)}`;
   if (await almacen.yaProcesado({ marcador })) return;
-  await almacen.registrarEvento({
-    tipo: "mensaje_procesado",
-    actor: "sistema",
-    detalle: { marcador, motivo: "tope_diario_chat" },
-  });
-  await enviarAviso({
+
+  // Primero el correo y DESPUÉS el candado: al revés, un fallo de Resend
+  // dejaba el candado puesto y el aviso perdido para todo el día. Si dos
+  // instancias corren a la vez puede salir el aviso doble — dos correos
+  // molestan menos que un chat apagado del que nadie se enteró.
+  const { entregado } = await enviarAviso({
     asunto: "El chat web llegó a su tope diario",
     cuerpo:
       `El chat del sitio alcanzó ${cuantos} mensajes en 24 horas y dejó de responder ` +
       `hasta que baje la marea (los visitantes reciben el WhatsApp y el correo como salida).\n\n` +
       `Si es tráfico real, sube CHAT_TOPE_DIARIO en Vercel. Si no lo es, era un abuso y el ` +
       `freno hizo su trabajo.`,
+  });
+  if (!entregado) throw new Error("el aviso del tope no salió; se reintentará en el próximo golpe");
+
+  await almacen.registrarEvento({
+    tipo: "mensaje_procesado",
+    actor: "sistema",
+    detalle: { marcador, motivo: "tope_diario_chat" },
   });
 }
 

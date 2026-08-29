@@ -55,22 +55,55 @@ const d = await almacen.guardarLead(
 );
 prueba("099... y +593 99... son la misma persona", c.id === d.id);
 
-// 3. La nota del dueño y el estado "ganado" no se tocan.
+// 3. Una ficha que el dueño CERRÓ no absorbe consultas nuevas: la persona que
+// vuelve tras un "ganado" trae una oportunidad nueva, con ficha nueva y
+// abierta; y la ficha cerrada conserva su nota y su estado tal cual.
 await almacen.actualizarLead({ id: a.id, nota: "cliente clave, llamar el lunes", estado: "ganado" });
 const e = await almacen.guardarLead(
   { nombre: "Ana", contacto: "ana@empresa.ec", necesidad: "recotizó", urgencia: "baja", estado: "contactado" },
-  { canal: "web" },
+  { canal: "web", sesion: "s_web2" },
 );
-prueba("la nota del dueño sigue intacta", e.nota === "cliente clave, llamar el lunes");
-prueba("ganado no se degrada a contactado", e.estado === "ganado");
-prueba("la urgencia no baja", e.urgencia === "alta");
+prueba("la ficha ganada no absorbe: nace ficha nueva", e.id !== a.id && !e.fue_fusion);
+const cerrada = (await almacen.listarLeads({ limite: 50 })).find((l) => l.id === a.id);
+prueba("la nota del dueño sigue intacta en la cerrada", cerrada?.nota === "cliente clave, llamar el lunes");
+prueba("la cerrada sigue en ganado", cerrada?.estado === "ganado");
 
-// 4. Contacto distinto → ficha aparte.
+// 4. Contacto distinto → ficha aparte. Cuentas: Ana cerrada + Ana nueva +
+// Luis + Otro = cuatro fichas.
 await almacen.guardarLead({ nombre: "Otro", contacto: "otro@x.com", urgencia: "media" }, { canal: "web" });
-const lista2 = await almacen.listarLeads({});
-prueba("tres personas = tres fichas", lista2.length === 3);
+const lista2 = await almacen.listarLeads({ limite: 50 });
+prueba("cuatro fichas: dos de Ana (cerrada y nueva), Luis y Otro", lista2.length === 4);
 
-// 5. La fusión queda en la bitácora.
+// 5. La ficha se muda al canal vigente: leadDeSesion la encuentra donde la
+// persona habla AHORA (de esto cuelgan el candado de cotizar y el calificador).
+prueba("la fusión trae la marca fue_fusion", d.fue_fusion === true);
+prueba("la ficha se mudó al canal vigente", d.canal === "voz");
+const porSesionNueva = await almacen.guardarLead(
+  { nombre: "", contacto: "099 887 7665", necesidad: "seguimiento", urgencia: "media" },
+  { canal: "whatsapp", sesion: "593998877665" },
+);
+const encontrado = await almacen.leadDeSesion({ canal: "whatsapp", sesion: "593998877665" });
+prueba("leadDeSesion encuentra la ficha en el canal nuevo", encontrado?.id === porSesionNueva.id);
+
+// 6. La ficha ABIERTA de Ana sí absorbe su siguiente consulta.
+const anaOtraVez = await almacen.guardarLead(
+  { nombre: "Ana", contacto: "ana@empresa.ec", necesidad: "más detalles", urgencia: "media" },
+  { canal: "web", sesion: "s_web2" },
+);
+prueba("la ficha abierta de Ana sí fusiona", anaOtraVez.id === e.id && anaOtraVez.fue_fusion === true);
+
+// 7. El resumen con prefijo de cotización no se pisa (el seguimiento cuelga de él).
+const r1 = await almacen.guardarLead(
+  { nombre: "Rosa", contacto: "rosa@x.ec", resumen: "Cotizó por chat: Chatbot. Rango dado: $900-1200.", urgencia: "media" },
+  { canal: "web", sesion: "s_rosa" },
+);
+const r2 = await almacen.guardarLead(
+  { nombre: "Rosa", contacto: "rosa@x.ec", resumen: "Agendó consultoría para el lunes.", urgencia: "media" },
+  { canal: "web", sesion: "s_rosa" },
+);
+prueba("el resumen de cotización sobrevive a la fusión", r2.resumen.startsWith("Cotizó por chat:"));
+
+// 8. La fusión queda en la bitácora.
 const eventos = await almacen.listarEventos({ limite: 50 });
 prueba("quedó el evento lead_fusionado", eventos.some((ev) => ev.tipo === "lead_fusionado"));
 

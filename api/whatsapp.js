@@ -139,7 +139,10 @@ async function procesarEnOrden(paquetes) {
 /** El trabajo de verdad. Corre después de haberle respondido a Meta. */
 async function procesar(valor, mensaje) {
   const numero = mensaje.from;
-  const nombrePerfil = valor?.contacts?.[0]?.profile?.name;
+  // En un lote pueden venir mensajes de varios números: el nombre de perfil se
+  // busca por wa_id para no colgarle a alguien el nombre de otro remitente.
+  const contacto = valor?.contacts?.find((c) => c?.wa_id === numero) ?? valor?.contacts?.[0];
+  const nombrePerfil = contacto?.profile?.name;
 
   avisarSiLaMemoriaEsFragil();
   const almacen = abrirAlmacen();
