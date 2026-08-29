@@ -13,7 +13,7 @@ import { waitUntil } from "@vercel/functions";
 import { responder } from "../lib/brain.js";
 import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { enviarAviso } from "../lib/leads.js";
-import { calificarConversacion, tocoUnLead } from "../lib/calificar.js";
+import { calificarConversacion } from "../lib/calificar.js";
 
 export const config = { maxDuration: 60 };
 
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
 
   try {
     let textoCompleto = "";
-    const { lead, acciones } = await responder({
+    const { lead, leadTocado } = await responder({
       historial,
       canal: "web",
       onTexto: (fragmento) => {
@@ -144,10 +144,10 @@ export default async function handler(req, res) {
     if (lead) enviar({ t: "lead" });
     enviar({ t: "done" });
 
-    // La ficha que se escribe sola: si esta vuelta tocó un lead, un modelo
-    // barato la califica y la resume — en segundo plano, cuando la persona ya
-    // tiene su respuesta.
-    if (tocoUnLead(acciones)) {
+    // La ficha que se escribe sola: si esta vuelta ESCRIBIÓ ficha de verdad
+    // (la señal viene de las herramientas, no del nombre de la herramienta:
+    // un rebote no cuenta), un modelo barato la califica en segundo plano.
+    if (leadTocado) {
       enSegundoPlano(
         calificarConversacion({
           almacen,

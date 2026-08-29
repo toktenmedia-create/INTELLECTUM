@@ -33,7 +33,7 @@ import { responder } from "../lib/brain.js";
 import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
 import { avisarEquipoWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
-import { calificarConversacion, tocoUnLead } from "../lib/calificar.js";
+import { calificarConversacion } from "../lib/calificar.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
 // tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
@@ -220,7 +220,7 @@ async function procesar(valor, mensaje) {
   }
 
   try {
-    const { texto: respuesta, acciones } = await responder({
+    const { texto: respuesta, leadTocado } = await responder({
       // El modelo recibe los bloques completos (con la foto o el PDF adentro)...
       historial: [...historial, { role: "user", content: entrada.bloques }],
       canal: "whatsapp",
@@ -256,10 +256,10 @@ async function procesar(valor, mensaje) {
       );
     }
 
-    // La ficha que se escribe sola: si la vuelta tocó un lead, se califica.
-    // Ya estamos en segundo plano, así que se espera sin apuro; y si falla,
-    // calificar se lo traga y lo deja en el registro.
-    if (tocoUnLead(acciones)) {
+    // La ficha que se escribe sola: solo si la vuelta ESCRIBIÓ ficha de
+    // verdad (un rebote de herramienta no enciende la señal). Ya estamos en
+    // segundo plano; si falla, calificar se lo traga y lo deja en el registro.
+    if (leadTocado) {
       await calificarConversacion({
         almacen,
         cliente,
