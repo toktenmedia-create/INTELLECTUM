@@ -120,6 +120,45 @@ export default async function handler(req, res) {
         }
       }
 
+      if (cuerpo?.accion === "modo_chat") {
+        const canal = String(cuerpo.canal ?? "");
+        const sesion = String(cuerpo.sesion ?? "").trim();
+        const modo = cuerpo.modo === "humano" ? "humano" : "bot";
+        if (canal !== "whatsapp") {
+          return responderJson(res, 400, { error: "El traspaso solo funciona en WhatsApp" });
+        }
+        if (!sesion) return responderJson(res, 400, { error: "Falta el número" });
+
+        try {
+          await almacen.cambiarModo({ canal, sesion, modo });
+        } catch (err) {
+          const mensajeError = String(err?.message ?? "");
+          // La conversación fue borrada (baja o retención) después de que el
+          // panel la pintó: cambiarle el modo la re-crearía, así que se niega.
+          if (/ya no existe/i.test(mensajeError)) {
+            return responderJson(res, 404, {
+              error: "Esa conversación ya no existe (la persona se dio de baja o venció). Vuelve a la lista.",
+            });
+          }
+          if (/does not exist|PGRST204|42703/i.test(mensajeError)) {
+            return responderJson(res, 400, {
+              error: "Falta aplicar supabase/traspaso.sql en la base (Supabase → SQL Editor).",
+            });
+          }
+          throw err;
+        }
+
+        await almacen
+          .registrarEvento({
+            tipo: modo === "humano" ? "traspaso_humano" : "traspaso_bot",
+            actor: "panel",
+            detalle: { canal, sesion, por: "panel" },
+          })
+          .catch(() => {});
+
+        return responderJson(res, 200, { ok: true, modo });
+      }
+
       if (cuerpo?.accion === "responder") {
         const canal = String(cuerpo.canal ?? "");
         const sesion = String(cuerpo.sesion ?? "").trim();
@@ -145,14 +184,17 @@ export default async function handler(req, res) {
 
         // Primero se envía y después se guarda: nunca queda escrito en la
         // memoria un mensaje que la persona no recibió. Si el guardado falla,
-        // el mensaje igual salió; solo se pierde la constancia.
+        // el mensaje igual salió; solo se pierde la constancia. Se ANEXA sobre
+        // una relectura para no pisar un mensaje que el webhook guardó
+        // mientras el envío estaba en vuelo.
         let guardado = true;
         try {
           const historial = await almacen.recordarConversacion({ canal, sesion });
-          await almacen.guardarConversacion({
+          await almacen.anexarMensajes({
             canal,
             sesion,
-            mensajes: [...historial, { role: "assistant", content: texto, via: "panel" }],
+            base: historial,
+            nuevos: [{ role: "assistant", content: texto, via: "panel" }],
           });
         } catch (err) {
           console.error("[PANEL] la respuesta salió pero no se pudo guardar:", err?.message ?? err);
@@ -388,6 +430,8 @@ export default async function handler(req, res) {
           },
         },
         conversaciones: conversaciones.length,
+        // Conversaciones en manos humanas: cada una espera respuesta del dueño.
+        en_mano: conversaciones.filter((c) => c.modo === "humano").length,
         citas: { proximas: citas.length, siguiente: citas[0] ?? null },
         eventos,
       });
@@ -395,9 +439,16 @@ export default async function handler(req, res) {
 
     if (vista === "leads") {
       const texto = url.searchParams.get("texto") ?? "";
+      // El límite alto existe para la exportación a CSV: la lista de pantalla
+      // pide 100 como siempre; la descarga pide hasta 1000 de una vez. Entero
+      // siempre: PostgREST rechaza limit=2.5 y la vista moriría en 500.
+      const limite = Math.min(
+        Math.max(Math.trunc(Number(url.searchParams.get("limite"))) || 100, 1),
+        1000,
+      );
       const leads = texto
         ? await almacen.buscarLeads({ texto, limite: 50 })
-        : await almacen.listarLeads({ limite: 100 });
+        : await almacen.listarLeads({ limite });
       return responderJson(res, 200, { leads });
     }
 
@@ -412,6 +463,7 @@ export default async function handler(req, res) {
           sesion: f.sesion,
           actualizado_en: f.actualizado_en,
           mensajes: mensajes.length,
+          modo: f.modo === "humano" ? "humano" : "bot",
           ultimo: typeof ultimo?.content === "string" ? ultimo.content.slice(0, 120) : "",
         };
       });
@@ -422,7 +474,11 @@ export default async function handler(req, res) {
       const canal = url.searchParams.get("canal") ?? "";
       const sesion = url.searchParams.get("sesion") ?? "";
       const mensajes = await almacen.recordarConversacion({ canal, sesion });
-      return responderJson(res, 200, { canal, sesion, mensajes });
+      const modo =
+        canal === "whatsapp"
+          ? await almacen.modoConversacion({ canal, sesion }).catch(() => "bot")
+          : "bot";
+      return responderJson(res, 200, { canal, sesion, mensajes, modo });
     }
 
     if (vista === "citas") {

@@ -33,6 +33,7 @@ import { responder } from "../lib/brain.js";
 import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
 import { avisarEquipoWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
+import { enviarAviso } from "../lib/leads.js";
 import { calificarConversacion } from "../lib/calificar.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
@@ -177,9 +178,20 @@ async function procesar(valor, mensaje) {
     console.error("[WHATSAPP] no se pudo revisar duplicados:", err?.message ?? err);
   }
 
-  // Doble check azul y "escribiendo...": la persona sabe que la escucharon.
-  // Es cosmético: si falla, no detiene nada.
-  marcarLeido(mensaje.id).catch(() => {});
+  // ¿Quién atiende este hilo? Se pregunta ANTES del "escribiendo…" y de leer
+  // la memoria: en manos humanas el bot calla y no debe prometer respuesta.
+  let modo = "bot";
+  try {
+    modo =
+      (await almacen.modoConversacion?.({ canal: "whatsapp", sesion: numero, cliente })) ?? "bot";
+  } catch (err) {
+    console.warn("[WHATSAPP] no se pudo leer el modo (se atiende como bot):", err?.message ?? err);
+  }
+
+  // Doble check azul: la persona sabe que la escucharon. El "escribiendo…"
+  // solo cuando va a responder el bot — en manos humanas sería prometerle una
+  // respuesta inmediata que no viene. Es cosmético: si falla, no detiene nada.
+  marcarLeido(mensaje.id, { escribiendo: modo !== "humano" }).catch(() => {});
 
   // "SALIR": la única palabra que no pasa por el cerebro. Se atiende aquí,
   // determinista y al instante, porque una baja no es una conversación: es un
@@ -187,6 +199,17 @@ async function procesar(valor, mensaje) {
   // se confirma. Si la persona vuelve a escribir después, se le responde con
   // normalidad: retomar la conversación es decisión suya.
   if (esSolicitudDeBaja(mensaje)) {
+    // La baja también suelta el volante: sin esto, quien vuelva algún día se
+    // encontraría con un bot mudo en vez de la atención normal que promete la
+    // confirmación. Va ANTES del borrado porque en Supabase cambiar el modo
+    // exige que la fila todavía exista.
+    if (modo === "humano") {
+      try {
+        await almacen.cambiarModo?.({ canal: "whatsapp", sesion: numero, cliente, modo: "bot" });
+      } catch (err) {
+        console.error("[BAJA] no se pudo soltar el modo humano:", err?.message ?? err);
+      }
+    }
     try {
       await almacen.registrarBaja({ canal: "whatsapp", sesion: numero, cliente });
       await almacen.olvidarConversacion({ canal: "whatsapp", sesion: numero, cliente });
@@ -219,6 +242,33 @@ async function procesar(valor, mensaje) {
     console.error("[WHATSAPP] no se pudo leer la memoria:", err?.message ?? err);
   }
 
+  // La conversación está en manos humanas: el bot calla. El mensaje se anexa
+  // al historial para que el panel lo muestre y se le avisa al dueño, que es
+  // quien responde ahora.
+  if (modo === "humano") {
+    try {
+      await almacen.anexarMensajes({
+        canal: "whatsapp",
+        cliente,
+        sesion: numero,
+        nombrePerfil,
+        base: historial,
+        nuevos: [{ role: "user", content: entrada.memoria }],
+      });
+    } catch (err) {
+      console.error("[WHATSAPP] no se pudo guardar el mensaje en manos humanas:", err?.message ?? err);
+    }
+    await avisarManosHumanas({
+      numero,
+      nombrePerfil,
+      texto: entrada.memoria,
+      bitacora,
+      almacen,
+      cliente,
+    });
+    return;
+  }
+
   try {
     const { texto: respuesta, leadTocado } = await responder({
       // El modelo recibe los bloques completos (con la foto o el PDF adentro)...
@@ -236,15 +286,17 @@ async function procesar(valor, mensaje) {
 
     // ...pero la memoria guarda solo texto. Guardar la foto en el historial
     // la volvería a mandar al modelo en cada mensaje siguiente, pagándola
-    // una y otra vez sin necesidad.
+    // una y otra vez sin necesidad. Se ANEXA sobre una relectura: durante la
+    // vuelta del modelo (segundos) pudo escribir el panel u otro webhook, y
+    // guardar la copia vieja les borraría el mensaje.
     try {
-      await almacen.guardarConversacion({
+      await almacen.anexarMensajes({
         canal: "whatsapp",
         cliente,
         sesion: numero,
         nombrePerfil,
-        mensajes: [
-          ...historial,
+        base: historial,
+        nuevos: [
           { role: "user", content: entrada.memoria },
           { role: "assistant", content: respuesta },
         ],
@@ -307,6 +359,63 @@ function avisarDelTropiezo(numero, err, bitacora) {
       `Le pedí disculpas y le di el correo y el teléfono. Motivo: ${motivo}`,
     bitacora,
   }).catch(() => {});
+}
+
+/**
+ * El aviso de "te escribieron y esta conversación la llevas tú", con dos
+ * vallas: un freno de cinco minutos por número (seis mensajes seguidos no son
+ * seis avisos pagados, y el volumen lo controla un tercero) y un rastro en la
+ * bitácora si ningún canal lo pudo entregar — un mensaje esperando respuesta
+ * humana no puede quedar en silencio Y sin registro a la vez. Los mensajes
+ * frenados igual quedan guardados en el historial y en la alerta del panel.
+ */
+const ESPERA_AVISO_MANOS_MS = 5 * 60 * 1000;
+const avisosManos = new Map(); // número → cuándo se avisó por última vez (por instancia)
+
+async function avisarManosHumanas({ numero, nombrePerfil, texto, bitacora, almacen, cliente }) {
+  const ahora = Date.now();
+  if (ahora - (avisosManos.get(numero) ?? 0) < ESPERA_AVISO_MANOS_MS) return;
+  avisosManos.set(numero, ahora);
+  if (avisosManos.size > 500) avisosManos.clear(); // que el mapa no crezca sin fin
+
+  // En una sola línea: la vía de plantilla de Meta (el respaldo cuando la
+  // ventana de 24 h está cerrada) rechaza parámetros con saltos de línea.
+  const resumen = (typeof texto === "string" ? texto : "(multimedia)")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+  const quien = nombrePerfil || `+${numero}`;
+
+  let entregado = false;
+  try {
+    const aviso = await avisarEquipoWhatsApp({
+      texto: `${quien} escribió y la conversación está en tus manos: "${resumen}". Respóndele desde el panel.`,
+      bitacora,
+    });
+    entregado = Boolean(aviso?.entregado);
+    if (!entregado) {
+      const correo = await enviarAviso({
+        asunto: "Mensaje de WhatsApp esperando tu respuesta",
+        cuerpo:
+          `${quien} escribió y su conversación está en manos humanas (el bot no responde):\n\n` +
+          `"${resumen}"\n\nRespóndele desde el panel: https://www.intellectum.ec/panel`,
+      });
+      entregado = Boolean(correo?.entregado);
+    }
+  } catch (err) {
+    console.error("[WHATSAPP] el aviso de manos humanas tropezó:", err?.message ?? err);
+  }
+  if (!entregado) {
+    console.error("[WHATSAPP] ningún canal pudo avisar del mensaje en manos humanas de", quien);
+    await almacen
+      .registrarEvento({
+        tipo: "aviso_fallido",
+        actor: "sistema",
+        cliente,
+        detalle: { canal: "whatsapp", sesion: numero, motivo: "manos_humanas" },
+      })
+      .catch(() => {});
+  }
 }
 
 /**
@@ -396,19 +505,22 @@ function firmaValida(cuerpoCrudo, cabecera) {
 }
 
 /** Doble check azul + "escribiendo..." mientras el cerebro piensa. */
-async function marcarLeido(idMensaje) {
+async function marcarLeido(idMensaje, { escribiendo = true } = {}) {
+  const cuerpo = {
+    messaging_product: "whatsapp",
+    status: "read",
+    message_id: idMensaje,
+  };
+  // El "escribiendo…" solo cuando el bot va a responder: mostrarlo con la
+  // conversación en manos humanas es prometer una respuesta que no viene.
+  if (escribiendo) cuerpo.typing_indicator = { type: "text" };
   await fetch(`${GRAPH}/${process.env.META_PHONE_NUMBER_ID}/messages`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.META_TOKEN}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      status: "read",
-      message_id: idMensaje,
-      typing_indicator: { type: "text" },
-    }),
+    body: JSON.stringify(cuerpo),
   });
 }
 

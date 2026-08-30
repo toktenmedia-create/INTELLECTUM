@@ -240,6 +240,48 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 .hora-op.quieta:hover { background: rgba(255,255,255,0.05); }
 
 .filtros { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 14px; }
+.filtros .empuja { margin-left: auto; }
+
+/* ── embudo (kanban) ── */
+.kanban { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch; }
+.kan-col { flex: 1 0 216px; min-width: 216px; max-width: 300px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px; transition: border-color 0.15s, background 0.15s; }
+.kan-col.encima { border-color: var(--accent); background: var(--accent-tint-bg); }
+.kan-head { display: flex; align-items: baseline; gap: 6px; padding: 2px 4px 8px;
+  font-size: 12.5px; color: var(--text-dim); }
+.kan-head .cuenta { color: var(--text-muted); }
+.kan-head .plata { margin-left: auto; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); }
+.kan-col[data-col="ganado"] .kan-head { color: var(--verde); }
+.kan-col[data-col="perdido"] .kan-head { color: var(--rojo); }
+.kan-card { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+  margin-bottom: 8px; background: var(--bg-elev); cursor: grab; }
+.kan-card:active { cursor: grabbing; }
+.kan-card.arrastrando { opacity: 0.45; }
+.kan-card .knombre { font-size: 13.5px; font-weight: 500; overflow-wrap: anywhere; }
+.kan-card .kdato { font-size: 12px; color: var(--text-dim); margin-top: 3px; overflow-wrap: anywhere; }
+.kan-card .kplata { font-family: var(--font-mono); font-size: 12px; color: var(--accent); margin-top: 3px; }
+.kan-card .kpie { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.kan-card .kpie .pastilla { font-size: 10px; padding: 1px 7px; }
+.kan-card .kcuando { margin-left: auto; font-size: 10.5px; color: var(--text-muted); }
+.kan-mover { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.kan-mover button { padding: 4px 9px; border-radius: 999px; font-size: 10.5px;
+  border: 1px solid var(--border-strong); color: var(--text-dim); }
+.kan-mover button:hover { border-color: var(--accent); color: var(--accent); }
+.kan-vacia { color: var(--text-muted); font-size: 12px; text-align: center; padding: 14px 4px; }
+
+/* ── traspaso bot → humano ── */
+.pastilla.mano { border-color: rgba(251,191,36,0.5); color: var(--ambar); background: rgba(251,191,36,0.07); }
+.chat-mando { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.chat-mando .quien-chat { color: var(--text-muted); font-size: 13px; }
+.btn-traspaso { padding: 6px 14px; border-radius: 999px; font-size: 12.5px;
+  border: 1px solid var(--accent-tint-border); color: var(--accent);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
+.btn-traspaso:hover { background: var(--accent-tint-bg); }
+.btn-traspaso:active { transform: scale(0.97); }
+.btn-traspaso.suelta { border-color: rgba(251,191,36,0.45); color: var(--ambar); }
+.btn-traspaso.suelta:hover { background: rgba(251,191,36,0.08); }
 .chip-filtro {
   padding: 5px 12px; border-radius: 999px; font-size: 12px;
   border: 1px solid var(--border); color: var(--text-muted);
@@ -527,7 +569,14 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + CLAVE },
       body: JSON.stringify(Object.assign({ accion: accion }, cuerpo)),
     }).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
+      if (!r.ok) {
+        // El servidor manda diagnósticos precisos ("falta traspaso.sql", "esa
+        // conversación ya no existe"): tirarlos y decir "HTTP 400" era mandar
+        // al dueño a arreglar lo que no estaba roto.
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          throw new Error(d.error || "HTTP " + r.status);
+        });
+      }
       return r.json();
     });
   }
@@ -608,6 +657,13 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         ? stat("$" + Number(d.leads.embudo.ganado).toLocaleString("es-EC"), "ganado", "leads")
         : "") +
       "</div>" +
+      (d.en_mano
+        ? '<div class="alerta-riesgo" data-ir="chats">🙋 ' +
+          (d.en_mano === 1
+            ? "1 conversación de WhatsApp está en tus manos: el bot no responde ahí, respóndele tú."
+            : d.en_mano + " conversaciones de WhatsApp están en tus manos: el bot no responde ahí, respóndeles tú.") +
+          "</div>"
+        : "") +
       (d.leads.en_riesgo
         ? '<div class="alerta-riesgo" data-ir="leads">🧊 ' +
           (d.leads.en_riesgo === 1
@@ -699,6 +755,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       }
       if (h === "ver_disponibilidad") return { icono: "🕐", texto: "Alguien revisó horarios disponibles", ir: "citas" };
       if (h === "escalar_a_humano") return { icono: "🙋", texto: "Una conversación pidió atención humana", ir: "chats" };
+      if (h === "responder") return { icono: "✍️", texto: "Respondiste a mano por WhatsApp", ir: "chats" };
       return { icono: "⚙️", texto: "IntelliA usó " + (h || "una herramienta"), ir: null };
     }
     if (e.tipo === "herramienta_fallida")
@@ -709,6 +766,16 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       return { icono: "✋", texto: "Hay una acción esperando tu visto bueno", ir: null };
     if (e.tipo === "aviso_fallido")
       return { icono: "📭", texto: "NO se pudo avisar por correo — revísalo tú", ir: "leads" };
+    if (e.tipo === "traspaso_humano")
+      return {
+        icono: "🙋",
+        texto: det.por === "panel"
+          ? "Tomaste una conversación de WhatsApp: el bot quedó en silencio"
+          : "IntelliA te pasó una conversación de WhatsApp: respóndela tú",
+        ir: "chats",
+      };
+    if (e.tipo === "traspaso_bot")
+      return { icono: "🤖", texto: "Le devolviste una conversación al bot", ir: "chats" };
     if (e.tipo === "llamada_registrada")
       return { icono: "📞", texto: "IntelliA atendió una llamada", ir: "leads" };
     if (e.tipo === "cotizacion_entregada")
@@ -749,23 +816,102 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     ["ganado", "Ganados"], ["perdido", "Perdidos"],
   ];
   var filtroLeads = "todos";
+  var vistaLeads = localStorage.getItem("panel_vista_leads") === "embudo" ? "embudo" : "lista";
 
   function montarFiltros(v) {
     var zona = document.createElement("div");
     zona.className = "filtros";
-    FILTROS.forEach(function (f) {
-      var b = document.createElement("button");
-      b.className = "chip-filtro" + (filtroLeads === f[0] ? " activo" : "");
-      b.textContent = f[1];
-      b.addEventListener("click", function () {
-        filtroLeads = f[0];
-        zona.querySelectorAll(".chip-filtro").forEach(function (x) { x.classList.remove("activo"); });
-        b.classList.add("activo");
-        pintaListaLeads(document.getElementById("buscaLeads").value.trim());
+
+    // Los filtros por estado solo tienen sentido en la lista: el embudo YA es
+    // la separación por estado, con todas las columnas a la vista.
+    if (vistaLeads === "lista") {
+      FILTROS.forEach(function (f) {
+        var b = document.createElement("button");
+        b.className = "chip-filtro" + (filtroLeads === f[0] ? " activo" : "");
+        b.textContent = f[1];
+        b.addEventListener("click", function () {
+          filtroLeads = f[0];
+          zona.querySelectorAll(".chip-filtro").forEach(function (x) { x.classList.remove("activo"); });
+          b.classList.add("activo");
+          pintaListaLeads(document.getElementById("buscaLeads").value.trim());
+        });
+        zona.appendChild(b);
       });
-      zona.appendChild(b);
+    }
+
+    var toggle = document.createElement("button");
+    toggle.className = "chip-filtro empuja" + (vistaLeads === "embudo" ? " activo" : "");
+    toggle.textContent = vistaLeads === "embudo" ? "☰ Ver lista" : "▦ Ver embudo";
+    toggle.addEventListener("click", function () {
+      vistaLeads = vistaLeads === "embudo" ? "lista" : "embudo";
+      localStorage.setItem("panel_vista_leads", vistaLeads);
+      cargarLeads(document.getElementById("buscaLeads").value.trim());
     });
+    zona.appendChild(toggle);
+
+    var csv = document.createElement("button");
+    csv.className = "chip-filtro";
+    csv.textContent = "⬇ CSV";
+    csv.title = "Descargar todos los leads en un archivo para Excel o Numbers";
+    csv.addEventListener("click", function () { descargarCSV(csv); });
+    zona.appendChild(csv);
+
     v.insertBefore(zona, document.getElementById("listaLeads"));
+  }
+
+  /* La exportación pide hasta 1000 leads (la lista de pantalla solo trae 100)
+     y arma el archivo en el navegador. Separador ";" y BOM UTF-8: es lo que
+     Excel en español espera para abrir columnas y tildes sin pelear. */
+  var COLUMNAS_CSV = [
+    ["nombre", "Nombre"], ["empresa", "Empresa"], ["contacto", "Contacto"],
+    ["canal", "Canal"], ["estado", "Estado"], ["urgencia", "Urgencia"],
+    ["temperatura", "Temperatura"], ["puntaje", "Puntaje"],
+    ["valor_estimado", "Valor estimado (USD)"], ["etiquetas", "Etiquetas"],
+    ["necesidad", "Necesidad"], ["resumen", "Resumen"],
+    ["resumen_ia", "Resumen IA"], ["proximo_paso", "Próximo paso"],
+    ["nota", "Nota"], ["motivo_perdida", "Motivo de pérdida"], ["creado_en", "Creado"],
+  ];
+
+  function celdaCSV(valor) {
+    if (valor == null) return '""';
+    if (Array.isArray(valor)) valor = valor.join(" | ");
+    var texto = String(valor);
+    // Excel evalúa como fórmula la celda que empieza con =, +, - o @ (aunque
+    // venga entre comillas), y estos campos los dicta el cliente que chatea:
+    // un apóstrofo delante la vuelve texto inofensivo sin cambiar lo que se lee.
+    if (/^\s*[=+\-@\t\r]/.test(texto)) texto = "'" + texto;
+    return '"' + texto.replace(/"/g, '""') + '"';
+  }
+
+  function descargarCSV(boton) {
+    var antes = boton.textContent;
+    boton.textContent = "Preparando…";
+    boton.disabled = true;
+    pedir("leads", { limite: 1000 })
+      .then(function (d) {
+        var filas = [COLUMNAS_CSV.map(function (c) { return celdaCSV(c[1]); }).join(";")];
+        (d.leads || []).forEach(function (l) {
+          filas.push(COLUMNAS_CSV.map(function (c) {
+            if (c[0] === "estado") return celdaCSV(l.estado || "nuevo");
+            return celdaCSV(l[c[0]]);
+          }).join(";"));
+        });
+        var contenido = "\uFEFF" + filas.join("\r\n");
+        var enlace = document.createElement("a");
+        enlace.href = URL.createObjectURL(new Blob([contenido], { type: "text/csv;charset=utf-8" }));
+        enlace.download = "leads-intellectum-" + new Date().toISOString().slice(0, 10) + ".csv";
+        document.body.appendChild(enlace);
+        enlace.click();
+        enlace.remove();
+        setTimeout(function () { URL.revokeObjectURL(enlace.href); }, 4000);
+        boton.textContent = "✓ Descargado";
+        setTimeout(function () { boton.textContent = antes; boton.disabled = false; }, 1800);
+      })
+      .catch(function () {
+        boton.textContent = antes;
+        boton.disabled = false;
+        alert("No se pudo preparar el archivo. Intenta de nuevo.");
+      });
   }
 
   function cargarLeads(texto) {
@@ -789,11 +935,15 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   function pintaListaLeads(texto) {
     pedir("leads", texto ? { texto: texto } : {})
       .then(function (d) {
+        var zona = document.getElementById("listaLeads");
+        if (vistaLeads === "embudo") {
+          pintarEmbudo(zona, d.leads || [], texto);
+          return;
+        }
         // Los que se están enfriando van arriba; el resto conserva su orden.
         d.leads = d.leads.slice().sort(function (a, b) { return leadEnRiesgo(b) - leadEnRiesgo(a); });
         if (filtroLeads === "riesgo") d.leads = d.leads.filter(leadEnRiesgo);
         else if (filtroLeads !== "todos") d.leads = d.leads.filter(function (l) { return (l.estado || "nuevo") === filtroLeads; });
-        var zona = document.getElementById("listaLeads");
         if (!d.leads.length) {
           zona.innerHTML = '<div class="vacio">' + (filtroLeads !== "todos" ? "Ninguno con este filtro." : texto ? "Nada con ese texto." : "Todavía no hay leads.") + "</div>";
           return;
@@ -824,6 +974,119 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         });
       })
       .catch(fallo("leads"));
+  }
+
+  /* ── el embudo ──
+     Una columna por estado, cada lead es una tarjeta. En computadora se
+     arrastra de columna a columna; en el teléfono (y también con el mouse) se
+     toca la tarjeta y aparecen los botones de destino. Las dos rutas terminan
+     en la misma orden al servidor. */
+
+  var arrastre = null; // { id, desde } solo mientras se arrastra una tarjeta propia
+
+  function pintarEmbudo(zona, leads, texto) {
+    if (!leads.length) {
+      zona.innerHTML = '<div class="vacio">' + (texto ? "Nada con ese texto." : "Todavía no hay leads.") + "</div>";
+      return;
+    }
+    var porEstado = {};
+    ESTADOS.forEach(function (e) { porEstado[e] = []; });
+    leads.forEach(function (l) {
+      var e = ESTADOS.indexOf(l.estado || "nuevo") === -1 ? "nuevo" : (l.estado || "nuevo");
+      porEstado[e].push(l);
+    });
+
+    zona.innerHTML = '<div class="kanban">' + ESTADOS.map(function (e) {
+      var lista = porEstado[e];
+      var plata = lista.reduce(function (s, l) { return s + (Number(l.valor_estimado) || 0); }, 0);
+      return '<div class="kan-col" data-col="' + e + '">' +
+        '<div class="kan-head"><span>' + esc(NOMBRE_ESTADO[e] || e) + '</span>' +
+        '<span class="cuenta">' + lista.length + "</span>" +
+        (plata > 0 ? '<span class="plata">$' + plata.toLocaleString("es-EC") + "</span>" : "") +
+        "</div>" +
+        (lista.map(tarjetaEmbudo).join("") || '<div class="kan-vacia">—</div>') +
+        "</div>";
+    }).join("") + "</div>";
+
+    zona.querySelectorAll(".kan-card").forEach(function (card) {
+      card.addEventListener("dragstart", function (ev) {
+        // La verdad del arrastre vive en esta variable, no en dataTransfer:
+        // así una selección de texto o un enlace de otra ventana jamás cuentan
+        // como tarjeta (y se sabe de qué columna salió, para ignorar el drop
+        // sobre la misma).
+        arrastre = { id: card.dataset.id, desde: card.closest("[data-col]").dataset.col };
+        ev.dataTransfer.setData("text/plain", card.dataset.id);
+        ev.dataTransfer.effectAllowed = "move";
+        card.classList.add("arrastrando");
+      });
+      card.addEventListener("dragend", function () {
+        arrastre = null;
+        card.classList.remove("arrastrando");
+      });
+      card.addEventListener("click", function () { desplegarMovida(card); });
+    });
+
+    zona.querySelectorAll(".kan-col").forEach(function (col) {
+      col.addEventListener("dragover", function (ev) {
+        if (!arrastre) return; // lo que no es una tarjeta nuestra no es destino
+        ev.preventDefault();
+        col.classList.add("encima");
+      });
+      col.addEventListener("dragleave", function () { col.classList.remove("encima"); });
+      col.addEventListener("drop", function (ev) {
+        ev.preventDefault();
+        col.classList.remove("encima");
+        if (!arrastre) return;
+        var mueve = arrastre;
+        arrastre = null;
+        if (mueve.desde === col.dataset.col) return; // soltarla donde estaba no es una orden
+        moverLeadA(mueve.id, col.dataset.col);
+      });
+    });
+  }
+
+  function tarjetaEmbudo(l) {
+    return '<div class="kan-card" draggable="true" data-id="' + esc(l.id) + '">' +
+      '<div class="knombre">' + esc(l.nombre || "Sin nombre") + "</div>" +
+      (l.empresa ? '<div class="kdato">' + esc(l.empresa) + "</div>" : "") +
+      (l.valor_estimado != null && l.valor_estimado !== ""
+        ? '<div class="kplata">$' + Number(l.valor_estimado).toLocaleString("es-EC") + "</div>"
+        : "") +
+      '<div class="kpie">' +
+      '<span class="pastilla canal">' + esc(etiquetaCanal(l.canal)) + "</span>" +
+      pastillaTemperatura(l) +
+      '<span class="kcuando">' + haceCuanto(l.creado_en) + "</span>" +
+      "</div></div>";
+  }
+
+  /* El toque: en vez de arrastrar, la tarjeta despliega a dónde puede irse. */
+  function desplegarMovida(card) {
+    var abierta = card.querySelector(".kan-mover");
+    if (abierta) { abierta.remove(); return; }
+    document.querySelectorAll(".kan-mover").forEach(function (x) { x.remove(); });
+    var estadoActual = card.closest("[data-col]").dataset.col;
+    var zona = document.createElement("div");
+    zona.className = "kan-mover";
+    ESTADOS.forEach(function (e) {
+      if (e === estadoActual) return;
+      var b = document.createElement("button");
+      b.textContent = "→ " + (NOMBRE_ESTADO[e] || e);
+      b.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        moverLeadA(card.dataset.id, e);
+      });
+      zona.appendChild(b);
+    });
+    card.appendChild(zona);
+  }
+
+  function moverLeadA(id, estado) {
+    if (!id || ESTADOS.indexOf(estado) === -1) return;
+    ordenar("lead", { id: id, estado: estado })
+      .then(function () {
+        pintaListaLeads(document.getElementById("buscaLeads").value.trim());
+      })
+      .catch(function () { alert("No se pudo mover el lead. Intenta de nuevo."); });
   }
 
   /* Urgencia alta y nadie lo ha tocado en 3+ días: se está enfriando.
@@ -1030,16 +1293,26 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 
   /* ──────────────────────────────────────────────────────────────── chats */
 
+  // Qué conversación está abierta ahora mismo: una respuesta tardía del
+  // servidor no debe re-abrir un chat que el dueño ya cerró.
+  var chatAbierto = null;
+
   function pintarChats(d) {
+    chatAbierto = null;
     var v = document.getElementById("vista-chats");
     if (!d.conversaciones.length) {
       v.innerHTML = '<div class="vacio">No hay conversaciones activas.</div>';
       return;
     }
-    v.innerHTML = d.conversaciones.map(function (c) {
+    // Las que están en tus manos van arriba: cada una espera TU respuesta.
+    var lista = d.conversaciones.slice().sort(function (a, b) {
+      return (b.modo === "humano" ? 1 : 0) - (a.modo === "humano" ? 1 : 0);
+    });
+    v.innerHTML = lista.map(function (c) {
       return (
         '<button class="fila-chat" data-canal="' + esc(c.canal) + '" data-sesion="' + esc(c.sesion) + '">' +
-        "<div><div class=\"quien\">" + esc(etiquetaCanal(c.canal)) + " · " + esc(acortarSesion(c.sesion)) + "</div>" +
+        "<div><div class=\"quien\">" + esc(etiquetaCanal(c.canal)) + " · " + esc(acortarSesion(c.sesion)) +
+        (c.modo === "humano" ? ' <span class="pastilla mano">🙋 en tus manos</span>' : "") + "</div>" +
         '<div class="resumen">' + esc(c.ultimo) + "</div></div>" +
         '<div class="lado">' + haceCuanto(c.actualizado_en) + "<br>" + esc(c.mensajes) + " msjs</div>" +
         "</button>"
@@ -1057,14 +1330,22 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   }
 
   function abrirChat(canal, sesion) {
+    chatAbierto = canal + "|" + sesion;
     var v = document.getElementById("vista-chats");
     v.innerHTML = '<div class="cargando">Cargando…</div>';
     pedir("conversacion", { canal: canal, sesion: sesion })
       .then(function (d) {
+        var modo = d.modo === "humano" ? "humano" : "bot";
         v.innerHTML =
           '<button class="volver" id="volverChats">← Todas las conversaciones</button>' +
-          '<div style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">' +
-          esc(etiquetaCanal(canal)) + " · " + esc(acortarSesion(sesion)) + "</div>" +
+          '<div class="chat-mando"><span class="quien-chat">' +
+          esc(etiquetaCanal(canal)) + " · " + esc(acortarSesion(sesion)) + "</span>" +
+          (modo === "humano" ? '<span class="pastilla mano">🙋 en tus manos</span>' : "") +
+          (canal === "whatsapp"
+            ? '<button class="btn-traspaso' + (modo === "humano" ? " suelta" : "") + '" id="btnTraspaso">' +
+              (modo === "humano" ? "🤖 Devolver al bot" : "🙋 Tomar la conversación") + "</button>"
+            : "") +
+          "</div>" +
           '<div class="burbujas">' +
           ((d.mensajes || []).map(function (m) {
             var quien = m.role === "user" ? "cliente" : (m.via === "panel" ? "bot mano" : "bot");
@@ -1075,14 +1356,33 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         document.getElementById("volverChats").addEventListener("click", function () {
           pedir("conversaciones").then(pintarChats).catch(fallo("chats"));
         });
-        if (canal === "whatsapp") montarComposer(v, canal, sesion);
+        var btn = document.getElementById("btnTraspaso");
+        if (btn) {
+          btn.addEventListener("click", function () {
+            btn.disabled = true;
+            btn.textContent = "Cambiando…";
+            var esteChat = canal + "|" + sesion;
+            ordenar("modo_chat", { canal: canal, sesion: sesion, modo: modo === "humano" ? "bot" : "humano" })
+              .then(function () {
+                if (chatAbierto === esteChat) abrirChat(canal, sesion);
+              })
+              .catch(function (err) {
+                // El servidor explica qué pasó ("ya no existe", "falta
+                // traspaso.sql"); solo sin explicación se cae al genérico.
+                var motivo = err && err.message && err.message.indexOf("HTTP") !== 0 ? err.message : "";
+                alert(motivo || "No se pudo cambiar. Intenta de nuevo.");
+                if (chatAbierto === esteChat) abrirChat(canal, sesion);
+              });
+          });
+        }
+        if (canal === "whatsapp") montarComposer(v, canal, sesion, modo);
       })
       .catch(fallo("chats"));
   }
 
   /* El cajón para responder a mano. Solo WhatsApp: en el chat de la web no hay
      forma de empujarle un mensaje al visitante después de que cerró la página. */
-  function montarComposer(v, canal, sesion) {
+  function montarComposer(v, canal, sesion, modo) {
     var caja = document.createElement("div");
     caja.className = "composer";
     var campo = document.createElement("textarea");
@@ -1096,7 +1396,9 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     caja.appendChild(boton);
     var nota = document.createElement("div");
     nota.className = "composer-nota";
-    nota.textContent = "Llega al instante si el cliente escribió en las últimas 24 horas.";
+    nota.textContent = modo === "humano"
+      ? "El bot está en silencio: esta conversación la llevas tú. Llega al instante si el cliente escribió en las últimas 24 horas."
+      : "El bot sigue respondiendo aquí. Si quieres atenderla tú, usa \"Tomar la conversación\". Llega al instante si el cliente escribió en las últimas 24 horas.";
     v.appendChild(caja);
     v.appendChild(nota);
 
