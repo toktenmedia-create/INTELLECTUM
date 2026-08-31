@@ -20,6 +20,7 @@ import { agendaConfigurada, horariosLibres, inicioDesdeCodigo } from "../lib/cal
 import { agendarConsultoria } from "../lib/agendar.js";
 import { abrirAlmacen } from "../lib/almacen.js";
 import { normalizarTelefono } from "../lib/mensajeria.js";
+import { CLIENTE } from "../lib/cliente.js";
 
 const ORIGENES_PERMITIDOS = (
   process.env.ALLOWED_ORIGINS ||
@@ -28,6 +29,15 @@ const ORIGENES_PERMITIDOS = (
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
+
+// Mismo aviso que en api/chat.js: una copia de otro negocio que no declare sus
+// dominios se queda con los de Intellectum y su propia página no podrá agendar.
+if (!process.env.ALLOWED_ORIGINS && CLIENTE !== "intellectum") {
+  console.warn(
+    `[AGENDA] esta copia atiende a "${CLIENTE}" pero no tiene ALLOWED_ORIGINS: ` +
+      "solo aceptará reservas desde los dominios de Intellectum.",
+  );
+}
 
 /** Reservas por IP y por hora. En memoria: cada instancia tiene el suyo. */
 const TOPE_POR_HORA = 5;

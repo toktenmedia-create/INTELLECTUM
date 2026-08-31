@@ -16,6 +16,7 @@
 import { responder } from "../lib/brain.js";
 import { esPersistente, dondeSeGuarda } from "../lib/almacen.js";
 import { claveCorrecta } from "../lib/acceso.js";
+import { CLIENTE } from "../lib/cliente.js";
 
 export const config = { maxDuration: 60 };
 
@@ -77,7 +78,7 @@ export default async function handler(req, res) {
       historial,
       canal,
       ambito: "privado",
-      cliente: typeof cuerpo?.cliente === "string" ? cuerpo.cliente.slice(0, 64) : "intellectum",
+      cliente: typeof cuerpo?.cliente === "string" ? cuerpo.cliente.slice(0, 64) : CLIENTE,
       duenoNombre: typeof cuerpo?.dueno === "string" ? cuerpo.dueno.slice(0, 80) : "Paul",
       onTexto: (fragmento) => enviar({ t: "delta", v: fragmento }),
       meta: { origen: "panel" },

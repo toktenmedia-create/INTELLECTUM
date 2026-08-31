@@ -34,6 +34,7 @@ import {
 } from "../lib/mensajeria.js";
 import { abrirAlmacen } from "../lib/almacen.js";
 import { claveCorrecta } from "../lib/acceso.js";
+import { CLIENTE } from "../lib/cliente.js";
 
 export default async function handler(req, res) {
   const esperado = process.env.CRON_SECRET;
@@ -125,7 +126,7 @@ export default async function handler(req, res) {
           nombre: cita.nombre,
           cuando: cita.etiqueta,
           codigo: cita.codigo,
-          bitacora: { almacen, cliente: "intellectum" },
+          bitacora: { almacen, cliente: CLIENTE },
         }));
       }
 

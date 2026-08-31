@@ -40,6 +40,7 @@ import {
 import { enviarConfirmacionCita, enviarHorariosPorCorreo } from "../lib/leads.js";
 import { enviarCancelacionWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
 import { claveCorrecta } from "../lib/acceso.js";
+import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
 
 export const config = { maxDuration: 30 };
 
@@ -173,7 +174,7 @@ export default async function handler(req, res) {
         const envio = await enviarTextoWhatsApp({
           para: sesion,
           texto,
-          bitacora: { almacen, cliente: "intellectum" },
+          bitacora: { almacen, cliente: CLIENTE },
           motivo: "panel",
         });
         if (!envio.entregado) {
@@ -252,11 +253,11 @@ export default async function handler(req, res) {
         const promesaWhatsApp = enviarTextoWhatsApp({
           para: cita.telefono || cita.contacto,
           texto:
-            `Hola${cita.nombre ? ` ${cita.nombre}` : ""}: tu consultoría con Intellectum quedó ` +
+            `Hola${cita.nombre ? ` ${cita.nombre}` : ""}: tu ${NEGOCIO.evento} con ${NEGOCIO.nombreCorto} quedó ` +
             `movida del ${cita.etiqueta} al ${movida.etiqueta} (hora de Ecuador). La invitación ` +
             `nueva ya va en camino a tu correo. Si esa hora no te sirve, respóndenos por aquí y ` +
             `buscamos otra.`,
-          bitacora: { almacen, cliente: "intellectum" },
+          bitacora: { almacen, cliente: CLIENTE },
           motivo: "cita_movida",
         })
           .then((r) => Boolean(r?.entregado))
@@ -330,7 +331,7 @@ export default async function handler(req, res) {
           para: cita.telefono || cita.contacto,
           nombre: cita.nombre,
           cuando: cita.etiqueta,
-          bitacora: { almacen, cliente: "intellectum" },
+          bitacora: { almacen, cliente: CLIENTE },
         }).then((r) => Boolean(r?.entregado));
 
         const [correoEnviado, whatsappEnviado] = await Promise.all([promesaCorreo, promesaWhatsApp]);
@@ -345,7 +346,7 @@ export default async function handler(req, res) {
                 para: cita.contacto,
                 nombre: cita.nombre,
                 horarios: libres.map(paraCorreo),
-                asunto: "Repongamos tu consultoría — elige la hora que te sirva",
+                asunto: `Repongamos tu ${NEGOCIO.evento} — elige la hora que te sirva`,
                 intro:
                   "Como tuvimos que cancelar la hora que tenías, aquí están las que están " +
                   "libres ahora mismo. Toca la que te sirva y queda agendada al instante.",

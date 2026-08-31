@@ -35,6 +35,7 @@ import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
 import { avisarEquipoWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
 import { enviarAviso } from "../lib/leads.js";
 import { calificarConversacion } from "../lib/calificar.js";
+import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
 // tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
@@ -44,13 +45,13 @@ export const config = { maxDuration: 120, api: { bodyParser: false } };
 
 const MENSAJE_TROPIEZO =
   "Perdona, se me complicó procesar tu mensaje. ¿Me lo repites? Si prefieres, " +
-  "escríbenos a info@intellectum.ec o llámanos al +593 98 312 0003 y el equipo te ayuda " +
+  `escríbenos a ${NEGOCIO.correo} o llámanos al ${NEGOCIO.whatsapp} y el equipo te ayuda ` +
   "directamente.";
 
 const MENSAJE_BAJA =
   "Listo, queda registrado: no te escribiremos más por este medio y tu historial " +
   "de conversación quedó borrado. Si algún día quieres retomar, solo escríbenos y " +
-  "con gusto te atendemos. También estamos en info@intellectum.ec.";
+  `con gusto te atendemos. También estamos en ${NEGOCIO.correo}.`;
 
 export default async function handler(req, res) {
   // 1. Verificación del webhook: Meta llama una sola vez con un reto.
@@ -156,7 +157,17 @@ async function procesar(valor, mensaje) {
   const dueño = await almacen
     .clientePorTelefono?.({ phone_number_id: valor?.metadata?.phone_number_id })
     .catch(() => null);
-  const cliente = dueño?.slug ?? "intellectum";
+
+  // Un cliente dado de baja NO se atiende como el dueño de esta copia: sus
+  // clientes recibirían respuestas de otro negocio, con otra ficha y otros
+  // precios. Se calla y se deja constancia. Que no haya enrutamiento (columna
+  // sin aplicar, número sin registrar) sí es el caso normal: ahí atiende el
+  // dueño de la copia, que es como funcionaba antes de que esto existiera.
+  if (dueño && dueño.activo === false) {
+    console.warn(`[WHATSAPP] llegó un mensaje al número de "${dueño.slug}", que está desactivado. Se ignora.`);
+    return;
+  }
+  const cliente = dueño?.slug ?? CLIENTE;
 
   // Con esto viaja el contador de mensajes entregados hasta lib/mensajeria.js.
   const bitacora = { almacen, cliente };
@@ -398,7 +409,7 @@ async function avisarManosHumanas({ numero, nombrePerfil, texto, bitacora, almac
         asunto: "Mensaje de WhatsApp esperando tu respuesta",
         cuerpo:
           `${quien} escribió y su conversación está en manos humanas (el bot no responde):\n\n` +
-          `"${resumen}"\n\nRespóndele desde el panel: https://www.intellectum.ec/panel`,
+          `"${resumen}"\n\nRespóndele desde el panel de ${NEGOCIO.nombreCorto}.`,
       });
       entregado = Boolean(correo?.entregado);
     }

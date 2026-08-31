@@ -24,6 +24,7 @@ import { elegirParaSeguimiento, TOPE_POR_TANDA, DIAS_DE_SILENCIO } from "../lib/
 import { enviarSeguimientoWhatsApp, whatsappSalidaConfigurada } from "../lib/mensajeria.js";
 import { enviarAviso } from "../lib/leads.js";
 import { claveCorrecta } from "../lib/acceso.js";
+import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
 
 export default async function handler(req, res) {
   const esperado = process.env.CRON_SECRET;
@@ -89,7 +90,7 @@ export default async function handler(req, res) {
       para: quien.numero,
       nombre: quien.nombre,
       concepto: quien.concepto,
-      bitacora: { almacen, cliente: "intellectum" },
+      bitacora: { almacen, cliente: CLIENTE },
     });
 
     if (!entregado) {
@@ -167,7 +168,7 @@ async function avisarDeLoQueSalio(salieron, fallaron) {
   await enviarAviso({
     asunto: `Seguimiento enviado a ${salieron.length} persona(s)`,
     cuerpo: [
-      `IntelliA retomó ${salieron.length} cotización(es) que quedaron a medias:`,
+      `${NEGOCIO.agente} retomó ${salieron.length} cotización(es) que quedaron a medias:`,
       ``,
       lista || "(ninguna)",
       ``,

@@ -32,6 +32,7 @@
 import { abrirAlmacen } from "../lib/almacen.js";
 import { enviarAviso } from "../lib/leads.js";
 import { enviarSeguimientoDeLlamada, normalizarTelefono } from "../lib/mensajeria.js";
+import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
 
 /** Cuánto del mensaje crudo se guarda. Suficiente para leerlo; no infinito. */
 const TOPE_CRUDO = 8_000;
@@ -152,7 +153,7 @@ export default async function handler(req, res) {
               1_000,
             ),
           },
-          { cliente: "intellectum", canal: "voz", sesion, origen: "dapta" },
+          { cliente: CLIENTE, canal: "voz", sesion, origen: "dapta" },
         );
         leadId = guardado?.id ?? null;
       }
@@ -185,7 +186,7 @@ export default async function handler(req, res) {
       llamada.transcripcion ? `— Transcripción (inicio) —` : "",
       llamada.transcripcion ? sano(llamada.transcripcion, 900) : "",
       ``,
-      `El detalle completo quedó en el panel: www.intellectum.ec/panel`,
+      NEGOCIO.dominio ? `El detalle completo quedó en el panel: ${NEGOCIO.dominio}/panel` : `El detalle completo quedó en el panel.`,
     ]
       .filter((l, i, todas) => l !== "" || todas[i + 1] !== "")
       .join("\n"),
@@ -298,7 +299,7 @@ async function escribirTrasLlamada({ almacen, llamada }) {
       // largos y a medio cocer dentro de una plantilla que no se puede editar.
       asunto: `automatizar la atención de ${sano(llamada.empresa, 60) || "tu negocio"}`,
       agendo: modo === "agenda",
-      bitacora: { almacen, cliente: "intellectum" },
+      bitacora: { almacen, cliente: CLIENTE },
     });
     return {
       entregado: r.entregado,

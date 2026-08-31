@@ -14,6 +14,7 @@ import { responder } from "../lib/brain.js";
 import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { enviarAviso } from "../lib/leads.js";
 import { calificarConversacion } from "../lib/calificar.js";
+import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
 
 export const config = { maxDuration: 60 };
 
@@ -34,8 +35,13 @@ const TOPE_DIARIO = Math.max(1, Number(process.env.CHAT_TOPE_DIARIO) || 400);
 
 const MENSAJE_TOPE_DIARIO =
   "El asistente alcanzó su tope de conversaciones por hoy. Escríbenos al WhatsApp " +
-  "+593 96 751 8060 o a info@intellectum.ec y te atendemos ahí mismo.";
+  `${NEGOCIO.whatsappBot} o a ${NEGOCIO.correo} y te atendemos ahí mismo.`;
 
+// De dónde se acepta el chat. Cada copia pone su propio ALLOWED_ORIGINS; el
+// respaldo son los dominios de Intellectum, que es de quien es la copia que
+// hoy está publicada. Una copia de otro negocio que olvide la variable no
+// atiende a nadie —falla hacia el lado seguro—, pero lo dice en el registro
+// para que el silencio no parezca un misterio.
 const ORIGENES_PERMITIDOS = (
   process.env.ALLOWED_ORIGINS ||
   "https://www.intellectum.ec,https://intellectum.ec,http://localhost:3000"
@@ -43,6 +49,13 @@ const ORIGENES_PERMITIDOS = (
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
+
+if (!process.env.ALLOWED_ORIGINS && CLIENTE !== "intellectum") {
+  console.warn(
+    `[CHAT] esta copia atiende a "${CLIENTE}" pero no tiene ALLOWED_ORIGINS: ` +
+      "solo aceptará el chat desde los dominios de Intellectum.",
+  );
+}
 
 /** Contador en memoria. Es "mejor que nada": cada instancia tiene el suyo. */
 const contador = new Map();
@@ -161,7 +174,9 @@ export default async function handler(req, res) {
     console.error("[CHAT] error hablando con Claude:", err?.status, err?.message ?? err);
     enviar({
       t: "error",
-      v: "Se me cortó la conexión. ¿Me repites lo último? Si prefieres, escríbenos al WhatsApp +593 96 751 8060.",
+      v:
+        "Se me cortó la conexión. ¿Me repites lo último?" +
+        (NEGOCIO.whatsappBot ? ` Si prefieres, escríbenos al WhatsApp ${NEGOCIO.whatsappBot}.` : ""),
     });
   } finally {
     res.end();
