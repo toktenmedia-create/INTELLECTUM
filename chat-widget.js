@@ -1,20 +1,87 @@
 /**
- * Widget de chat de Intellectum.
+ * La burbuja de chat, para incrustar en el sitio de cualquier cliente.
  *
- * Se inserta solo: basta con una línea en el index.html
+ * Se inserta sola:
  *     <script defer src="/chat-widget.js"></script>
  *
+ * QUIÉN ES EL NEGOCIO. Este archivo viaja al sitio de otra empresa, así que no
+ * puede leer variables de entorno ni preguntarle nada al servidor de nadie: la
+ * identidad se la dice la propia etiqueta <script> que lo carga.
+ *
+ *     <script defer src="/chat-widget.js"
+ *             data-agente="Tornillito"
+ *             data-negocio="Ferretería El Tornillo"
+ *             data-whatsapp="+593 99 111 2233"
+ *             data-correo="ventas@eltornillo.ec"
+ *             data-saludo="Hola 👋 ¿Qué herramienta andas buscando?"></script>
+ *
+ * SIN NINGÚN data-*, el widget no dice ningún nombre y NO reparte ningún dato
+ * de contacto. Es la misma regla del backend (lib/cliente.js): antes que dar
+ * el correo y el WhatsApp de otra empresa, no dar ninguno. Antes decía aquí
+ * mismo "Soy IntelliA, el asistente de Intellectum" y, cuando se caía la
+ * conexión, entregaba el WhatsApp de Intellectum al cliente de quien lo
+ * hubiera incrustado.
+ *
  * No trae librerías ni dependencias. Usa las mismas variables de color y las
- * mismas tipografías que ya define el sitio (--accent, --bg, --font-display),
- * con valores de respaldo por si se carga en otra página.
+ * mismas tipografías que ya define el sitio (--accent, --bg, --font-display).
+ * Los valores de respaldo son NEUTROS a propósito: eran el cian y la serif de
+ * marca de Intellectum, así que un sitio que no declarara esas variables se
+ * pintaba con los colores de otra empresa.
  */
 (function () {
   "use strict";
 
   var ENDPOINT = "/api/chat";
-  var SALUDO =
-    "Hola 👋 Soy IntelliA, el asistente de Intellectum. ¿Qué proceso de tu empresa te está consumiendo más tiempo hoy?";
   var MAX_HISTORIAL = 30;
+
+  // La etiqueta que cargó este archivo. document.currentScript funciona con
+  // defer y es la forma barata de encontrarla; el respaldo cubre navegadores
+  // viejos y el caso de que alguien lo inyecte a mano.
+  var GUION =
+    document.currentScript ||
+    (function () {
+      var todos = document.querySelectorAll('script[src*="chat-widget"]');
+      return todos.length ? todos[todos.length - 1] : null;
+    })();
+
+  function ajuste(nombre) {
+    var valor = GUION && GUION.getAttribute ? GUION.getAttribute("data-" + nombre) : null;
+    return valor ? String(valor).trim() : "";
+  }
+
+  var AGENTE = ajuste("agente");
+  var NEGOCIO = ajuste("negocio");
+  var WHATSAPP = ajuste("whatsapp");
+  var CORREO = ajuste("correo");
+
+  var SALUDO = ajuste("saludo") || saludoPorDefecto();
+
+  function saludoPorDefecto() {
+    if (AGENTE && NEGOCIO) return "Hola 👋 Soy " + AGENTE + ", el asistente de " + NEGOCIO + ". ¿En qué te ayudo?";
+    if (AGENTE) return "Hola 👋 Soy " + AGENTE + ". ¿En qué te ayudo?";
+    return "Hola 👋 ¿En qué puedo ayudarte hoy?";
+  }
+
+  /** El texto que se le añade a un error para ofrecer otra vía. Puede ser "". */
+  function colaDeContacto() {
+    var vias = [];
+    if (WHATSAPP) vias.push("al WhatsApp " + WHATSAPP);
+    if (CORREO) vias.push("a " + CORREO);
+    if (!vias.length) return "";
+    return "\n\nSi es urgente, escríbenos " + vias.join(" o ") + ".";
+  }
+
+  // Estos valores los escribe quien incrusta el widget, y se meten en innerHTML
+  // al armar la cabecera y el lanzador: se escapan para que un nombre con < o &
+  // no pueda inyectar etiquetas en la página que lo hospeda.
+  function escaparHtml(texto) {
+    return String(texto == null ? "" : texto)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
 
   var historial = [];
   var enviando = false;
@@ -41,14 +108,14 @@
   function inyectarEstilos() {
     var css = `
 .iachat-launcher{position:fixed;right:20px;bottom:20px;z-index:9998;display:inline-flex;align-items:center;gap:10px;
-  padding:13px 20px;border:1px solid var(--accent-tint-border,rgba(34,211,238,.22));border-radius:999px;
+  padding:13px 20px;border:1px solid var(--accent-tint-border,rgba(37,99,235,.22));border-radius:999px;
   background:var(--bg-elev,#111);color:var(--text,#fafaf7);font:500 14px/1 var(--font-sans,system-ui,-apple-system,"Segoe UI",sans-serif);
   cursor:pointer;box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.03);
   transition:transform .25s var(--ease,cubic-bezier(.22,1,.36,1)),border-color .25s,opacity .2s}
-.iachat-launcher:hover{transform:translateY(-2px);border-color:var(--accent,#22d3ee)}
-.iachat-launcher:focus-visible{outline:2px solid var(--accent,#22d3ee);outline-offset:3px}
-.iachat-launcher .iachat-dot{width:7px;height:7px;border-radius:50%;background:var(--accent,#22d3ee);
-  box-shadow:0 0 10px var(--accent,#22d3ee);flex:none}
+.iachat-launcher:hover{transform:translateY(-2px);border-color:var(--accent,#2563eb)}
+.iachat-launcher:focus-visible{outline:2px solid var(--accent,#2563eb);outline-offset:3px}
+.iachat-launcher .iachat-dot{width:7px;height:7px;border-radius:50%;background:var(--accent,#2563eb);
+  box-shadow:0 0 10px var(--accent,#2563eb);flex:none}
 .iachat-launcher[hidden]{display:none}
 
 .iachat-panel{position:fixed;right:20px;bottom:20px;z-index:9999;width:390px;max-width:calc(100vw - 32px);
@@ -60,25 +127,25 @@
 
 .iachat-head{display:flex;align-items:center;gap:12px;padding:16px 16px 14px;
   border-bottom:1px solid var(--border,rgba(255,255,255,.08));background:rgba(255,255,255,.02)}
-.iachat-mark{font-size:13px;color:var(--accent,#22d3ee);line-height:1}
-.iachat-title{font:400 19px/1.15 var(--font-display,"Fraunces",Georgia,serif);color:var(--text,#fafaf7);margin:0}
+.iachat-mark{font-size:13px;color:var(--accent,#2563eb);line-height:1}
+.iachat-title{font:400 19px/1.15 var(--font-display,Georgia,serif);color:var(--text,#fafaf7);margin:0}
 .iachat-sub{font:400 11px/1.3 var(--font-sans,system-ui,sans-serif);color:var(--text-muted,#6e6e66);
   letter-spacing:.06em;text-transform:uppercase;margin:3px 0 0}
 .iachat-close{margin-left:auto;width:32px;height:32px;display:grid;place-items:center;border-radius:8px;
   border:1px solid transparent;background:none;color:var(--text-dim,#a8a89e);font-size:18px;cursor:pointer;line-height:1}
 .iachat-close:hover{background:rgba(255,255,255,.05);color:var(--text,#fafaf7)}
-.iachat-close:focus-visible{outline:2px solid var(--accent,#22d3ee);outline-offset:2px}
+.iachat-close:focus-visible{outline:2px solid var(--accent,#2563eb);outline-offset:2px}
 
 .iachat-log{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:18px 16px;display:flex;flex-direction:column;gap:12px;
   font:400 14.5px/1.55 var(--font-sans,system-ui,-apple-system,"Segoe UI",sans-serif)}
 .iachat-msg{max-width:86%;padding:11px 14px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
 .iachat-msg.bot{align-self:flex-start;background:var(--bg-card,rgba(255,255,255,.025));
   border:1px solid var(--border,rgba(255,255,255,.08));color:var(--text,#fafaf7);border-bottom-left-radius:5px}
-.iachat-msg.yo{align-self:flex-end;background:var(--accent-tint-bg,rgba(34,211,238,.08));
-  border:1px solid var(--accent-tint-border,rgba(34,211,238,.22));color:var(--text,#fafaf7);border-bottom-right-radius:5px}
+.iachat-msg.yo{align-self:flex-end;background:var(--accent-tint-bg,rgba(37,99,235,.08));
+  border:1px solid var(--accent-tint-border,rgba(37,99,235,.22));color:var(--text,#fafaf7);border-bottom-right-radius:5px}
 .iachat-msg.aviso{align-self:center;max-width:100%;text-align:center;background:none;border:none;padding:2px 0;
   color:var(--text-muted,#6e6e66);font-size:12.5px}
-.iachat-msg a{color:var(--accent,#22d3ee)}
+.iachat-msg a{color:var(--accent,#2563eb)}
 
 .iachat-puntos{display:inline-flex;gap:4px;align-items:center;height:10px}
 .iachat-puntos i{width:5px;height:5px;border-radius:50%;background:var(--text-muted,#6e6e66);animation:iachatPulso 1.3s infinite}
@@ -92,14 +159,14 @@
   border:1px solid var(--border,rgba(255,255,255,.08));background:var(--bg,#0a0a0a);color:var(--text,#fafaf7);
   font:400 14.5px/1.45 var(--font-sans,system-ui,sans-serif)}
 .iachat-input::placeholder{color:var(--text-muted,#6e6e66)}
-.iachat-input:focus{outline:none;border-color:var(--accent,#22d3ee)}
-.iachat-send{flex:none;width:42px;height:42px;border-radius:12px;border:1px solid var(--accent,#22d3ee);
-  background:var(--accent,#22d3ee);color:#04222a;font-size:17px;cursor:pointer;display:grid;place-items:center;line-height:1}
+.iachat-input:focus{outline:none;border-color:var(--accent,#2563eb)}
+.iachat-send{flex:none;width:42px;height:42px;border-radius:12px;border:1px solid var(--accent,#2563eb);
+  background:var(--accent,#2563eb);color:#fff;font-size:17px;cursor:pointer;display:grid;place-items:center;line-height:1}
 .iachat-send:disabled{opacity:.4;cursor:default}
-.iachat-send:focus-visible{outline:2px solid var(--accent-bright,#67e8f9);outline-offset:2px}
+.iachat-send:focus-visible{outline:2px solid var(--accent-bright,#60a5fa);outline-offset:2px}
 .iachat-legal{margin:8px 2px 0;font:400 10.5px/1.4 var(--font-sans,system-ui,sans-serif);color:var(--text-muted,#6e6e66);text-align:center}
 .iachat-legal a{color:var(--text-dim,#a8a89e);text-decoration:underline;text-underline-offset:2px}
-.iachat-legal a:hover{color:var(--accent,#22d3ee)}
+.iachat-legal a:hover{color:var(--accent,#2563eb)}
 
 @media (max-width:520px){
   .iachat-panel{right:10px;left:10px;bottom:10px;width:auto;max-width:none;height:min(78vh,calc(100vh - 20px))}
@@ -122,19 +189,27 @@
     launcher = document.createElement("button");
     launcher.className = "iachat-launcher";
     launcher.type = "button";
-    launcher.setAttribute("aria-label", "Abrir el chat con IntelliA");
-    launcher.innerHTML = '<span class="iachat-dot"></span><span>Habla con IntelliA</span>';
+    launcher.setAttribute("aria-label", AGENTE ? "Abrir el chat con " + AGENTE : "Abrir el chat de atención");
+    launcher.innerHTML =
+      '<span class="iachat-dot"></span><span>' + escaparHtml(AGENTE ? "Habla con " + AGENTE : "¿Te ayudamos?") + "</span>";
     launcher.addEventListener("click", abrir);
 
     panel = document.createElement("section");
     panel.className = "iachat-panel";
     panel.setAttribute("role", "dialog");
     panel.setAttribute("aria-modal", "false");
-    panel.setAttribute("aria-label", "Chat con IntelliA, asistente de Intellectum");
+    panel.setAttribute(
+      "aria-label",
+      AGENTE && NEGOCIO ? "Chat con " + AGENTE + ", asistente de " + NEGOCIO : "Chat de atención",
+    );
     panel.innerHTML =
       '<header class="iachat-head">' +
       '<span class="iachat-mark" aria-hidden="true">◆</span>' +
-      "<div><p class=\"iachat-title\">IntelliA</p><p class=\"iachat-sub\">Asistente de Intellectum</p></div>" +
+      "<div><p class=\"iachat-title\">" +
+      escaparHtml(AGENTE || NEGOCIO || "Chat") +
+      "</p>" +
+      (AGENTE && NEGOCIO ? '<p class="iachat-sub">Asistente de ' + escaparHtml(NEGOCIO) + "</p>" : "") +
+      "</div>" +
       '<button class="iachat-close" type="button" aria-label="Cerrar el chat">✕</button>' +
       "</header>" +
       '<div class="iachat-log" role="log" aria-live="polite" aria-atomic="false"></div>' +
@@ -343,8 +418,7 @@
         burbuja.remove();
         pintar(
           "bot",
-          (err && err.message ? err.message : "Se cayó la conexión.") +
-            "\n\nSi es urgente, escríbenos al WhatsApp +593 96 751 8060 o a info@intellectum.ec.",
+          (err && err.message ? err.message : "Se cayó la conexión.") + colaDeContacto(),
         );
       })
       .then(function () {

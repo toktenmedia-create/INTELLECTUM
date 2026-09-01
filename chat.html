@@ -10,17 +10,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#08090b" />
 
-<title>Habla con IntelliA — Asistente de IA de Intellectum</title>
-<meta name="description" content="Conversa en línea con IntelliA, el asistente con inteligencia artificial de Intellectum. Resuelve tus dudas sobre automatización, chatbots y agentes de voz IA para tu empresa, al instante y sin compromiso." />
+<!-- Título y descripción NEUTROS a propósito, igual que en agenda.html. Este
+     archivo viaja idéntico a todas las copias: lo que diga aquí lo va a leer
+     también el cliente que publique la suya, y lo leen los rastreadores y las
+     vistas previas de WhatsApp y Facebook ANTES de que corra ningún JS. Antes
+     decía "Intellectum AI Solutions", así que la ferretería que compartía su
+     enlace de chat mostraba una vista previa con el nombre de Intellectum.
+     El nombre real lo pone identidad() con lo que responde /api/negocio: sirve
+     para la pestaña y para Google, que sí ejecuta el JS. -->
+<title>Habla con nuestro asistente</title>
+<meta name="description" content="Escribe tu consulta y te respondemos al instante, las 24 horas." />
 <meta name="robots" content="index, follow" />
-<link rel="canonical" href="https://www.intellectum.ec/chat" />
+<!-- Canonical RELATIVO a propósito: así cada copia se canoniza a su propio
+     dominio. Con la dirección absoluta, la copia de otro negocio le decía a
+     Google que su página de chat era en realidad la de intellectum.ec. -->
+<link rel="canonical" href="/chat" />
 
+<!-- Lo mismo para la vista previa al compartir el enlace: neutra en el archivo,
+     y la completa el JS con el negocio de esta copia. og:site_name se fue: era
+     el dato que más delataba, porque WhatsApp lo muestra en negrita. -->
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://www.intellectum.ec/chat" />
-<meta property="og:site_name" content="Intellectum AI Solutions" />
-<meta property="og:title" content="Habla con IntelliA — Asistente de IA de Intellectum" />
-<meta property="og:description" content="Pregunta lo que quieras sobre automatización con IA para tu empresa. IntelliA te responde al instante, 24/7." />
-<meta property="og:image" content="https://www.intellectum.ec/og.png" />
+<meta property="og:title" id="og-titulo" content="Habla con nuestro asistente" />
+<meta property="og:description" id="og-descripcion" content="Escribe tu consulta y te respondemos al instante, las 24 horas." />
+<meta property="og:image" content="/og.png" />
 <meta property="og:locale" content="es_EC" />
 
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -32,21 +44,20 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  "@id": "https://www.intellectum.ec/chat#webpage",
-  "url": "https://www.intellectum.ec/chat",
-  "name": "Habla con IntelliA — Asistente de IA de Intellectum",
-  "inLanguage": "es-EC",
-  "isPartOf": { "@id": "https://www.intellectum.ec/#website" },
-  "about": { "@id": "https://www.intellectum.ec/#organization" },
-  "description": "Chat en línea con IntelliA, el asistente con inteligencia artificial de Intellectum AI Solutions."
-}
-</script>
+<!-- Aquí había un bloque de datos estructurados (JSON-LD) que decía, con la
+     dirección escrita a mano, que esta página era https://www.intellectum.ec/chat
+     y que pertenecía al sitio y a la organización Intellectum. En la copia de
+     otro negocio eso es sencillamente falso: le declaraba a Google que su chat
+     era una página de intellectum.ec. Se quitó. La ficha de organización sigue
+     donde corresponde, en la portada de cada sitio, y esta página se identifica
+     sola con el canonical relativo de arriba. -->
 
 <style>
+/* El atributo hidden vale menos que cualquier regla de display, y esta página
+   lo usa para esconder lo que la copia no tiene configurado (el logo, el botón
+   de WhatsApp, las preguntas sugeridas). Sin esto, el hueco se sigue viendo. */
+[hidden] { display: none !important; }
+
 /* Mismo mundo visual que la portada (ver DESIGN.md): oscuro #08090b, cian de
    marca, Fraunces solo como acento. */
 :root {
@@ -376,14 +387,16 @@ body::before {
 <body>
 
 <header class="top">
-  <a href="/" class="brand" aria-label="Intellectum AI Solutions — Volver al inicio">
-    <img src="/logo-nav.webp" alt="" width="125" height="90" />
-    <span class="brand-text">Intellectum</span>
+  <!-- Sin identidad escrita a mano: la pone identidad() con lo que responde
+       /api/negocio. Este archivo es el mismo en todas las copias. -->
+  <a href="/" class="brand" id="brand" aria-label="Volver al inicio">
+    <img id="logo" alt="" width="125" height="90" hidden />
+    <span class="brand-text" id="brand-text"></span>
   </a>
   <div class="top-spacer"></div>
   <a href="/" class="volver">← Volver al sitio</a>
-  <a href="https://wa.me/593967518060?text=Hola%20Intellectum%2C%20quiero%20m%C3%A1s%20informaci%C3%B3n"
-     class="btn-wa" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
+  <a href="#" id="btn-wa"
+     class="btn-wa" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp" hidden>
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.464 3.488"/></svg>
     <span>WhatsApp</span>
   </a>
@@ -395,18 +408,11 @@ body::before {
 
       <div class="portada" id="portada">
         <span class="chip-live"><span class="vivo" aria-hidden="true"></span><strong>En línea</strong> · te responde ahora mismo</span>
-        <h1>Habla con <em>IntelliA.</em></h1>
-        <p class="sub">
-          Soy el asistente de Intellectum. Cuéntame qué proceso te consume más tiempo
-          y te muestro cómo la inteligencia artificial puede resolverlo. Respondo al
-          instante, las 24 horas.
-        </p>
-        <div class="chips" id="chips" aria-label="Preguntas sugeridas">
-          <button class="chip" type="button">¿Qué procesos de mi empresa puedo automatizar con IA?</button>
-          <button class="chip" type="button">Quiero un chatbot que atienda WhatsApp por mí</button>
-          <button class="chip" type="button">¿Cómo funcionan los agentes de voz que contestan llamadas?</button>
-          <button class="chip" type="button">¿Cómo es el proceso de trabajo y cuánto tarda?</button>
-        </div>
+        <h1 id="portada-titulo">Hola.</h1>
+        <p class="sub" id="portada-sub">Cuéntame en qué te puedo ayudar. Respondo al instante.</p>
+        <!-- Las llena identidad() con las de este negocio. Vacías si no las
+             configuró: preguntar por chatbots en una ferretería no ayuda. -->
+        <div class="chips" id="chips" aria-label="Preguntas sugeridas" hidden></div>
       </div>
 
     </div>
@@ -423,7 +429,7 @@ body::before {
       <p class="legal">
         Asistente con IA. Puede equivocarse: los datos definitivos los confirma el equipo. ·
         <a href="/privacidad">Aviso de privacidad</a> ·
-        Si prefieres, <a href="https://wa.me/593967518060" target="_blank" rel="noopener">escríbenos por WhatsApp</a>.
+        <span id="legal-wa" hidden>Si prefieres, <a id="legal-wa-enlace" href="#" target="_blank" rel="noopener">escríbenos por WhatsApp</a>.</span>
       </p>
     </div>
   </footer>
@@ -448,6 +454,113 @@ body::before {
   var enviando = false;
   var sesion = obtenerSesion();
   var historial = cargarHistorial();
+
+  /* DE QUIÉN ES ESTA COPIA.
+     Esta página es un archivo estático: viaja idéntica a todos los despliegues,
+     así que no puede llevar escrito el nombre, el logo ni el contacto de nadie.
+     Se los pregunta al servidor, que sí sabe para qué negocio se publicó. */
+  var NEG = {};
+
+  function identidad() {
+    return fetch("/api/negocio")
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (d) {
+        NEG = d || {};
+
+        if (NEG.nombre) {
+          var tituloPagina = (NEG.agente ? "Habla con " + NEG.agente + " — " : "") + NEG.nombre;
+          document.title = tituloPagina;
+          document.getElementById("brand").setAttribute("aria-label", NEG.nombre + " — Volver al inicio");
+
+          /* La pestaña, la descripción y la vista previa quedan con el nombre de
+             este negocio. En el archivo son neutras a propósito (ver el head), y
+             esto las completa. Google ejecuta el JS y lee lo de aquí; WhatsApp y
+             Facebook NO, así que ellos se quedan con la versión neutra: preferimos
+             una vista previa genérica antes que una con el nombre de otro. */
+          var descripcion = (NEG.agente ? "Habla con " + NEG.agente + ", el asistente de " + NEG.nombreCorto + ". " : "") +
+            "Te responde al instante, las 24 horas.";
+          var metaDesc = document.querySelector('meta[name="description"]');
+          if (metaDesc) metaDesc.setAttribute("content", descripcion);
+          var ogT = document.getElementById("og-titulo");
+          if (ogT) ogT.setAttribute("content", tituloPagina);
+          var ogD = document.getElementById("og-descripcion");
+          if (ogD) ogD.setAttribute("content", descripcion);
+        }
+        if (NEG.nombreCorto) document.getElementById("brand-text").textContent = NEG.nombreCorto;
+
+        if (NEG.logo) {
+          var img = document.getElementById("logo");
+          img.src = NEG.logo;
+          img.hidden = false;
+        }
+
+        /* El botón de WhatsApp de la cabecera y el del pie: si esta copia no
+           tiene número, no se muestran. Un botón que abre el chat de otra
+           empresa es peor que no tener botón. */
+        if (NEG.enlaceWhatsapp) {
+          var saludo = NEG.nombreCorto ? "Hola " + NEG.nombreCorto + ", quiero más información" : "Hola, quiero más información";
+          var btn = document.getElementById("btn-wa");
+          btn.href = NEG.enlaceWhatsapp + "?text=" + encodeURIComponent(saludo);
+          btn.hidden = false;
+
+          document.getElementById("legal-wa-enlace").href = NEG.enlaceWhatsapp;
+          document.getElementById("legal-wa").hidden = false;
+        }
+
+        var titulo = document.getElementById("portada-titulo");
+        if (titulo && NEG.agente) titulo.innerHTML = "Habla con <em>" + escapar(NEG.agente) + ".</em>";
+
+        var sub = document.getElementById("portada-sub");
+        if (sub && (NEG.nombreCorto || NEG.chatIntro)) {
+          sub.textContent =
+            (NEG.nombreCorto ? "Soy el asistente de " + NEG.nombreCorto + ". " : "") + (NEG.chatIntro || "");
+        }
+
+        pintarChips();
+      })
+      .catch(function () {
+        /* Sin respuesta no se inventa ninguna identidad: la página queda
+           neutra y el chat funciona igual, que es a lo que vino la persona. */
+      });
+  }
+
+  function pintarChips() {
+    var lista = NEG.chips || [];
+    if (!lista.length) return;
+    lista.forEach(function (t) {
+      var b = document.createElement("button");
+      b.className = "chip";
+      b.type = "button";
+      b.textContent = t;
+      chips.appendChild(b);
+    });
+    chips.hidden = false;
+  }
+
+  function escapar(t) {
+    var d = document.createElement("div");
+    d.textContent = t == null ? "" : String(t);
+    return d.innerHTML;
+  }
+
+  /* Cómo se llama aquí a la cita, con lo que diga este negocio. */
+  function unaCita() {
+    return NEG.cita || "una cita";
+  }
+  function elEvento() {
+    return NEG.evento || "cita";
+  }
+
+  /* La cola de un mensaje de error, con las vías que esta copia tenga. Si no
+     tiene ninguna, no se añade nada: es el momento en que la persona más
+     necesita el canal correcto, y darle el de otra empresa es lo peor. */
+  function colaDeContacto() {
+    var vias = [];
+    if (NEG.whatsappBot) vias.push("al WhatsApp " + NEG.whatsappBot);
+    if (NEG.correo) vias.push("a " + NEG.correo);
+    if (!vias.length) return "";
+    return "\n\nSi es urgente, escríbenos " + vias.join(" o ") + ".";
+  }
 
   // Si la persona ya venía conversando (p. ej. recargó la página), se repinta todo.
   if (historial.length) {
@@ -477,10 +590,12 @@ body::before {
   });
   entrada.focus();
 
+  identidad().then(arrancarPorIntencion);
+
   /* Si llegan desde un aviso de cancelación (?intencion=reagendar) o desde un
      botón de agendar (?intencion=agendar), la conversación arranca sola
      pidiendo las fechas disponibles: nadie debería teclear para eso. */
-  (function () {
+  function arrancarPorIntencion() {
     var params = new URLSearchParams(location.search);
     var intencion = params.get("intencion");
     if (!intencion || enviando) return;
@@ -490,17 +605,17 @@ body::before {
     var cita = (params.get("cita") || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 24);
     var arranques = {
       reagendar: "Hola, me avisaron que mi cita quedó cancelada, así que necesito agendar una nueva. ¿Qué fechas tienes disponibles?",
-      agendar: "Hola, quiero agendar una consultoría gratuita. ¿Qué fechas tienes disponibles?",
+      agendar: "Hola, quiero agendar " + unaCita() + ". ¿Qué fechas tienes disponibles?",
       mover: cita
-        ? "Hola, necesito mover o cancelar mi consultoría. La referencia de mi cita es " + cita + "."
-        : "Hola, necesito mover o cancelar mi consultoría.",
+        ? "Hola, necesito mover o cancelar mi " + elEvento() + ". La referencia de mi cita es " + cita + "."
+        : "Hola, necesito mover o cancelar mi " + elEvento() + ".",
     };
     var mensaje = arranques[intencion];
     if (!mensaje) return;
     // Sin repetir si la persona recarga la página con el mismo enlace.
     history.replaceState(null, "", location.pathname);
     enviar(mensaje);
-  })();
+  }
 
   /* ------------------------------------------------------------ conversación */
 
@@ -633,8 +748,7 @@ body::before {
         burbuja.remove();
         pintar(
           "bot",
-          (err && err.message ? err.message : "Se cayó la conexión.") +
-            "\n\nSi es urgente, escríbenos al WhatsApp +593 96 751 8060 o a info@intellectum.ec.",
+          (err && err.message ? err.message : "Se cayó la conexión.") + colaDeContacto(),
         );
       })
       .then(function () {

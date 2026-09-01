@@ -16,7 +16,7 @@
 import { responder } from "../lib/brain.js";
 import { esPersistente, dondeSeGuarda } from "../lib/almacen.js";
 import { claveCorrecta } from "../lib/acceso.js";
-import { CLIENTE } from "../lib/cliente.js";
+import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
 
 export const config = { maxDuration: 60 };
 
@@ -78,8 +78,15 @@ export default async function handler(req, res) {
       historial,
       canal,
       ambito: "privado",
-      cliente: typeof cuerpo?.cliente === "string" ? cuerpo.cliente.slice(0, 64) : CLIENTE,
-      duenoNombre: typeof cuerpo?.dueno === "string" ? cuerpo.dueno.slice(0, 80) : "Paul",
+      // A QUÉ CLIENTE PERTENECEN LOS DATOS: lo decide esta copia, NUNCA quien
+      // llama. Antes se aceptaba un "cliente" en el cuerpo del pedido, y como
+      // todas las copias comparten la misma base de datos, el dueño de una
+      // ferretería podía mandar {"cliente":"intellectum"} con SU propia clave
+      // y leerse los leads y las conversaciones de otro negocio. La clave da
+      // permiso para entrar a esta copia, no para elegir de quién son los
+      // datos: eso lo fija la variable de entorno del despliegue.
+      cliente: CLIENTE,
+      duenoNombre: typeof cuerpo?.dueno === "string" ? cuerpo.dueno.slice(0, 80) : NEGOCIO.dueno,
       onTexto: (fragmento) => enviar({ t: "delta", v: fragmento }),
       meta: { origen: "panel" },
     });

@@ -33,9 +33,17 @@ const VENTANA_MS = 10 * 60 * 1000; // por cada 10 minutos
 const LIMITE_IP_HORA = Math.max(1, Number(process.env.CHAT_LIMITE_IP_HORA) || 60);
 const TOPE_DIARIO = Math.max(1, Number(process.env.CHAT_TOPE_DIARIO) || 400);
 
-const MENSAJE_TOPE_DIARIO =
-  "El asistente alcanzó su tope de conversaciones por hoy. Escríbenos al WhatsApp " +
-  `${NEGOCIO.whatsappBot} o a ${NEGOCIO.correo} y te atendemos ahí mismo.`;
+// Función y no constante: si la copia no declaró WhatsApp ni correo, no hay
+// "ahí mismo" al que mandar a nadie, y la frase tiene que decir otra cosa.
+function mensajeTopeDiario() {
+  const vias = [];
+  if (NEGOCIO.whatsappBot) vias.push(`al WhatsApp ${NEGOCIO.whatsappBot}`);
+  if (NEGOCIO.correo) vias.push(`a ${NEGOCIO.correo}`);
+  const base = "El asistente alcanzó su tope de conversaciones por hoy.";
+  return vias.length
+    ? `${base} Escríbenos ${vias.join(" o ")} y te atendemos ahí mismo.`
+    : `${base} Vuelve a escribir mañana y con gusto te atendemos.`;
+}
 
 // De dónde se acepta el chat. Cada copia pone su propio ALLOWED_ORIGINS; el
 // respaldo son los dominios de Intellectum, que es de quien es la copia que
@@ -116,7 +124,7 @@ export default async function handler(req, res) {
     }
     if (freno === "dia") {
       topeVisto = Date.now(); // las próximas peticiones ya no pagan las consultas
-      responderJson(res, cors, 429, { error: MENSAJE_TOPE_DIARIO });
+      responderJson(res, cors, 429, { error: mensajeTopeDiario() });
       return;
     }
     // Se espera de verdad: si el evento no se puede escribir, el contador

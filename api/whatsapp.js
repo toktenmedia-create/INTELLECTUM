@@ -35,7 +35,7 @@ import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
 import { avisarEquipoWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
 import { enviarAviso } from "../lib/leads.js";
 import { calificarConversacion } from "../lib/calificar.js";
-import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
+import { CLIENTE, NEGOCIO, comoEscribirnos, esIntellectum } from "../lib/cliente.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
 // tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
@@ -43,15 +43,38 @@ import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
 // el 200 a Meta ya salió, esto solo protege el trabajo en segundo plano.
 export const config = { maxDuration: 120, api: { bodyParser: false } };
 
-const MENSAJE_TROPIEZO =
-  "Perdona, se me complicó procesar tu mensaje. ¿Me lo repites? Si prefieres, " +
-  `escríbenos a ${NEGOCIO.correo} o llámanos al ${NEGOCIO.whatsapp} y el equipo te ayuda ` +
-  "directamente.";
+// Estos dos son funciones y no constantes porque una copia sin correo ni
+// teléfono configurados no tiene esas vías: la frase se arma con lo que hay y,
+// si no hay nada, se corta limpia en vez de salir con el hueco a la vista
+// ("escríbenos a  o llámanos al  y el equipo te ayuda").
+function mensajeTropiezo() {
+  const vias = comoEscribirnos();
+  const base = "Perdona, se me complicó procesar tu mensaje. ¿Me lo repites?";
+  return vias ? `${base} Si prefieres, ${vias} y el equipo te ayuda directamente.` : base;
+}
 
-const MENSAJE_BAJA =
-  "Listo, queda registrado: no te escribiremos más por este medio y tu historial " +
-  "de conversación quedó borrado. Si algún día quieres retomar, solo escríbenos y " +
-  `con gusto te atendemos. También estamos en ${NEGOCIO.correo}.`;
+function mensajeBaja() {
+  const base =
+    "Listo, queda registrado: no te escribiremos más por este medio y tu historial " +
+    "de conversación quedó borrado. Si algún día quieres retomar, solo escríbenos y " +
+    "con gusto te atendemos.";
+  return NEGOCIO.correo ? `${base} También estamos en ${NEGOCIO.correo}.` : base;
+}
+
+/**
+ * ¿Le toca a ESTA copia atender los mensajes de ese cliente?
+ *
+ * Exportada aparte porque es la única decisión de este archivo que se puede
+ * probar sin levantar un webhook, y es la que separa los datos de un negocio
+ * de los de otro.
+ *
+ * @param {string|undefined|null} dueño  slug al que enruta el número, o nada
+ *   si el número no está registrado (lo normal mientras haya un solo cliente).
+ */
+export function estaCopiaAtiendeA(dueño) {
+  if (!dueño || dueño === CLIENTE) return true; // es suyo, o no hay enrutamiento
+  return esIntellectum(); // solo la casa reparte: el webhook de Meta apunta ahí
+}
 
 export default async function handler(req, res) {
   // 1. Verificación del webhook: Meta llama una sola vez con un reto.
@@ -167,6 +190,25 @@ async function procesar(valor, mensaje) {
     console.warn(`[WHATSAPP] llegó un mensaje al número de "${dueño.slug}", que está desactivado. Se ignora.`);
     return;
   }
+
+  // Y NO SE ATIENDE A UN CLIENTE QUE NO ES EL DE ESTA COPIA. Los datos se
+  // enrutan por número de teléfono y la identidad se decide por variable de
+  // entorno, y hasta aquí nada obligaba a que ambas coincidieran: un
+  // whatsapp_phone_id mal pegado en la fila de un cliente bastaba para que los
+  // mensajes de un negocio se atendieran con la ficha, la agenda y los precios
+  // de otro, sin un solo error en el registro.
+  //
+  // La copia de casa SÍ enruta a otros: hay una sola app de Meta y su webhook
+  // apunta aquí, así que es la que reparte. Una copia ajena solo se atiende a
+  // sí misma; si el número no es suyo, es un error de configuración y callarse
+  // es la respuesta correcta.
+  if (!estaCopiaAtiendeA(dueño?.slug)) {
+    console.error(
+      `[WHATSAPP] el número por el que entró este mensaje es de "${dueño.slug}", pero esta copia es de "${CLIENTE}". ` +
+        "Revisa whatsapp_phone_id en la tabla clientes. No se responde.",
+    );
+    return;
+  }
   const cliente = dueño?.slug ?? CLIENTE;
 
   // Con esto viaja el contador de mensajes entregados hasta lib/mensajeria.js.
@@ -229,7 +271,7 @@ async function procesar(valor, mensaje) {
       // base tosa. Pero queda gritado en el registro para arreglarlo a mano.
       console.error("[BAJA] ¡no se pudo registrar la baja de", numero + "!:", err?.message ?? err);
     }
-    await enviarWhatsApp(numero, MENSAJE_BAJA, { bitacora, motivo: "baja" }).catch((err) =>
+    await enviarWhatsApp(numero, mensajeBaja(), { bitacora, motivo: "baja" }).catch((err) =>
       console.error("[BAJA] no se pudo confirmar:", err?.message ?? err),
     );
     return;
@@ -339,7 +381,7 @@ async function procesar(valor, mensaje) {
     console.error("[WHATSAPP] error procesando el mensaje:", err?.message ?? err);
     // Ya le dijimos 200 a Meta, así que nadie va a reintentar por nosotros.
     // Antes que el silencio, una disculpa honesta con el contacto del equipo.
-    await enviarWhatsApp(numero, MENSAJE_TROPIEZO, { bitacora, motivo: "tropiezo" }).catch(() => {});
+    await enviarWhatsApp(numero, mensajeTropiezo(), { bitacora, motivo: "tropiezo" }).catch(() => {});
     // Y que el dueño se entere HOY: desde que el WhatsApp público lo atiende
     // IntelliA, un fallo aquí es un cliente perdido, no una línea de registro.
     avisarDelTropiezo(numero, err, bitacora);

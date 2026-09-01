@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#08090b" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Panel — Intellectum</title>
+<!-- Neutro a propósito: este archivo viaja igual a todas las copias y el
+     dueño de una ferretería no tiene por qué ver "Intellectum" en su pestaña.
+     El nombre real lo pone identidad() con lo que responde /api/negocio. -->
+<title>Panel del negocio</title>
 
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
@@ -15,6 +18,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
 <style>
+/* El atributo hidden pierde contra cualquier regla de display, y aquí se usa
+   para esconder el logo cuando la copia no declaró el suyo. */
+[hidden] { display: none !important; }
+
 :root {
   --bg: #08090b; --bg-elev: #0d0f12; --bg-card: rgba(255,255,255,0.02);
   --border: rgba(255,255,255,0.07); --border-strong: rgba(255,255,255,0.15);
@@ -446,7 +453,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 <!-- ── acceso ── -->
 <div class="acceso" id="acceso">
   <form class="acceso-caja" id="formAcceso">
-    <div class="marca"><img src="/logo-nav.webp" alt="" /><span style="font-family:var(--font-display);font-size:19px;">Intellectum</span></div>
+    <div class="marca"><img id="acceso-logo" src="" alt="" hidden /><span id="acceso-nombre" style="font-family:var(--font-display);font-size:19px;"></span></div>
     <h1>Panel del negocio</h1>
     <p>Escribe tu clave de acceso. Es la misma del agente privado.</p>
     <input type="password" id="clave" placeholder="Clave de acceso" autocomplete="current-password" />
@@ -458,7 +465,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 <!-- ── aplicación ── -->
 <div class="app" id="app">
   <div class="topbar">
-    <img src="/logo-nav.webp" alt="" />
+    <img id="topbar-logo" src="" alt="" hidden />
     <span class="titulo">Panel</span>
     <span class="espacio"></span>
     <button class="salir" id="salir">Salir</button>
@@ -479,7 +486,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       Citas</button>
     <button class="tab" data-vista="agente">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M4.9 19.1l2.2-2.2M16.9 7.1l2.2-2.2"/></svg>
-      IntelliA</button>
+      <span id="tab-agente">Agente</span></button>
   </nav>
 
   <div class="lienzo">
@@ -513,6 +520,46 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   var CLAVE = localStorage.getItem("panel_clave") || "";
   var acceso = document.getElementById("acceso");
   var app = document.getElementById("app");
+
+  /* ──────────────────────────────────────────────────────────── identidad
+     Este panel es un archivo estático: viaja idéntico a todas las copias, así
+     que no puede llevar escrito el nombre del negocio ni el del asistente.
+     Antes decía "Intellectum" en la pestaña, en la caja de acceso y en la
+     barra, y "IntelliA" en cada línea de actividad: el dueño de una ferretería
+     entraba a su panel y leía el nombre de otra empresa. Se lo pregunta al
+     servidor, que sí sabe para qué negocio se publicó esta copia.
+
+     Corre antes del acceso a propósito: no lleva ningún dato reservado —es lo
+     mismo que cualquiera lee en la página pública— y así el panel ya está
+     rotulado cuando el dueño escribe su clave. */
+  var NEG = {};
+
+  function agente() { return NEG.agente || "el asistente"; }
+  function Agente() { var a = agente(); return a.charAt(0).toUpperCase() + a.slice(1); }
+  function deAgente() { return NEG.agente ? "de " + NEG.agente : "del asistente"; }
+
+  fetch("/api/negocio")
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (d) {
+      NEG = d || {};
+      if (NEG.nombreCorto) {
+        document.title = "Panel — " + NEG.nombreCorto;
+        document.getElementById("acceso-nombre").textContent = NEG.nombreCorto;
+      }
+      if (NEG.agente) document.getElementById("tab-agente").textContent = NEG.agente;
+      /* Sin logo declarado no se pone ninguno: el de la casa en el panel de
+         otro negocio es justamente lo que se vino a arreglar. */
+      if (NEG.logo) {
+        ["acceso-logo", "topbar-logo"].forEach(function (id) {
+          var img = document.getElementById(id);
+          img.src = NEG.logo;
+          img.hidden = false;
+        });
+      }
+    })
+    .catch(function () {
+      /* Sin respuesta, el panel queda sin rótulo y funciona igual. */
+    });
 
   /* ─────────────────────────────────────────────────────────────── acceso */
 
@@ -700,7 +747,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
 
     if (!c.entregados || !c.entregados.total)
       return titulo + '<div class="vacio">Todavía no ha salido ningún mensaje. ' +
-        'Cuando IntelliA empiece a atender por WhatsApp, aquí verás cuántos ' +
+        "Cuando " + agente() + " empiece a atender por WhatsApp, aquí verás cuántos " +
         'mensajes entrega en cada conversación.</div>';
 
     if (!c.conversaciones)
@@ -737,11 +784,11 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     var det = e.detalle || {};
     var h = det.herramienta || "";
     if (e.tipo === "mensaje_procesado")
-      return { icono: "💬", texto: "IntelliA atendió un mensaje de WhatsApp", ir: "chats" };
+      return { icono: "💬", texto: Agente() + " atendió un mensaje de WhatsApp", ir: "chats" };
     if (e.tipo === "consulta_disponibilidad")
       return { icono: "🕐", texto: "Alguien consultó horarios para una cita", ir: "citas" };
     if (e.tipo === "herramienta_ejecutada") {
-      if (h === "guardar_lead") return { icono: "⭐", texto: "IntelliA capturó un lead nuevo", ir: "leads" };
+      if (h === "guardar_lead") return { icono: "⭐", texto: Agente() + " capturó un lead nuevo", ir: "leads" };
       if (h === "agendar_cita") return { icono: "📅", texto: "Se agendó una cita nueva", ir: "citas" };
       if (h === "reagendar_cita") return { icono: "📅", texto: "Se movió una cita", ir: "citas" };
       if (h === "cancelar_cita") {
@@ -756,12 +803,12 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
       if (h === "ver_disponibilidad") return { icono: "🕐", texto: "Alguien revisó horarios disponibles", ir: "citas" };
       if (h === "escalar_a_humano") return { icono: "🙋", texto: "Una conversación pidió atención humana", ir: "chats" };
       if (h === "responder") return { icono: "✍️", texto: "Respondiste a mano por WhatsApp", ir: "chats" };
-      return { icono: "⚙️", texto: "IntelliA usó " + (h || "una herramienta"), ir: null };
+      return { icono: "⚙️", texto: Agente() + " usó " + (h || "una herramienta"), ir: null };
     }
     if (e.tipo === "herramienta_fallida")
-      return { icono: "⚠️", texto: "Falló una acción de IntelliA" + (h ? " (" + h + ")" : ""), ir: null };
+      return { icono: "⚠️", texto: "Falló una acción " + deAgente() + (h ? " (" + h + ")" : ""), ir: null };
     if (e.tipo === "herramienta_rechazada")
-      return { icono: "🛑", texto: "IntelliA intentó algo fuera de su alcance y se bloqueó", ir: null };
+      return { icono: "🛑", texto: Agente() + " intentó algo fuera de su alcance y se bloqueó", ir: null };
     if (e.tipo === "accion_pendiente_de_confirmacion")
       return { icono: "✋", texto: "Hay una acción esperando tu visto bueno", ir: null };
     if (e.tipo === "aviso_fallido")
@@ -771,17 +818,17 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         icono: "🙋",
         texto: det.por === "panel"
           ? "Tomaste una conversación de WhatsApp: el bot quedó en silencio"
-          : "IntelliA te pasó una conversación de WhatsApp: respóndela tú",
+          : Agente() + " te pasó una conversación de WhatsApp: respóndela tú",
         ir: "chats",
       };
     if (e.tipo === "traspaso_bot")
       return { icono: "🤖", texto: "Le devolviste una conversación al bot", ir: "chats" };
     if (e.tipo === "llamada_registrada")
-      return { icono: "📞", texto: "IntelliA atendió una llamada", ir: "leads" };
+      return { icono: "📞", texto: Agente() + " atendió una llamada", ir: "leads" };
     if (e.tipo === "cotizacion_entregada")
-      return { icono: "🧾", texto: "IntelliA entregó una cotización", ir: "leads" };
+      return { icono: "🧾", texto: Agente() + " entregó una cotización", ir: "leads" };
     if (e.tipo === "seguimiento_programado")
-      return { icono: "⏰", texto: "IntelliA dejó programado un seguimiento", ir: "leads" };
+      return { icono: "⏰", texto: Agente() + " dejó programado un seguimiento", ir: "leads" };
     if (e.tipo === "seguimiento_enviado")
       return { icono: "📨", texto: "Salió un seguimiento por WhatsApp", ir: "leads" };
     /* Cada WhatsApp que sale deja su evento, y son muchos: aquí solo se muestra
@@ -899,7 +946,10 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
         var contenido = "\uFEFF" + filas.join("\r\n");
         var enlace = document.createElement("a");
         enlace.href = URL.createObjectURL(new Blob([contenido], { type: "text/csv;charset=utf-8" }));
-        enlace.download = "leads-intellectum-" + new Date().toISOString().slice(0, 10) + ".csv";
+        // Sin el nombre de la empresa: este archivo se lo baja el dueño de la
+        // copia, y "leads-intellectum-….csv" en el escritorio de una ferretería
+        // es el único rastro de identidad ajena que sale de esta pantalla.
+        enlace.download = "leads-" + new Date().toISOString().slice(0, 10) + ".csv";
         document.body.appendChild(enlace);
         enlace.click();
         enlace.remove();

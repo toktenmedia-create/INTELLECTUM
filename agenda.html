@@ -8,8 +8,12 @@
        verificación se cae y con ella la medición de la pauta. -->
   <meta name="facebook-domain-verification" content="9xfwj09xamrs3694cjhthfj1xqqax5" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Agenda tu consultoría — Intellectum AI Solutions</title>
-<meta name="description" content="Elige la hora de tu consultoría gratuita de 30 minutos con Intellectum AI Solutions." />
+<!-- Título y descripción NEUTROS a propósito. Este archivo viaja idéntico a
+     todas las copias, así que no puede afirmar de quién es: el nombre real lo
+     pone el JS con lo que responde /api/negocio. Antes decía "Intellectum AI
+     Solutions" en la pestaña de cualquier negocio que publicara una copia. -->
+<title>Agenda tu cita</title>
+<meta name="description" content="Elige la hora que mejor te quede." />
 <meta name="robots" content="noindex, nofollow" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -17,6 +21,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Geist:wght@300..600&display=swap" rel="stylesheet" />
 <style>
+/* El atributo hidden vale menos que cualquier regla de display, y esta página
+   lo usa para esconder lo que la copia no tiene configurado (el logo, el botón
+   de WhatsApp, las preguntas sugeridas). Sin esto, el hueco se sigue viendo. */
+[hidden] { display: none !important; }
+
 /* La misma paleta del sitio. Si cambia allá, cambia aquí. */
 :root {
   --bg: #08090b;
@@ -85,6 +94,12 @@ body::before {
 .marca span {
   font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--texto-tenue); font-weight: 500;
+}
+/* El nombre del negocio cuando esa copia no tiene logotipo propio: hace de
+   logotipo, así que se lee como tal y no como el rótulo tenue de al lado. */
+.marca .nombre-negocio {
+  font-family: var(--display); font-size: 18px; letter-spacing: normal;
+  text-transform: none; color: var(--texto); font-weight: 500;
 }
 
 h1 {
@@ -242,9 +257,10 @@ input:focus, textarea:focus {
 </head>
 <body>
 <main class="envoltorio">
-  <a class="marca" href="/" aria-label="Intellectum AI Solutions">
-    <img src="/logo-nav.webp" alt="" width="120" height="34" />
-    <span id="rotulo">Consultoría gratuita</span>
+  <a class="marca" href="/" id="marca" aria-label="Inicio">
+    <img id="logo" alt="" width="120" height="34" hidden />
+    <span id="nombre-negocio" class="nombre-negocio" hidden></span>
+    <span id="rotulo">Agenda tu cita</span>
   </a>
 
   <div id="paso-elegir">
@@ -256,7 +272,7 @@ input:focus, textarea:focus {
   <div id="paso-datos" class="tarjeta oculto">
     <div class="elegida">
       <span class="elegida-hora" id="elegida-hora"></span>
-      <span class="elegida-nota" id="elegida-nota">hora de Ecuador · 30 min</span>
+      <span class="elegida-nota" id="elegida-nota"></span>
       <button type="button" class="cambiar" id="cambiar">Cambiar</button>
     </div>
     <form id="formulario" novalidate>
@@ -292,11 +308,10 @@ input:focus, textarea:focus {
 
   <p id="pie-nota" style="margin-top:34px;font-size:13px;color:var(--texto-tenue);">Son 30 minutos, sin costo y sin compromiso.</p>
 
-  <footer class="pie" style="margin-top:14px;">
-    <a href="mailto:info@intellectum.ec">info@intellectum.ec</a>
-    <a href="https://wa.me/593967518060">WhatsApp +593 96 751 8060</a>
-    <a href="/">intellectum.ec</a>
-  </footer>
+  <!-- Vacío en el archivo: lo llena identidad() con las vías que esta copia
+       tenga configuradas. Un pie vacío es correcto; uno con el correo y el
+       WhatsApp de otra empresa manda los clientes del negocio a un tercero. -->
+  <footer class="pie" id="pie" style="margin-top:14px;"></footer>
 </main>
 
 <script>
@@ -317,7 +332,7 @@ input:focus, textarea:focus {
         titulo: "Pick your time",
         bajada1: "It's ", bajada2: "30 minutes", bajada3: ", no cost and no strings attached. You leave with a clear map of what can be automated in your company and what it would cost.",
         cargando: "Checking the calendar…",
-        zona: "Ecuador time · 30 min",
+        zona: "Ecuador time",
         cambiar: "Change",
         campoNombre: "Your name", campoContacto: "Email or WhatsApp",
         campoEmpresa: "Company", campoMotivo: "What would you like to solve?",
@@ -335,14 +350,14 @@ input:focus, textarea:focus {
         listoTitulo: "Done, you're booked",
         listoCorreo: function (c) { return "We sent the confirmation to " + c + ", with the invitation for your calendar."; },
         listoSinCorreo: function (c) { return "We'll write to " + c + " to confirm the details."; },
-        pie: "30 minutes, no cost and no strings attached.",
+        pie: function (m) { return m + " minutes, no cost and no strings attached."; },
       }
     : {
         rotulo: "Consultoría gratuita",
         titulo: "Elige tu hora",
-        bajada1: "Son ", bajada2: "30 minutos", bajada3: ", sin compromiso y sin costo. Salimos de ahí con un mapa claro de qué se puede automatizar en tu empresa y cuánto costaría.",
+        bajada1: "Son ", bajada2: "30 minutos", bajada3: ", sin compromiso y sin costo.",
         cargando: "Consultando la agenda…",
-        zona: "hora de Ecuador · 30 min",
+        zona: "hora de Ecuador",
         cambiar: "Cambiar",
         campoNombre: "Tu nombre", campoContacto: "Correo o WhatsApp",
         campoEmpresa: "Empresa", campoMotivo: "¿Qué te gustaría resolver?",
@@ -360,17 +375,22 @@ input:focus, textarea:focus {
         listoTitulo: "Listo, quedó agendada",
         listoCorreo: function (c) { return "Te llegó la confirmación a " + c + ", con la invitación para tu calendario."; },
         listoSinCorreo: function (c) { return "Te escribiremos a " + c + " para confirmarte los detalles."; },
-        pie: "Son 30 minutos, sin costo y sin compromiso.",
+        pie: function (m) { return "Son " + m + " minutos, sin costo y sin compromiso."; },
       };
   var LOCALE = EN ? "en-US" : "es-EC";
+
+  /* Se declaran ANTES de pintar nada: el primer pintado ya los consulta, y con
+     "var" la declaración se iza pero la asignación no. */
+  var NEG = {};
+  var duracion = 30;
 
   /* Pintar los textos fijos antes de que se vea nada. */
   document.documentElement.lang = EN ? "en" : "es";
   $("rotulo").textContent = T.rotulo;
   $("titulo").textContent = T.titulo;
-  $("bajada").innerHTML = esc(T.bajada1) + "<strong>" + esc(T.bajada2) + "</strong>" + esc(T.bajada3);
+  pintarDuracion(30);
   $("horarios").textContent = T.cargando;
-  $("elegida-nota").textContent = T.zona;
+
   $("cambiar").textContent = T.cambiar;
   $("lbl-nombre").textContent = T.campoNombre;
   $("lbl-contacto").textContent = T.campoContacto;
@@ -378,8 +398,12 @@ input:focus, textarea:focus {
   $("lbl-motivo").innerHTML = esc(T.campoMotivo) + ' <span style="color:var(--texto-tenue)">' + esc(T.opcional) + "</span>";
   $("enviar").textContent = T.enviar;
   $("listo-titulo").textContent = T.listoTitulo;
-  $("pie-nota").textContent = T.pie;
-  if (EN) document.title = "Book your consultation — Intellectum AI Solutions";
+
+  /* El nombre del negocio no se traduce: lo pone identidad() en los dos
+     idiomas. Antes había aquí un segundo literal con "Intellectum AI
+     Solutions", así que corregir solo el <title> de arriba no bastaba: la
+     versión ?lang=en volvía a ponerlo. */
+  document.title = EN ? "Book your appointment" : "Agenda tu cita";
 
   /* La hora puede venir ya elegida desde un botón del correo (?h=1708-1430).
      Si para cuando abren el correo ya se ocupó, no se finge: se dice y se
@@ -414,6 +438,10 @@ input:focus, textarea:focus {
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function (d) {
         horariosCache = (d.horarios || []).map(conIdioma);
+        if (d.duracionMinutos) {
+          duracion = d.duracionMinutos;
+          pintarDuracion(duracion);
+        }
         pintar(horariosCache);
         if (pedida) {
           var hay = horariosCache.filter(function (h) { return h.codigo === pedida; })[0];
@@ -423,10 +451,7 @@ input:focus, textarea:focus {
       })
       .catch(function () {
         $("horarios").className = "vacio";
-        $("horarios").innerHTML =
-          esc(T.sinAgenda) +
-          '<a href="https://wa.me/593967518060" style="color:var(--cian-claro)">WhatsApp</a>' +
-          esc(T.yCoordinamos);
+        $("horarios").innerHTML = conSalida(T.sinAgenda, T.yCoordinamos);
       });
   }
 
@@ -442,10 +467,7 @@ input:focus, textarea:focus {
     var caja = $("horarios");
     if (!horarios.length) {
       caja.className = "vacio";
-      caja.innerHTML =
-        esc(T.sinHoras) +
-        '<a href="https://wa.me/593967518060" style="color:var(--cian-claro)">WhatsApp</a>' +
-        esc(T.yBuscamos);
+      caja.innerHTML = conSalida(T.sinHoras, T.yBuscamos);
       return;
     }
 
@@ -566,7 +588,84 @@ input:focus, textarea:focus {
     $("error").classList.remove("oculto");
   }
 
-  cargar();
+  /* DE QUIÉN ES ESTA COPIA.
+     El HTML no lo sabe (es el mismo archivo en todos los despliegues), así que
+     se lo pregunta al servidor. Mientras no conteste, la página no dice ningún
+     nombre ni reparte ningún contacto: en una copia ajena, equivocarse aquí es
+     mandarle los clientes de un negocio a otro. */
+
+  function identidad() {
+    return fetch("/api/negocio")
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (d) {
+        NEG = d || {};
+
+        var titulo = NEG.citaTitulo || (EN ? "Book your appointment" : T.rotulo);
+        document.title = NEG.nombre ? titulo + " — " + NEG.nombre : titulo;
+        if (NEG.nombre) $("marca").setAttribute("aria-label", NEG.nombre);
+        if (NEG.citaTitulo) $("rotulo").textContent = NEG.citaTitulo;
+        pintarDuracion(duracion);
+
+        /* Con logo se pinta el logo; sin logo, el nombre en letra. Nunca el
+           logotipo de otra empresa encabezando este formulario. */
+        if (NEG.logo) {
+          $("logo").src = NEG.logo;
+          $("logo").hidden = false;
+        } else if (NEG.nombre) {
+          $("nombre-negocio").textContent = NEG.nombre;
+          $("nombre-negocio").hidden = false;
+        }
+
+        pintarPie();
+      })
+      .catch(function () {
+        /* Sin identidad no se inventa ninguna: la página queda neutra y la
+           agenda funciona igual, que es lo que la persona vino a hacer. */
+      });
+  }
+
+  /* La duración de la cita la manda /api/agenda; hasta que conteste se dice
+     media hora, que es lo que dura por defecto. La frase de qué se lleva la
+     persona ("salimos de ahí con un mapa de...") es una promesa comercial, así
+     que solo aparece si ESTE negocio la configuró. */
+  function pintarDuracion(minutos) {
+    var m = Number(minutos) || 30;
+    var unidad = EN ? " minutes" : " minutos";
+    var extra = NEG.citaDescripcion ? " " + NEG.citaDescripcion : "";
+    $("bajada").innerHTML =
+      esc(T.bajada1) + "<strong>" + esc(m + unidad) + "</strong>" + esc(T.bajada3 + extra);
+    $("pie-nota").textContent = T.pie(m);
+    $("elegida-nota").textContent = T.zona + " · " + m + (EN ? " min" : " min");
+  }
+
+  function pintarPie() {
+    var pie = $("pie");
+    var partes = [];
+    if (NEG.correo) partes.push('<a href="mailto:' + esc(NEG.correo) + '">' + esc(NEG.correo) + "</a>");
+    if (NEG.enlaceWhatsapp && NEG.whatsappBot) {
+      partes.push('<a href="' + esc(NEG.enlaceWhatsapp) + '">WhatsApp ' + esc(NEG.whatsappBot) + "</a>");
+    }
+    /* NEG.web es el dominio como el negocio lo escribe ("intellectum.ec");
+       NEG.dominio sale de SITIO_URL y trae el www. Se prefiere el primero. */
+    var casa = NEG.web || NEG.dominio;
+    if (casa) partes.push('<a href="/">' + esc(casa) + "</a>");
+    pie.innerHTML = partes.join("");
+  }
+
+  /* Un aviso de error con su salida por WhatsApp, si esta copia tiene una.
+     Si no la tiene, la frase se corta antes del "escríbenos por": es el
+     momento en que la persona más necesita el canal correcto, y darle el de
+     otra empresa es peor que no darle ninguno. */
+  function conSalida(antes, despues) {
+    if (!NEG.enlaceWhatsapp) return esc(antes.replace(/\s*Escríbenos por\s*$/i, "").replace(/\s*Write to us on\s*$/i, ""));
+    return (
+      esc(antes) +
+      '<a href="' + esc(NEG.enlaceWhatsapp) + '" style="color:var(--cian-claro)">WhatsApp</a>' +
+      esc(despues)
+    );
+  }
+
+  identidad().then(cargar);
 })();
 </script>
   <script src="/medicion.js" defer></script>
