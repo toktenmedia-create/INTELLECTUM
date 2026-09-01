@@ -328,9 +328,9 @@ input:focus, textarea:focus {
   var EN = params.get("lang") === "en";
   var T = EN
     ? {
-        rotulo: "Free consultation",
+        rotulo: "Book your appointment",
         titulo: "Pick your time",
-        bajada1: "It's ", bajada2: "30 minutes", bajada3: ", no cost and no strings attached. You leave with a clear map of what can be automated in your company and what it would cost.",
+        bajada1: "It's ", bajada2: "30 minutes", bajada3: ", no cost and no strings attached.",
         cargando: "Checking the calendar…",
         zona: "Ecuador time",
         cambiar: "Change",
@@ -353,7 +353,7 @@ input:focus, textarea:focus {
         pie: function (m) { return m + " minutes, no cost and no strings attached."; },
       }
     : {
-        rotulo: "Consultoría gratuita",
+        rotulo: "Agenda tu cita",
         titulo: "Elige tu hora",
         bajada1: "Son ", bajada2: "30 minutos", bajada3: ", sin compromiso y sin costo.",
         cargando: "Consultando la agenda…",
@@ -600,10 +600,14 @@ input:focus, textarea:focus {
       .then(function (d) {
         NEG = d || {};
 
-        var titulo = NEG.citaTitulo || (EN ? "Book your appointment" : T.rotulo);
+        /* El rótulo del negocio, en el idioma que se está viendo. Sin la
+           versión inglesa se pisaba el "Free consultation" recién pintado con
+           el "Consultoría gratuita" que llega del servidor, a media página. */
+        var rotulo = EN ? NEG.citaTituloEn : NEG.citaTitulo;
+        var titulo = rotulo || (EN ? "Book your appointment" : T.rotulo);
         document.title = NEG.nombre ? titulo + " — " + NEG.nombre : titulo;
         if (NEG.nombre) $("marca").setAttribute("aria-label", NEG.nombre);
-        if (NEG.citaTitulo) $("rotulo").textContent = NEG.citaTitulo;
+        if (rotulo) $("rotulo").textContent = rotulo;
         pintarDuracion(duracion);
 
         /* Con logo se pinta el logo; sin logo, el nombre en letra. Nunca el
@@ -631,7 +635,10 @@ input:focus, textarea:focus {
   function pintarDuracion(minutos) {
     var m = Number(minutos) || 30;
     var unidad = EN ? " minutes" : " minutos";
-    var extra = NEG.citaDescripcion ? " " + NEG.citaDescripcion : "";
+    /* Cada idioma con la suya. Pegar aquí la española debajo de la inglesa
+       dejaba la misma promesa dos veces, la segunda en otro idioma. */
+    var promesa = EN ? NEG.citaDescripcionEn : NEG.citaDescripcion;
+    var extra = promesa ? " " + promesa : "";
     $("bajada").innerHTML =
       esc(T.bajada1) + "<strong>" + esc(m + unidad) + "</strong>" + esc(T.bajada3 + extra);
     $("pie-nota").textContent = T.pie(m);

@@ -589,8 +589,16 @@ console.log("\nLas páginas estáticas no dicen de quién son:");
   for (const pagina of ["agenda.html", "chat.html", "panel.html"]) {
     const fuente = sinComentarios(await readFile(new URL(`../${pagina}`, import.meta.url), "utf8"));
     prueba(`${pagina} no nombra a Intellectum ni a IntelliA`, !/intellectum|intellia/i.test(fuente));
+    // Los teléfonos se buscan sobre el texto SIN separadores: en el repositorio
+    // estos números se escriben "+593 96 751 8060", y el patrón anterior solo
+    // reconocía la forma de corrido ("593967518060"), que es justamente la que
+    // este cambio eliminó. O sea: vigilaba la única grafía que ya no podía
+    // volver, y dejaba pasar la que sí se usa.
+    const pegado = fuente.replace(/[\s\-().]/g, "");
     prueba(`${pagina} no reparte el correo ni el WhatsApp de la casa`,
-      !fuente.includes("info@intellectum.ec") && !/9675180 ?60|593967518060/.test(fuente));
+      !fuente.includes("info@intellectum.ec") &&
+        !pegado.includes("967518060") &&
+        !pegado.includes("983120003"));
     prueba(`${pagina} no se canoniza a un dominio ajeno`, !/rel="canonical"[^>]*https?:/.test(fuente));
   }
 
@@ -609,65 +617,94 @@ console.log("\nLas páginas estáticas no dicen de quién son:");
 
 console.log("\nPor /api/negocio solo sale la identidad pública:");
 {
-  const { default: handler } = await import("../api/negocio.js");
-
-  const pedir = async (metodo) => {
-    let estado = 0;
-    let cabeceras = {};
-    let cuerpo = "";
-    const res = {
-      writeHead(e, c) { estado = e; cabeceras = c || {}; return res; },
-      end(t) { cuerpo = t ?? ""; return res; },
+  // TODO ESTE BLOQUE CORRE EN PROCESOS APARTE, A PROPÓSITO.
+  //
+  // Los bloques de arriba escriben CLIENTE_SLUG y los NEGOCIO_* de la
+  // ferretería en el entorno de ESTE proceso y no los borran. Pero CLIENTE se
+  // congela en la primera importación de lib/cliente.js, mientras NEGOCIO son
+  // getters que releen el entorno cada vez: llamar aquí al handler daba un
+  // híbrido —nombre y correo de la ferretería con el WhatsApp, el logo y las
+  // preguntas de Intellectum— y las pruebas pasaban igual, que es exactamente
+  // el defecto que esta etapa existe para impedir. Cada copia se levanta con
+  // su entorno limpio y se le pide la respuesta de verdad al endpoint.
+  const { execFileSync } = await import("node:child_process");
+  const guion = `
+    const { default: handler } = await import("../api/negocio.js");
+    const pedir = async (metodo) => {
+      let estado = 0, cabeceras = {}, cuerpo = "";
+      const res = {
+        writeHead(e, c) { estado = e; cabeceras = c || {}; return res; },
+        end(t) { cuerpo = t ?? ""; return res; },
+      };
+      await handler({ method: metodo }, res);
+      return { estado, cabeceras, cuerpo };
     };
-    await handler({ method: metodo }, res);
-    return { estado, cabeceras, cuerpo };
-  };
+    const get = await pedir("GET");
+    console.log(JSON.stringify({
+      estado: get.estado,
+      cabeceras: get.cabeceras,
+      cuerpo: get.cuerpo,
+      estadoPost: (await pedir("POST")).estado,
+    }));
+  `;
+  const servir = (env) =>
+    JSON.parse(
+      execFileSync(process.execPath, ["--input-type=module", "--eval", guion], {
+        cwd: new URL("./", import.meta.url).pathname,
+        env: { PATH: process.env.PATH, VERCEL: "1", ...env },
+        encoding: "utf8",
+      }).trim().split("\n").pop(),
+    );
 
-  const get = await pedir("GET");
-  prueba("un GET contesta 200", get.estado === 200);
+  const casa = servir({});
+  prueba("un GET contesta 200", casa.estado === 200);
   prueba("cualquier sitio lo puede leer (el widget vive en otro dominio)",
-    get.cabeceras["Access-Control-Allow-Origin"] === "*");
+    casa.cabeceras["Access-Control-Allow-Origin"] === "*");
   prueba("el navegador revalida siempre, el CDN cachea",
-    /max-age=0/.test(get.cabeceras["Cache-Control"]) && /s-maxage=\d+/.test(get.cabeceras["Cache-Control"]));
-  prueba("un POST no pasa", (await pedir("POST")).estado === 405);
+    /max-age=0/.test(casa.cabeceras["Cache-Control"]) && /s-maxage=\d+/.test(casa.cabeceras["Cache-Control"]));
+  prueba("un POST no pasa", casa.estadoPost === 405);
 
   // La lista se fija a mano: si mañana alguien agrega un campo a
   // identidadPublica(), esta prueba falla y obliga a mirar si es público.
   const ESPERADAS = [
     "nombre", "nombreCorto", "agente", "correo", "whatsapp", "whatsappBot",
     "enlaceWhatsapp", "sitio", "dominio", "web", "logo", "cita", "evento",
-    "citaTitulo", "citaDescripcion", "chips", "chatIntro",
+    "citaTitulo", "citaTituloEn", "citaDescripcion", "citaDescripcionEn",
+    "chips", "chatIntro",
   ].sort();
-  const datos = JSON.parse(get.cuerpo);
+  const datos = JSON.parse(casa.cuerpo);
   prueba("no sale ni un campo más de los previstos",
     JSON.stringify(Object.keys(datos).sort()) === JSON.stringify(ESPERADAS));
+  prueba("no se escapa ninguna clave",
+    !/sk-|Bearer |_TOKEN|_KEY|SUPABASE|ANTHROPIC/i.test(JSON.stringify(datos)));
 
-  const todo = JSON.stringify(datos);
-  prueba("no se escapa ninguna clave", !/sk-|Bearer |_TOKEN|_KEY|SUPABASE|ANTHROPIC/i.test(todo));
+  // Y los VALORES, que es lo que de verdad se publica. Sin esto, un endpoint
+  // que devolviera las 19 claves con todo en blanco pasaba en verde y las tres
+  // páginas se quedaban mudas en todas las copias sin que nadie se enterara.
+  prueba("la copia de casa publica la identidad de casa",
+    datos.nombre === "Intellectum AI Solutions" &&
+      datos.agente === "IntelliA" &&
+      datos.correo === "info@intellectum.ec" &&
+      datos.whatsappBot === "+593 96 751 8060" &&
+      datos.logo === "/logo-nav.webp");
+  prueba("con su cita, su promesa y sus preguntas",
+    datos.citaTitulo === "Consultoría gratuita" &&
+      datos.citaDescripcion.length > 20 &&
+      datos.chips.length === 4);
+  prueba("y con las dos frases en inglés de la página en inglés",
+    datos.citaTituloEn === "Free consultation" && /automated in your company/.test(datos.citaDescripcionEn));
 
   // Y en la copia de otro negocio, lo mismo pero sin nada de la casa.
-  const { execFileSync } = await import("node:child_process");
-  const guion = `
-    const { identidadPublica } = await import("../lib/cliente.js");
-    console.log(JSON.stringify(identidadPublica()));
-  `;
-  const ajena = JSON.parse(
-    execFileSync(process.execPath, ["--input-type=module", "--eval", guion], {
-      cwd: new URL("./", import.meta.url).pathname,
-      env: {
-        PATH: process.env.PATH,
-        VERCEL: "1",
-        CLIENTE_SLUG: "ferreteria-tornillo",
-        NEGOCIO_NOMBRE: "Ferretería El Tornillo",
-        NEGOCIO_NOMBRE_CORTO: "El Tornillo",
-        NEGOCIO_AGENTE: "Tornillito",
-        NEGOCIO_CORREO: "ventas@eltornillo.ec",
-        NEGOCIO_WHATSAPP: "+593 99 111 2233",
-        NEGOCIO_WEB: "eltornillo.ec",
-      },
-      encoding: "utf8",
-    }).trim().split("\n").pop(),
-  );
+  const ENTORNO_AJENO = {
+    CLIENTE_SLUG: "ferreteria-tornillo",
+    NEGOCIO_NOMBRE: "Ferretería El Tornillo",
+    NEGOCIO_NOMBRE_CORTO: "El Tornillo",
+    NEGOCIO_AGENTE: "Tornillito",
+    NEGOCIO_CORREO: "ventas@eltornillo.ec",
+    NEGOCIO_WHATSAPP: "+593 99 111 2233",
+    NEGOCIO_WEB: "eltornillo.ec",
+  };
+  const ajena = JSON.parse(servir(ENTORNO_AJENO).cuerpo);
 
   const textoAjeno = JSON.stringify(ajena);
   prueba("la ferretería publica su nombre", ajena.nombre === "Ferretería El Tornillo");
@@ -675,6 +712,15 @@ console.log("\nPor /api/negocio solo sale la identidad pública:");
   prueba("ni su WhatsApp ni su correo", !/967518060|983120003|info@/.test(textoAjeno));
   prueba("sin logo declarado, no hereda el de la casa", ajena.logo === "");
   prueba("y no hereda sus preguntas sugeridas", Array.isArray(ajena.chips) && ajena.chips.length === 0);
+  prueba("ni las frases en inglés, que son promesa comercial de la casa",
+    ajena.citaTituloEn === "" && ajena.citaDescripcionEn === "");
+
+  // El caso feo: una copia publicada a la que se le olvidó el nombre. Antes se
+  // presentaba ante los clientes de ese negocio como "Intellectum AI Solutions".
+  const sinNombre = JSON.parse(servir({ CLIENTE_SLUG: "ferreteria-tornillo" }).cuerpo);
+  prueba("una copia sin nombre puesto NO se llama Intellectum",
+    !/intellectum|intellia/i.test(JSON.stringify(sinNombre)));
+  prueba("se llama como su identificador, feo pero suyo", sinNombre.nombre === "Ferreteria Tornillo");
 }
 
 await rm(CARPETA, { recursive: true, force: true });
