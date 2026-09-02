@@ -42,6 +42,7 @@ import { enviarCancelacionWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeri
 import { claveCorrecta } from "../lib/acceso.js";
 import { CLIENTE, NEGOCIO, esIntellectum } from "../lib/cliente.js";
 import { planDe, claveDePlan, planDeRespaldo, PLAN_POR_DEFECTO } from "../lib/planes.js";
+import { PRECIOS } from "../lib/precios.js";
 
 export const config = { maxDuration: 30 };
 
@@ -392,7 +393,7 @@ export default async function handler(req, res) {
     const vista = url.searchParams.get("vista") ?? "resumen";
 
     if (vista === "resumen") {
-      const [leads, conversaciones, eventos, citas, consumo, ficha] = await Promise.all([
+      const [leads, conversaciones, eventos, citas, consumo, ficha, conversacionesMes] = await Promise.all([
         almacen.listarLeads({ limite: 200 }),
         almacen.listarConversaciones({ limite: 100 }),
         almacen.listarEventos({ limite: 10 }),
@@ -404,6 +405,9 @@ export default async function handler(req, res) {
         // El plan contratado: el panel esconde lo que el plan no incluye (hoy,
         // la pestaña del agente privado). Misma regla que lib/brain.js.
         almacen.fichaDeCliente?.({ cliente: CLIENTE }).catch(() => null) ?? null,
+        // LO QUE SE VENDE: conversaciones del mes en curso (ventana de 24 h por
+        // persona, solo si el agente respondió). Contra el tope del plan.
+        almacen.consumoDeConversaciones?.({ cliente: CLIENTE }).catch(() => null) ?? null,
       ]);
       const clavePlan = claveDePlan(
         ficha?.plan ?? (ficha && !ficha.ilegible ? PLAN_POR_DEFECTO : planDeRespaldo()),
@@ -452,6 +456,9 @@ export default async function handler(req, res) {
           agente_privado: Boolean(plan.agente_privado),
           canales: plan.canales,
         },
+        conversaciones_mes: conversacionesMes
+          ? { ...conversacionesMes, tope: PRECIOS.planes[clavePlan]?.conversaciones_incluidas ?? null }
+          : null,
         eventos,
       });
     }

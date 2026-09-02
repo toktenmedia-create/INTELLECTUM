@@ -165,6 +165,17 @@ export default async function handler(req, res) {
     if (lead) enviar({ t: "lead" });
     enviar({ t: "done" });
 
+    // LO QUE SE VENDE. El chat web no guarda historial en el servidor, así
+    // que el contador de conversaciones se llama aquí, cuando el agente ya
+    // respondió: misma sesión dentro de 24 h = misma conversación.
+    if (textoCompleto && sesionId) {
+      enSegundoPlano(
+        almacen
+          .contarConversacion({ canal: "web", sesion: sesionId })
+          .catch((err) => console.error("[CONTADOR] chat web sin contar:", err?.message ?? err)),
+      );
+    }
+
     // La ficha que se escribe sola: si esta vuelta ESCRIBIÓ ficha de verdad
     // (la señal viene de las herramientas, no del nombre de la herramienta:
     // un rebote no cuenta), un modelo barato la califica en segundo plano.

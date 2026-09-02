@@ -729,6 +729,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
           (s.contacto ? '<div class="contacto">' + esc(s.contacto) + "</div>" : "") +
           "</div>"
         : "") +
+      bloqueConversaciones(d.conversaciones_mes) +
       bloqueConsumo(d.consumo) +
       '<h2 class="seccion">Última actividad</h2>' +
       ((d.eventos || []).map(filaActividad).join("") ||
@@ -745,6 +746,36 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
      conversación. Los topes de cada plan se calcularon sobre una estimación;
      este bloque la reemplaza por la cuenta real. Sin conversaciones todavía
      lo dice con todas sus letras, en vez de enseñar un cero que parece dato. */
+  /* LO QUE SE VENDE: conversaciones del mes contra el tope del plan. Una
+     conversación es una persona atendida por el agente dentro de una ventana
+     de 24 horas; un mensaje sin respuesta del agente no cuenta. */
+  function bloqueConversaciones(c) {
+    if (!c) return "";
+    var titulo = '<h2 class="seccion">Conversaciones de este mes</h2>';
+    var tope = Number(c.tope) || 0;
+    var canales = c.por_canal || {};
+    if (!c.total)
+      return titulo + '<div class="vacio">Todavía ninguna. Cada persona que ' + agente() +
+        " atiende cuenta como una conversación por día" +
+        (tope ? "; el plan incluye " + esc(tope) + " al mes." : ".") + "</div>";
+    var pct = tope ? Math.round((c.total / tope) * 100) : null;
+    return titulo +
+      '<div class="stats">' +
+      stat(String(c.total) + (tope ? " / " + tope : ""), "conversaciones este mes") +
+      (pct !== null ? stat(pct + "%", "del plan usado") : "") +
+      stat(canales.whatsapp || 0, "por WhatsApp") +
+      stat(canales.web || 0, "por la web") +
+      "</div>" +
+      (tope && c.total > tope
+        ? '<div class="alerta-riesgo">⚠ Este mes ya pasaste el tope del plan: las ' +
+          esc(c.total - tope) + " de más se facturan como excedente.</div>"
+        : tope && pct >= 80
+          ? '<div class="vacio">Vas por el ' + pct + "% del plan. Si el ritmo sigue, conviene mirar el siguiente plan.</div>"
+          : "") +
+      '<div class="vacio">Una conversación es una persona atendida por ' + agente() +
+      " dentro de una ventana de 24 horas. Un mensaje sin respuesta no cuenta.</div>";
+  }
+
   function bloqueConsumo(c) {
     if (!c) return "";
     var titulo = '<h2 class="seccion">Mensajes de WhatsApp (últimos 30 días)</h2>';

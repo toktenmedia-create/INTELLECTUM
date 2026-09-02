@@ -41,6 +41,15 @@ como ese negocio (ver `docs/ALTA-CLIENTE.md`). Cómo se vigila que siga viva:
 - No hace llamadas: el módulo de voz está en lista de espera desde que Dapta
   cerró (agosto de 2026).
 
+**Cómo se cuenta lo que se vende.** Cada plan incluye un número de
+conversaciones al mes (`lib/precios.js`). Una conversación son todos los
+mensajes de una misma persona (su número de WhatsApp o su sesión web) dentro
+de una ventana de 24 horas desde el primero que el agente respondió; si vuelve
+después, es otra. Un mensaje sin respuesta del agente, y lo que escribe una
+persona desde el panel, no cuentan. El contador vive en `lib/almacen.js`
+(`contarConversacion`, evento `conversacion`) y el panel lo muestra contra el
+tope del plan. Prueba: `node scripts/probar-conversaciones.mjs`.
+
 ---
 
 ## 2. Probarlo en tu computadora
