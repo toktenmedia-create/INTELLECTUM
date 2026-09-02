@@ -263,10 +263,27 @@ function origenPermitido(req) {
     const url = new URL(origen || referer);
     if (ORIGENES_PERMITIDOS.includes(url.origin)) return true;
     if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return true; // pruebas locales
-    return url.origin.endsWith(".vercel.app"); // previsualizaciones de Vercel
+    return esDespliegueDeEstaCopia(url.hostname);
   } catch {
     return false;
   }
+}
+
+/**
+ * Los dominios que Vercel le da a ESTA copia: el de producción, el de la rama
+ * y el de cada previsualización. Antes valía cualquier *.vercel.app, o sea
+ * cualquier proyecto de cualquier persona en Vercel: bastaba publicar una
+ * página ahí para gastar los mensajes de Claude de esta copia.
+ */
+function esDespliegueDeEstaCopia(host) {
+  const propios = [
+    process.env.VERCEL_URL,
+    process.env.VERCEL_BRANCH_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  ]
+    .map((v) => String(v ?? "").trim().toLowerCase())
+    .filter(Boolean);
+  return propios.includes(String(host ?? "").toLowerCase());
 }
 
 /**
@@ -362,11 +379,19 @@ function superaLimite(ip) {
 
 function cabecerasCors(req) {
   const origen = req.headers.origin;
-  const permitido =
-    origen &&
-    (ORIGENES_PERMITIDOS.includes(origen) ||
-      origen.endsWith(".vercel.app") ||
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origen));
+  let permitido = false;
+  if (origen) {
+    try {
+      const host = new URL(origen).hostname;
+      permitido =
+        ORIGENES_PERMITIDOS.includes(origen) ||
+        esDespliegueDeEstaCopia(host) ||
+        host === "localhost" ||
+        host === "127.0.0.1";
+    } catch {
+      permitido = false;
+    }
+  }
 
   return {
     "Access-Control-Allow-Origin": permitido ? origen : ORIGENES_PERMITIDOS[0],

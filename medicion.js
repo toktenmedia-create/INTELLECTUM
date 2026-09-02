@@ -23,22 +23,42 @@
  *    repetir en cada visita no es un rechazo, es un desgaste.
  *
  * CÓMO SE ENCIENDE: crea el píxel en tu Business Manager de Meta, copia el
- * identificador (son unos 15 dígitos) y pégalo en PIXEL, aquí abajo.
+ * identificador (son unos 15 dígitos) y ponlo en la variable NEGOCIO_PIXEL_ID
+ * de la copia. Este archivo se lo pregunta al servidor (/api/negocio) porque
+ * viaja idéntico a todas las copias: escrito aquí, el píxel de Intellectum
+ * mediría las visitas de los clientes de otro negocio y se las mandaría al
+ * Business Manager equivocado.
  */
 
-/** El identificador del píxel de Meta. Vacío = todo esto duerme. */
-var PIXEL = "1420043423319842";
+/** El identificador del píxel de Meta, según responda /api/negocio. Vacío = todo esto duerme. */
+var PIXEL = "";
+/** Dónde está el aviso de privacidad de ESTE negocio; sin él, el aviso no enlaza nada. */
+var AVISO_URL = "";
 
 (function () {
   "use strict";
 
-  if (!PIXEL) return; // dormido: ni una línea más se ejecuta
-
   var LLAVE = "intellectum:medicion";
-  var decision = leer();
 
-  if (decision === "si") encender();
-  else if (decision !== "no") preguntar();
+  fetch("/api/negocio")
+    .then(function (r) {
+      return r.ok ? r.json() : null;
+    })
+    .then(function (d) {
+      PIXEL = (d && d.pixel) || "";
+      AVISO_URL = (d && d.avisoPrivacidad) || "";
+      if (!PIXEL) return; // dormido: ni una línea más se ejecuta
+      arrancar();
+    })
+    .catch(function () {
+      /* Sin identidad no se mide nada: dormido es el estado seguro. */
+    });
+
+  function arrancar() {
+    var decision = leer();
+    if (decision === "si") encender();
+    else if (decision !== "no") preguntar();
+  }
 
   /* ── El permiso, guardado donde el visitante puede borrarlo ───────────── */
 
@@ -147,13 +167,15 @@ var PIXEL = "1420043423319842";
           "No es necesaria para navegar y puedes decir que no. ",
       ),
     );
-    var enlace = document.createElement("a");
-    enlace.href = "/privacidad";
-    enlace.target = "_blank";
-    enlace.rel = "noopener";
-    enlace.textContent = "Cómo tratamos tus datos";
-    texto.appendChild(enlace);
-    texto.appendChild(document.createTextNode("."));
+    if (AVISO_URL) {
+      var enlace = document.createElement("a");
+      enlace.href = AVISO_URL;
+      enlace.target = "_blank";
+      enlace.rel = "noopener";
+      enlace.textContent = "Cómo tratamos tus datos";
+      texto.appendChild(enlace);
+      texto.appendChild(document.createTextNode("."));
+    }
 
     var botones = document.createElement("div");
     botones.className = "botones";

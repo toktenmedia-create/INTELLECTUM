@@ -35,7 +35,8 @@ import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
 import { avisarEquipoWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
 import { enviarAviso } from "../lib/leads.js";
 import { calificarConversacion } from "../lib/calificar.js";
-import { CLIENTE, NEGOCIO, comoEscribirnos, esIntellectum } from "../lib/cliente.js";
+import { CLIENTE, NEGOCIO, comoEscribirnos, atiendeAlSlug } from "../lib/cliente.js";
+import { alertarAlOperador } from "../lib/alertas.js";
 
 // bodyParser desactivado: la firma de Meta se calcula sobre el cuerpo EXACTO
 // tal como llegó, así que hay que leerlo crudo, sin que nadie lo reinterprete.
@@ -64,16 +65,13 @@ function mensajeBaja() {
 /**
  * ¿Le toca a ESTA copia atender los mensajes de ese cliente?
  *
- * Exportada aparte porque es la única decisión de este archivo que se puede
- * probar sin levantar un webhook, y es la que separa los datos de un negocio
- * de los de otro.
- *
- * @param {string|undefined|null} dueño  slug al que enruta el número, o nada
- *   si el número no está registrado (lo normal mientras haya un solo cliente).
+ * La regla vive en lib/cliente.js (atiendeAlSlug) para poder probarse sin
+ * levantar un webhook. Cada copia atiende SOLO a su propio negocio: la casa ya
+ * no "reparte", porque repartir significaba contestar a los clientes de otro
+ * negocio desde el número y las plantillas de Intellectum.
  */
 export function estaCopiaAtiendeA(dueño) {
-  if (!dueño || dueño === CLIENTE) return true; // es suyo, o no hay enrutamiento
-  return esIntellectum(); // solo la casa reparte: el webhook de Meta apunta ahí
+  return atiendeAlSlug(dueño);
 }
 
 export default async function handler(req, res) {
@@ -126,6 +124,7 @@ export default async function handler(req, res) {
   // Quedarse con el primero pierde los demás en silencio, así que aquí se
   // recogen todos y se atienden en orden.
   const paquetes = [];
+  const fallidos = [];
   for (const entrada of datos?.entry ?? []) {
     for (const cambio of entrada?.changes ?? []) {
       const valor = cambio?.value;
@@ -133,17 +132,64 @@ export default async function handler(req, res) {
         // Confirmaciones de entrega, cambios de estado... no son conversación.
         if (mensaje?.from && mensaje?.id) paquetes.push({ valor, mensaje });
       }
+      // Los estados de lo que NOSOTROS mandamos. Solo interesa el "failed":
+      // es la única forma de enterarse de que un mensaje que Meta aceptó
+      // nunca llegó (número inválido, ventana cerrada, cuenta restringida...).
+      // Antes se descartaban todos, y un número restringido no se notaba.
+      for (const estado of valor?.statuses ?? []) {
+        if (estado?.status === "failed") fallidos.push({ valor, estado });
+      }
     }
   }
 
-  if (paquetes.length === 0) {
+  if (paquetes.length === 0 && fallidos.length === 0) {
     res.writeHead(200).end("OK");
     return;
   }
 
   // 3. El 200 sale YA; el trabajo de verdad sigue en segundo plano.
   res.writeHead(200).end("OK");
-  enSegundoPlano(procesarEnOrden(paquetes));
+  if (fallidos.length > 0) enSegundoPlano(anotarFallidos(fallidos));
+  if (paquetes.length > 0) enSegundoPlano(procesarEnOrden(paquetes));
+}
+
+/**
+ * Un "failed" de Meta queda en la bitácora con el código de error y le suena
+ * al operador. Los códigos que más importan: 131047 (ventana de 24 h cerrada,
+ * hacía falta plantilla), 131026 (número no puede recibir), 131049/131048
+ * (Meta frenó el envío por calidad o por límite), 130429 (demasiado rápido).
+ */
+async function anotarFallidos(fallidos) {
+  const almacen = abrirAlmacen();
+  for (const { valor, estado } of fallidos) {
+    const errores = (estado.errors ?? []).map((e) => ({
+      codigo: e?.code ?? null,
+      titulo: e?.title ?? null,
+      detalle: e?.error_data?.details ?? e?.message ?? null,
+    }));
+    const codigo = errores[0]?.codigo ?? "sin_codigo";
+    const detalle = {
+      canal: "whatsapp",
+      wamid: estado.id ?? null,
+      destinatario: String(estado.recipient_id ?? "").slice(-4),
+      phone_number_id: valor?.metadata?.phone_number_id ?? null,
+      errores,
+    };
+    console.error("[WHATSAPP] Meta no pudo entregar un mensaje:", JSON.stringify(detalle));
+    await almacen
+      .registrarEvento({ tipo: "mensaje_no_entregado", actor: "sistema", cliente: CLIENTE, detalle })
+      .catch((err) => console.error("[WHATSAPP] el fallo quedó sin evento:", err?.message ?? err));
+    await alertarAlOperador({
+      asunto: `Meta no entregó un mensaje (error ${codigo})`,
+      cuerpo:
+        `${errores[0]?.titulo ?? "sin título"}${errores[0]?.detalle ? `: ${errores[0].detalle}` : ""}. ` +
+        `Destinatario terminado en ${detalle.destinatario || "?"}. Si se repite con el mismo código, ` +
+        "revisa la calidad y el estado del número en Meta o consulta /api/salud.",
+      clave: `estado_fallido:${codigo}`,
+      almacen,
+      detalle: { codigo, wamid: detalle.wamid },
+    }).catch(() => {});
+  }
 }
 
 /**
@@ -205,8 +251,36 @@ async function procesar(valor, mensaje) {
   if (!estaCopiaAtiendeA(dueño?.slug)) {
     console.error(
       `[WHATSAPP] el número por el que entró este mensaje es de "${dueño.slug}", pero esta copia es de "${CLIENTE}". ` +
-        "Revisa whatsapp_phone_id en la tabla clientes. No se responde.",
+        "Apunta el webhook de ese número a su propia copia (o corrige whatsapp_phone_id en la tabla clientes). No se responde.",
     );
+    alertarAlOperador({
+      asunto: "Un mensaje de WhatsApp entró por la copia equivocada",
+      cuerpo: `El número está registrado a "${dueño.slug}" y esta copia es de "${CLIENTE}". Se dejó sin responder.`,
+      clave: "copia_equivocada",
+      almacen,
+    }).catch(() => {});
+    return;
+  }
+
+  // Y TAMPOCO SE RESPONDE DESDE EL NÚMERO EQUIVOCADO. La respuesta sale por
+  // META_PHONE_NUMBER_ID, el de esta copia. Si el mensaje entró por otro
+  // número (Meta lo dice en metadata.phone_number_id), contestar significaría
+  // que el cliente escribió a un WhatsApp y recibió respuesta desde otro. Eso
+  // pasa cuando dos números comparten una app de Meta y el webhook apunta a
+  // una sola copia: el arreglo es apuntar cada número a su copia.
+  const entroPor = String(valor?.metadata?.phone_number_id ?? "").trim();
+  const propio = String(process.env.META_PHONE_NUMBER_ID ?? "").trim();
+  if (entroPor && propio && entroPor !== propio) {
+    console.error(
+      `[WHATSAPP] el mensaje entró por el número ${entroPor} y esta copia responde desde ${propio}: ` +
+        "no se responde para no contestar desde el número equivocado.",
+    );
+    alertarAlOperador({
+      asunto: "Un mensaje de WhatsApp entró por un número que no es el de esta copia",
+      cuerpo: `Entró por ${entroPor}; esta copia manda desde ${propio}. Apunta el webhook de ese número a su propia copia.`,
+      clave: "numero_ajeno",
+      almacen,
+    }).catch(() => {});
     return;
   }
   const cliente = dueño?.slug ?? CLIENTE;
@@ -389,28 +463,24 @@ async function procesar(valor, mensaje) {
 }
 
 /**
- * Le avisa al equipo que un mensaje no se pudo atender.
+ * Le avisa al operador que un mensaje no se pudo atender.
  *
- * Con freno de diez minutos: si algo se cae de verdad (el modelo, la base,
- * Meta), pueden llegar decenas de mensajes seguidos y cien avisos no informan
- * más que uno — solo consiguen que el dueño silencie el chat, que es
- * exactamente lo contrario de lo que queremos.
+ * Va por lib/alertas.js, que trae su propio freno de diez minutos por motivo:
+ * si algo se cae de verdad (el modelo, la base, Meta) pueden llegar decenas
+ * de mensajes seguidos, y cien avisos no informan más que uno. Antes salía
+ * solo por WhatsApp y con el freno en la memoria de la instancia; ahora sale
+ * por todos los canales configurados y deja evento en la bitácora.
  */
-const ESPERA_ENTRE_AVISOS_MS = 10 * 60 * 1000;
-let ultimoAviso = 0;
-
 function avisarDelTropiezo(numero, err, bitacora) {
-  const ahora = Date.now();
-  if (ahora - ultimoAviso < ESPERA_ENTRE_AVISOS_MS) return;
-  ultimoAviso = ahora;
-
   const motivo = String(err?.message ?? err ?? "desconocido").slice(0, 140);
   const ultimos = String(numero ?? "").slice(-4);
-  avisarEquipoWhatsApp({
-    texto:
-      `no pude atender un mensaje de WhatsApp (número terminado en ${ultimos}). ` +
-      `Le pedí disculpas y le di el correo y el teléfono. Motivo: ${motivo}`,
-    bitacora,
+  alertarAlOperador({
+    asunto: "Un mensaje de WhatsApp no se pudo atender",
+    cuerpo:
+      `Número terminado en ${ultimos}. Se le pidió disculpas y se le dio el contacto del equipo. ` +
+      `Motivo: ${motivo}`,
+    clave: "tropiezo",
+    almacen: bitacora?.almacen ?? null,
   }).catch(() => {});
 }
 

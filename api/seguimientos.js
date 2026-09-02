@@ -25,6 +25,7 @@ import { enviarSeguimientoWhatsApp, whatsappSalidaConfigurada } from "../lib/men
 import { enviarAviso } from "../lib/leads.js";
 import { claveCorrecta } from "../lib/acceso.js";
 import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
+import { latidoDeTarea } from "../lib/alertas.js";
 
 export default async function handler(req, res) {
   const esperado = process.env.CRON_SECRET;
@@ -39,6 +40,9 @@ export default async function handler(req, res) {
 
   const enSerio = process.env.SEGUIMIENTOS_ACTIVOS === "si";
   const almacen = abrirAlmacen();
+
+  // Rastro de que el cron disparó, para /api/salud (ver lib/alertas.js).
+  await latidoDeTarea({ tarea: "seguimientos", almacen, resumen: { activo: enSerio } });
 
   let leads = [];
   let conversaciones = [];

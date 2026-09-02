@@ -691,6 +691,10 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   function pintarResumen(d) {
     var v = document.getElementById("vista-resumen");
     var s = d.citas && d.citas.siguiente;
+    /* Lo que el plan no incluye no se muestra: la pestaña del agente privado
+       solo existe en el plan que la paga (el servidor la niega igual). */
+    var tabAgente = document.querySelector('.tab[data-vista="agente"]');
+    if (tabAgente && d.plan) tabAgente.hidden = d.plan.agente_privado === false;
     v.innerHTML =
       '<div class="stats">' +
       stat(d.leads.ultimos7, "leads esta semana", "leads") +
@@ -1329,7 +1333,7 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
   }
 
   function avisoLead() {
-    alert("No se pudo guardar. Si es la primera vez que usas etiquetas o valores, falta aplicar supabase/crm.sql en la base (Supabase → SQL Editor).");
+    alert("No se pudo guardar. Si es la primera vez que usas etiquetas o valores, puede faltar una actualización de la base: avísale a quien administra el sistema.");
   }
 
   function guardarNota(boton) {
@@ -1361,7 +1365,8 @@ h2.seccion { font-family: var(--font-display); font-weight: 400; font-size: 21px
     v.innerHTML = lista.map(function (c) {
       return (
         '<button class="fila-chat" data-canal="' + esc(c.canal) + '" data-sesion="' + esc(c.sesion) + '">' +
-        "<div><div class=\"quien\">" + esc(etiquetaCanal(c.canal)) + " · " + esc(acortarSesion(c.sesion)) +
+        "<div><div class=\"quien\">" + esc(etiquetaCanal(c.canal)) + " · " +
+        esc(c.nombre ? c.nombre + " (" + acortarSesion(c.sesion) + ")" : acortarSesion(c.sesion)) +
         (c.modo === "humano" ? ' <span class="pastilla mano">🙋 en tus manos</span>' : "") + "</div>" +
         '<div class="resumen">' + esc(c.ultimo) + "</div></div>" +
         '<div class="lado">' + haceCuanto(c.actualizado_en) + "<br>" + esc(c.mensajes) + " msjs</div>" +

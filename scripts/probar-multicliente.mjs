@@ -433,7 +433,9 @@ console.log("\nUn número mal enrutado no se atiende con la ficha de otro:");
 {
   const { estaCopiaAtiendeA } = await import("../api/whatsapp.js");
   prueba("la casa atiende un número sin registrar", estaCopiaAtiendeA(null) === true);
-  prueba("la casa sí reparte a otros clientes", estaCopiaAtiendeA("ferreteria-tornillo") === true);
+  // Antes la casa "repartía": contestaba a los clientes de otro negocio desde
+  // su propio número y sus plantillas. Ya no: cada copia atiende lo suyo.
+  prueba("la casa YA NO reparte a otros clientes", estaCopiaAtiendeA("ferreteria-tornillo") === false);
 
   const { execFileSync } = await import("node:child_process");
   const guion = `
@@ -468,7 +470,7 @@ console.log("\nUna copia ajena no reparte los precios de Intellectum:");
       nombres,
       ejecutable: buscarHerramienta("cotizar", "publico") !== null,
       mandaLlamarCotizar: /llama a cotizar/.test(texto),
-      prohibeCifras: /NUNCA des una cifra de precio/.test(texto),
+      prohibeCifras: /SOLO las que estén escritas literalmente en la ficha/.test(texto),
     }));
   `;
   const corre = (env) =>
@@ -671,6 +673,9 @@ console.log("\nPor /api/negocio solo sale la identidad pública:");
     "enlaceWhatsapp", "sitio", "dominio", "web", "logo", "cita", "evento",
     "citaTitulo", "citaTituloEn", "citaDescripcion", "citaDescripcionEn",
     "chips", "chatIntro",
+    // Públicos por naturaleza: el píxel va en cada página igual, y las URL del
+    // aviso y las condiciones son las que el chat enlaza.
+    "pixel", "avisoPrivacidad", "condiciones",
   ].sort();
   const datos = JSON.parse(casa.cuerpo);
   prueba("no sale ni un campo más de los previstos",
@@ -724,6 +729,70 @@ console.log("\nPor /api/negocio solo sale la identidad pública:");
 }
 
 await rm(CARPETA, { recursive: true, force: true });
+
+// ── 5. Lo que cambió tras la auditoría de septiembre de 2026 ────────────────
+// Tres patrones que se repetían en casi todos los frentes: la copia de un
+// cliente seguía siendo Intellectum por dentro (prompt de ventas, cotizador,
+// píxel), la casa "repartía" mensajes ajenos desde su propio número, y la
+// voz se cotizaba aunque el proveedor hubiera cerrado.
+console.log("\nLo que se corrigió tras la auditoría:");
+{
+  const { atiendeAlSlug, identidadPublica } = await import("../lib/cliente.js");
+  prueba("la casa atiende a su propio slug", atiendeAlSlug("intellectum") === true);
+  prueba("sin número registrado, la copia atiende (un solo cliente)", atiendeAlSlug(undefined) === true);
+  prueba("la casa YA NO atiende los mensajes de la ferretería", atiendeAlSlug("ferreteria-tornillo") === false);
+  const yo = identidadPublica();
+  prueba("la casa publica su píxel y su aviso", yo.pixel === "1420043423319842" && yo.avisoPrivacidad === "/privacidad");
+
+  const { calcularCotizacion } = await import("../lib/herramientas.js");
+  const conVoz = calcularCotizacion({ objetivo: "atender WhatsApp", quiere_whatsapp: true, quiere_llamadas: true, integraciones: 0 });
+  prueba(
+    "con la voz en lista de espera, la cotización lo dice y no la cobra",
+    conVoz.voz_en_espera === true && /LISTA DE ESPERA/.test(String(conVoz.detalle ?? "")),
+  );
+  const sinVoz = calcularCotizacion({ objetivo: "atender WhatsApp", quiere_whatsapp: true, quiere_llamadas: false, integraciones: 0 });
+  prueba(
+    "sin pedir voz, no aparece la nota de espera",
+    sinVoz.voz_en_espera === false && !/LISTA DE ESPERA/.test(String(sinVoz.detalle ?? "")),
+  );
+
+  const { execFileSync } = await import("node:child_process");
+  const guion = `
+    const { construirSystem } = await import("../lib/prompt.js");
+    const { identidadPublica, atiendeAlSlug } = await import("../lib/cliente.js");
+    const { loQueSeEntregaHoy } = await import("../lib/herramientas.js");
+    const planes = Object.values(loQueSeEntregaHoy());
+    console.log(JSON.stringify({
+      prompt: construirSystem({ canal: "web" }).map((b) => b.text).join("\\n"),
+      identidad: identidadPublica(),
+      atiendeCasa: atiendeAlSlug("intellectum"),
+      atiendeSuyo: atiendeAlSlug("ferreteria-tornillo"),
+      cotizarEnObra: planes.some((p) => (p.en_construccion ?? []).some((h) => h.nombre === "cotizar")),
+      cotizarHoy: planes.some((p) => (p.entregable_hoy ?? []).some((h) => h.nombre === "cotizar")),
+    }));
+  `;
+  const salida = execFileSync(process.execPath, ["--input-type=module", "--eval", guion], {
+    cwd: new URL("./", import.meta.url).pathname,
+    env: {
+      PATH: process.env.PATH,
+      VERCEL: "1",
+      CLIENTE_SLUG: "ferreteria-tornillo",
+      NEGOCIO_NOMBRE: "Ferretería El Tornillo",
+      NEGOCIO_NOMBRE_CORTO: "El Tornillo",
+      NEGOCIO_AGENTE: "Tornillito",
+      NEGOCIO_TRATO: "usted",
+    },
+    encoding: "utf8",
+  });
+  const r = JSON.parse(salida.trim().split("\n").pop());
+
+  prueba("la copia ajena no averigua sector ni tamaño de empresa", !/sector|tamaño aproximado de la empresa/i.test(r.prompt));
+  prueba("la copia ajena no vende automatización B2B", !/automatizar|B2B/i.test(r.prompt));
+  prueba("con NEGOCIO_TRATO=usted, el agente trata de usted", /usted/.test(r.prompt));
+  prueba("la copia ajena no publica el píxel ni el aviso de Intellectum", r.identidad.pixel === "" && r.identidad.avisoPrivacidad === "");
+  prueba("la ferretería atiende lo suyo y no lo de la casa", r.atiendeSuyo === true && r.atiendeCasa === false);
+  prueba("en la copia ajena, cotizar figura como en construcción, no como entregado", r.cotizarEnObra === true && r.cotizarHoy === false);
+}
 
 console.log("");
 if (fallos) {

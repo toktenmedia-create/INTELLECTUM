@@ -4,8 +4,11 @@ Este proyecto es el sitio de intellectum.ec **más** un asistente de IA que
 conversa con los visitantes, los califica y captura sus datos de contacto.
 
 El asistente se llama **IntelliA** y funciona con Claude. Un solo "cerebro"
-(`lib/brain.js`) atiende hoy el chat de la web y mañana WhatsApp, sin duplicar
-reglas ni información.
+(`lib/brain.js`) atiende el chat de la web y WhatsApp, sin duplicar reglas ni
+información. El mismo repo se despliega una vez por cliente ("modelo madre"):
+con `CLIENTE_SLUG` y las variables `NEGOCIO_*` la copia habla, firma y cobra
+como ese negocio (ver `docs/ALTA-CLIENTE.md`). Cómo se vigila que siga viva:
+`docs/RUNBOOK.md`.
 
 ---
 
@@ -21,11 +24,22 @@ reglas ni información.
 - Responde preguntas de servicios y proceso **solo** con lo que dice
   `lib/ficha.js`. Si no está ahí, no lo inventa: lo deriva al equipo.
 
-**No hace (todavía):**
+**También hace, desde 2026:**
 
-- No agenda en un calendario. Toma los datos y el equipo coordina.
-- No transfiere la conversación a un humano en vivo.
-- No da precios. Por diseño: Intellectum cotiza a la medida.
+- Agenda en Google Calendar (`lib/agendar.js`) y manda confirmación por correo
+  o por WhatsApp.
+- Pasa la conversación a una persona (`lib/traspaso.js`) y la devuelve al bot.
+- Cotiza al instante con las tarifas de `lib/precios.js` (solo la copia de
+  casa; las copias de clientes dicen únicamente las cifras escritas en su
+  ficha).
+- Da seguimiento a quien dejó datos (`api/seguimientos.js`) y recuerda citas
+  (`api/recordatorios.js`).
+
+**No hace:**
+
+- No atiende Instagram ni Messenger. Solo WhatsApp (API oficial) y el chat web.
+- No hace llamadas: el módulo de voz está en lista de espera desde que Dapta
+  cerró (agosto de 2026).
 
 ---
 
@@ -154,10 +168,10 @@ y deja de enviárselos automáticamente.
 
 ---
 
-## 7. Encender WhatsApp más adelante
+## 7. Encender WhatsApp
 
-`api/whatsapp.js` ya está escrito y usa el mismo cerebro. Está dormido hasta
-que existan estas cuatro variables en Vercel:
+`api/whatsapp.js` usa el mismo cerebro. Está dormido hasta que existan estas
+cuatro variables en Vercel:
 
 ```
 META_VERIFY_TOKEN     una frase secreta que inventas tú
@@ -169,11 +183,12 @@ META_PHONE_NUMBER_ID  id del número emisor (lo da Meta)
 En Meta for Developers registra el webhook apuntando a
 `https://www.intellectum.ec/api/whatsapp` con ese mismo `META_VERIFY_TOKEN`.
 
-Una advertencia honesta: la memoria de conversación por número vive en la
-memoria de la función, así que se pierde si Vercel apaga la instancia (minutos
-de inactividad). Para una conversación seguida alcanza; antes de darle volumen
-real conviene mover esa memoria a Upstash Redis o Vercel KV. Está aislado en
-dos funciones dentro de `api/whatsapp.js`.
+La conversación por número se guarda en Supabase (`lib/almacen.js`), así que
+sobrevive a que Vercel apague la instancia. En Meta, suscribe también el campo
+`messages` con sus estados: el webhook anota los `failed` (mensajes que Meta
+aceptó y no entregó) y le avisa al operador. Cada copia responde SOLO por su
+propio número: si un mensaje entra por otro `phone_number_id`, no se contesta
+y se alerta (ver `docs/RUNBOOK.md`).
 
 ---
 

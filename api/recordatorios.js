@@ -35,6 +35,7 @@ import {
 import { abrirAlmacen } from "../lib/almacen.js";
 import { claveCorrecta } from "../lib/acceso.js";
 import { CLIENTE } from "../lib/cliente.js";
+import { alertarAlOperador, latidoDeTarea } from "../lib/alertas.js";
 
 export default async function handler(req, res) {
   const esperado = process.env.CRON_SECRET;
@@ -49,6 +50,11 @@ export default async function handler(req, res) {
   }
 
   const almacen = abrirAlmacen();
+
+  // El latido va PRIMERO: lo que /api/salud mira para saber si el cron corre.
+  // Si se pusiera al final, una tarea que se cae a la mitad parecería una
+  // tarea que nunca corrió, y son dos problemas distintos.
+  await latidoDeTarea({ tarea: "recordatorios", almacen });
 
   // 0. El reloj de retención: borra de la base lo que ya venció su plazo.
   // Corre aunque la agenda no esté conectada — cumplir el aviso de privacidad
@@ -78,8 +84,22 @@ export default async function handler(req, res) {
         contenido: foto,
       });
       console.log(`[RESPALDO] ${entregado ? "enviado" : "NO se pudo enviar"}.`);
+      if (!entregado) {
+        await alertarAlOperador({
+          asunto: "El respaldo semanal no se pudo enviar",
+          cuerpo: "La foto de la base se generó pero el correo no salió. Revisa RESEND_API_KEY y LEADS_EMAIL.",
+          clave: "respaldo",
+          almacen,
+        });
+      }
     } catch (err) {
       console.error("[RESPALDO] falló:", err?.message ?? err);
+      await alertarAlOperador({
+        asunto: "El respaldo semanal falló",
+        cuerpo: `No se pudo generar o enviar la foto de la base: ${String(err?.message ?? err).slice(0, 200)}`,
+        clave: "respaldo",
+        almacen,
+      });
     }
   }
 

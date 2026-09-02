@@ -40,7 +40,8 @@ import {
 import { enviarConfirmacionCita, enviarHorariosPorCorreo } from "../lib/leads.js";
 import { enviarCancelacionWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
 import { claveCorrecta } from "../lib/acceso.js";
-import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
+import { CLIENTE, NEGOCIO, esIntellectum } from "../lib/cliente.js";
+import { planDe, claveDePlan, planDeRespaldo, PLAN_POR_DEFECTO } from "../lib/planes.js";
 
 export const config = { maxDuration: 30 };
 
@@ -48,9 +49,13 @@ const ESTADOS_VALIDOS = new Set(["nuevo", "contactado", "en_conversacion", "gana
 const ESTADOS_ABIERTOS = new Set(["nuevo", "contactado", "en_conversacion"]);
 
 export default async function handler(req, res) {
-  const esperado = process.env.AGENTE_PRIVADO_TOKEN;
+  // La clave del panel es SUYA (PANEL_TOKEN). Mientras no exista, vale la del
+  // agente privado, para que ninguna copia publicada se quede afuera; pero
+  // son dos puertas distintas y conviene que tengan dos llaves: la del panel
+  // se le da al dueño del negocio, la del agente privado no sale de casa.
+  const esperado = (process.env.PANEL_TOKEN || process.env.AGENTE_PRIVADO_TOKEN || "").trim();
   if (!esperado) {
-    return responderJson(res, 503, { error: "El panel está apagado: falta AGENTE_PRIVADO_TOKEN." });
+    return responderJson(res, 503, { error: "El panel está apagado: falta PANEL_TOKEN." });
   }
   if (!claveCorrecta(req, esperado)) {
     return responderJson(res, 401, { error: "No autorizado" });
@@ -114,7 +119,7 @@ export default async function handler(req, res) {
           // nuevas. Mejor decirlo con claridad que devolver un error genérico.
           if (/does not exist|column/i.test(String(err?.message))) {
             return responderJson(res, 400, {
-              error: "Falta aplicar supabase/crm.sql en la base (Supabase → SQL Editor).",
+              error: mensajeDeBaseDesactualizada("supabase/crm.sql"),
             });
           }
           throw err;
@@ -143,7 +148,7 @@ export default async function handler(req, res) {
           }
           if (/does not exist|PGRST204|42703/i.test(mensajeError)) {
             return responderJson(res, 400, {
-              error: "Falta aplicar supabase/traspaso.sql en la base (Supabase → SQL Editor).",
+              error: mensajeDeBaseDesactualizada("supabase/traspaso.sql"),
             });
           }
           throw err;
@@ -387,7 +392,7 @@ export default async function handler(req, res) {
     const vista = url.searchParams.get("vista") ?? "resumen";
 
     if (vista === "resumen") {
-      const [leads, conversaciones, eventos, citas, consumo] = await Promise.all([
+      const [leads, conversaciones, eventos, citas, consumo, ficha] = await Promise.all([
         almacen.listarLeads({ limite: 200 }),
         almacen.listarConversaciones({ limite: 100 }),
         almacen.listarEventos({ limite: 10 }),
@@ -396,7 +401,14 @@ export default async function handler(req, res) {
         // depende el margen desde que Meta cobra por mensaje. Si falla, el
         // panel entero no puede caerse por un contador.
         almacen.consumoDeMensajes?.({ dias: 30 }).catch(() => null) ?? null,
+        // El plan contratado: el panel esconde lo que el plan no incluye (hoy,
+        // la pestaña del agente privado). Misma regla que lib/brain.js.
+        almacen.fichaDeCliente?.({ cliente: CLIENTE }).catch(() => null) ?? null,
       ]);
+      const clavePlan = claveDePlan(
+        ficha?.plan ?? (ficha && !ficha.ilegible ? PLAN_POR_DEFECTO : planDeRespaldo()),
+      );
+      const plan = planDe(clavePlan);
 
       const hace = (dias) => new Date(Date.now() - dias * 86_400_000).toISOString();
       const [d7, d30] = [hace(7), hace(30)];
@@ -434,6 +446,12 @@ export default async function handler(req, res) {
         // Conversaciones en manos humanas: cada una espera respuesta del dueño.
         en_mano: conversaciones.filter((c) => c.modo === "humano").length,
         citas: { proximas: citas.length, siguiente: citas[0] ?? null },
+        plan: {
+          clave: clavePlan,
+          nombre: plan.nombre,
+          agente_privado: Boolean(plan.agente_privado),
+          canales: plan.canales,
+        },
         eventos,
       });
     }
@@ -462,6 +480,9 @@ export default async function handler(req, res) {
         return {
           canal: f.canal,
           sesion: f.sesion,
+          // El nombre del perfil de WhatsApp, cuando Meta lo mandó: la lista
+          // deja de ser una columna de números.
+          nombre: typeof f.nombre_perfil === "string" ? f.nombre_perfil.slice(0, 60) : "",
           actualizado_en: f.actualizado_en,
           mensajes: mensajes.length,
           modo: f.modo === "humano" ? "humano" : "bot",
@@ -506,6 +527,18 @@ export default async function handler(req, res) {
 function responderJson(res, codigo, datos) {
   res.writeHead(codigo, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(datos));
+}
+
+/**
+ * Qué se le dice al dueño cuando a la base le falta una migración. En la copia
+ * de casa, la instrucción técnica; en la de un cliente, algo que él pueda
+ * hacer: avisar. "Supabase → SQL Editor" en el panel de una ferretería es un
+ * mensaje para nadie.
+ */
+function mensajeDeBaseDesactualizada(archivo) {
+  return esIntellectum()
+    ? `Falta aplicar ${archivo} en la base (Supabase → SQL Editor).`
+    : "Esta función todavía no está habilitada en tu cuenta. Avísale a quien te instaló el sistema y lo activa.";
 }
 
 async function leerJson(req) {

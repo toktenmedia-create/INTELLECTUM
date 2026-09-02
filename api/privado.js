@@ -14,9 +14,10 @@
  */
 
 import { responder } from "../lib/brain.js";
-import { esPersistente, dondeSeGuarda } from "../lib/almacen.js";
+import { abrirAlmacen, esPersistente, dondeSeGuarda } from "../lib/almacen.js";
 import { claveCorrecta } from "../lib/acceso.js";
 import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
+import { planDe, claveDePlan, planDeRespaldo, PLAN_POR_DEFECTO } from "../lib/planes.js";
 
 export const config = { maxDuration: 60 };
 
@@ -47,6 +48,17 @@ export default async function handler(req, res) {
   if (!claveCorrecta(req, esperado)) {
     // Sin pistas sobre qué falló: es un endpoint privado.
     responderJson(res, 401, { error: "No autorizado" });
+    return;
+  }
+
+  // ¿El plan de este negocio incluye el agente privado? lib/planes.js lo dice
+  // (solo Jefe de Ventas), pero hasta aquí nadie lo miraba: cualquier copia
+  // con clave tenía el agente privado, se hubiera pagado o no.
+  const plan = await planDeEstaCopia();
+  if (!planDe(plan).agente_privado) {
+    responderJson(res, 403, {
+      error: `Tu plan (${planDe(plan).nombre}) no incluye el agente privado. Viene con el plan Jefe de Ventas.`,
+    });
     return;
   }
 
@@ -100,6 +112,14 @@ export default async function handler(req, res) {
   } finally {
     res.end();
   }
+}
+
+/** El plan contratado por esta copia, con la misma regla de lib/brain.js. */
+async function planDeEstaCopia() {
+  const ficha = await abrirAlmacen()
+    .fichaDeCliente?.({ cliente: CLIENTE })
+    .catch(() => null);
+  return claveDePlan(ficha?.plan ?? (ficha && !ficha.ilegible ? PLAN_POR_DEFECTO : planDeRespaldo()));
 }
 
 async function leerJson(req) {

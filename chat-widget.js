@@ -31,7 +31,6 @@
 (function () {
   "use strict";
 
-  var ENDPOINT = "/api/chat";
   var MAX_HISTORIAL = 30;
 
   // La etiqueta que cargó este archivo. document.currentScript funciona con
@@ -48,6 +47,29 @@
     var valor = GUION && GUION.getAttribute ? GUION.getAttribute("data-" + nombre) : null;
     return valor ? String(valor).trim() : "";
   }
+
+  // DE DÓNDE VINO ESTE ARCHIVO. El chat habla con el servidor de la copia que
+  // lo sirvió, no con el del sitio donde está incrustado: si la ferretería
+  // pega la etiqueta en su propio dominio, "/api/chat" apuntaría a un
+  // endpoint que en su sitio no existe. Se toma el origen de la propia
+  // etiqueta <script>, y solo si no se puede saber se cae al mismo sitio.
+  var ORIGEN_GUION = (function () {
+    try {
+      return GUION && GUION.src ? new URL(GUION.src, window.location.href).origin : "";
+    } catch (e) {
+      return "";
+    }
+  })();
+  var ENDPOINT = ORIGEN_GUION + "/api/chat";
+
+  // El aviso de privacidad es del negocio dueño del chat, no del sitio que lo
+  // incrusta. Se declara con data-privacidad; si no viene y el archivo se sirve
+  // desde el mismo sitio (la copia de casa), se enlaza el /privacidad de ahí.
+  // Incrustado en otro dominio sin declararlo, no se enlaza nada: un aviso que
+  // nombra a otra empresa como responsable es peor que ningún enlace.
+  var PRIVACIDAD =
+    ajuste("privacidad") ||
+    (!ORIGEN_GUION || ORIGEN_GUION === window.location.origin ? "/privacidad" : "");
 
   var AGENTE = ajuste("agente");
   var NEGOCIO = ajuste("negocio");
@@ -218,7 +240,11 @@
       '<textarea class="iachat-input" rows="1" placeholder="Escribe tu mensaje…" aria-label="Tu mensaje"></textarea>' +
       '<button class="iachat-send" type="button" aria-label="Enviar mensaje">↑</button>' +
       "</div>" +
-      '<p class="iachat-legal">Asistente con IA. Puede equivocarse: los datos definitivos los confirma el equipo.<br><a href="/privacidad" target="_blank" rel="noopener">Aviso de privacidad</a></p>' +
+      '<p class="iachat-legal">Asistente con IA. Puede equivocarse: los datos definitivos los confirma el equipo.' +
+      (PRIVACIDAD
+        ? '<br><a href="' + escaparHtml(PRIVACIDAD) + '" target="_blank" rel="noopener">Aviso de privacidad</a>'
+        : "") +
+      "</p>" +
       "</footer>";
 
     document.body.appendChild(launcher);

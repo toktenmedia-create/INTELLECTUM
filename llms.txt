@@ -1,18 +1,20 @@
 # Intellectum AI Solutions
 
 > Empresa ecuatoriana de automatización con inteligencia artificial para negocios.
-> Diseña e implementa agentes de voz IA, chatbots para WhatsApp y redes sociales,
-> ventas automatizadas, flujos a medida, sitios web y tiendas en línea.
+> Diseña e implementa agentes de IA para WhatsApp y para el chat del sitio web,
+> que atienden, califican interesados y agendan citas; además, sitios web,
+> landing pages y tiendas en línea, y automatización a medida entre sistemas.
 > Con sede en Quito, Ecuador; atiende clientes dentro y fuera del país de forma remota.
 
 ## Servicios
 
-- Agentes de voz IA: califican leads, agendan citas y atienden llamadas 24/7.
-- Chatbots y mensajería omnicanal: WhatsApp, Instagram y Messenger con IA generativa.
-- Ventas automatizadas: embudos que prospectan, nutren y entregan leads listos.
-- Automatización a medida: integra CRM, ERP, hojas de cálculo y correo en flujos inteligentes.
+- Agentes de IA para WhatsApp (API oficial de Meta): atienden 24/7 con la información del negocio, califican y agendan citas en Google Calendar.
+- Chat con IA en el sitio web: el mismo agente, incrustado en la página del negocio.
+- Seguimiento automático a interesados, cotización al instante (según plan) y recordatorios de cita.
+- Automatización a medida: integra CRM, ERP, hojas de cálculo y correo en flujos entre sistemas (se cotiza aparte).
 - Sitios web y landing pages con agente de IA integrado.
 - Tiendas en línea para Ecuador con atención automatizada.
+- Llamadas de voz con IA: en lista de espera (el proveedor anterior cerró; se evalúa el reemplazo).
 
 ## Cómo trabaja
 
