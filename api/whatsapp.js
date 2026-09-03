@@ -32,7 +32,11 @@ import { waitUntil } from "@vercel/functions";
 import { responder } from "../lib/brain.js";
 import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { prepararEntrada, GRAPH } from "../lib/multimedia.js";
-import { avisarEquipoWhatsApp, enviarTextoWhatsApp } from "../lib/mensajeria.js";
+import {
+  avisarEquipoWhatsApp,
+  enviarTextoWhatsApp,
+  normalizarTelefono,
+} from "../lib/mensajeria.js";
 import { enviarAviso } from "../lib/leads.js";
 import { calificarConversacion } from "../lib/calificar.js";
 import { CLIENTE, NEGOCIO, comoEscribirnos, atiendeAlSlug } from "../lib/cliente.js";
@@ -60,6 +64,71 @@ function mensajeBaja() {
     "de conversación quedó borrado. Si algún día quieres retomar, solo escríbenos y " +
     "con gusto te atendemos.";
   return NEGOCIO.correo ? `${base} También estamos en ${NEGOCIO.correo}.` : base;
+}
+
+/* ── EL FRENO DEL BOLSILLO ───────────────────────────────────────────────────
+ *
+ * Hasta el 30 de septiembre de 2026 responder por WhatsApp dentro de la
+ * ventana de 24 horas era GRATIS, así que no hacía falta contar nada. Desde el
+ * 1 de octubre Meta cobra por mensaje TODAS las respuestas del asistente (los
+ * "mensajes de servicio"), y en Ecuador —que Meta mete en "Resto de
+ * Latinoamérica"— eso es 0,0113 USD cada una.
+ *
+ * El chat de la web ya tenía sus dos topes (api/chat.js) porque cada mensaje
+ * costaba en Anthropic. WhatsApp no tenía NINGUNO: un número que reciba cinco
+ * mil mensajes en un día genera cinco mil respuestas y nadie lo para. Antes
+ * eso solo era una factura de modelo; ahora son además 56 dólares de Meta en
+ * un día, de un solo cliente, sobre una mensualidad fija.
+ *
+ * Son dos topes porque son dos daños distintos:
+ *
+ *   POR PERSONA — alguien que se queda pegado escribiendo (o un bucle entre
+ *   dos bots) no puede consumir el mes entero él solo. Al llegar aquí se le
+ *   manda UN último mensaje que lo remite al chat de la web, que no le cuesta
+ *   nada a nadie, y después silencio.
+ *
+ *   POR DÍA, SUMANDO A TODOS — el freno de emergencia del despliegue. Aquí NO
+ *   se avisa a quien escribe: mandar el aviso sería seguir pagando mensajes,
+ *   que es justo lo que se está frenando. Se le avisa al dueño, que es quien
+ *   puede decidir.
+ *
+ * Los dos se ajustan por variable de entorno y no tocando código, porque cada
+ * despliegue tiene su propio plan y su propio volumen (regla del modelo madre).
+ * Los valores por defecto son deliberadamente holgados para el uso normal
+ * —tres mensajes por conversación, medidos— y estrechos para el desastre.
+ */
+const VENTANA_TOPE_MS = 24 * 60 * 60 * 1000;
+const TOPE_POR_PERSONA = Math.max(1, Number(process.env.WHATSAPP_TOPE_PERSONA) || 40);
+const TOPE_POR_DIA = Math.max(1, Number(process.env.WHATSAPP_TOPE_DIARIO) || 500);
+
+/** Cada cuánto, como mucho, se le repite al dueño que el tope diario sigue puesto. */
+const ESPERA_AVISO_DIA_MS = 6 * 60 * 60 * 1000;
+// Respaldo por instancia para cuando el marcador durable no se puede escribir.
+let ultimoAvisoDiaEnEstaInstancia = 0;
+
+/**
+ * Cuántos adjuntos (fotos, audios, PDFs) caben en una misma ráfaga. Los
+ * textos no cuentan: son gratis de preparar y pesan poco. Los adjuntos no:
+ * cada uno se descarga (hasta 5 MB) y viaja entero al modelo. Veinte fotos
+ * seleccionadas de golpe llegan en un solo webhook; sin este tope serían
+ * veinte descargas seguidas y UNA petición con veinte imágenes dentro, que
+ * puede pasarse de los 120 s o de la memoria, y al reventar se perdería la
+ * ráfaga entera. Con el tope se parte en varias vueltas: más respuestas, pero
+ * cada una acotada.
+ */
+const ADJUNTOS_POR_RAFAGA = 4;
+
+function mensajeTopeDeLaPersona() {
+  const base =
+    "Hemos hablado bastante por aquí y prefiero no saturarte. Seguimos cuando " +
+    "quieras, y si necesitas algo ya mismo";
+  // "sin límite" sería mentira: el chat de la web tiene sus propios topes. Lo
+  // que sí es cierto es que no comparte cupo con este, y que ahí no se paga
+  // por mensaje. Se dice eso.
+  const web = NEGOCIO.sitio ? `${NEGOCIO.sitio.replace(/\/+$/, "")}/chat` : null;
+  if (web) return `${base}, escríbeme en ${web}, que ahí te atiendo enseguida.`;
+  const vias = comoEscribirnos();
+  return vias ? `${base}, ${vias}.` : `${base}, escríbenos de nuevo más tarde.`;
 }
 
 /**
@@ -193,14 +262,133 @@ async function anotarFallidos(fallidos) {
 }
 
 /**
+ * LA RÁFAGA SE CONTESTA UNA SOLA VEZ.
+ *
+ * Meta agrupa: cuando alguien escribe "hola", "buenas", "quiero info" en diez
+ * segundos, los tres llegan en el mismo webhook. Antes cada uno se procesaba
+ * por separado y salían TRES respuestas — tres vueltas del modelo y, desde el
+ * 1 de octubre de 2026, tres cobros de Meta por una sola intención. Además se
+ * leía raro: el asistente contestaba a "hola" mientras la persona ya había
+ * preguntado otra cosa.
+ *
+ * Aquí los mensajes seguidos del MISMO remitente (y entrados por el mismo
+ * número nuestro) se juntan en un grupo, que se atiende como si fuera un solo
+ * mensaje con varias líneas. Se agrupa solo lo CONSECUTIVO: si en el lote se
+ * intercalan dos personas, cada una conserva su turno y su orden.
+ *
+ * Ojo con lo que esto NO arregla: si Meta reparte la ráfaga en varios webhooks
+ * —que pasa— cada uno llega por su lado y se contesta por su lado. Juntar eso
+ * exigiría esperar unos segundos por si viene más, y esperar es otra cosa, con
+ * sus propios riesgos. Esto atrapa el caso común sin cambiar el momento en que
+ * se responde.
+ */
+export function agruparRafagas(paquetes) {
+  const grupos = [];
+  for (const { valor, mensaje } of paquetes) {
+    const ultimo = grupos[grupos.length - 1];
+    const pesa = esAdjunto(mensaje);
+    const mismaPersona =
+      ultimo &&
+      ultimo.mensajes[0].from === mensaje.from &&
+      (ultimo.valor?.metadata?.phone_number_id ?? null) ===
+        (valor?.metadata?.phone_number_id ?? null);
+    const cabe = mismaPersona && (!pesa || ultimo.adjuntos < ADJUNTOS_POR_RAFAGA);
+    if (cabe) {
+      ultimo.mensajes.push(mensaje);
+      if (pesa) ultimo.adjuntos++;
+    } else {
+      grupos.push({ valor, mensajes: [mensaje], adjuntos: pesa ? 1 : 0 });
+    }
+  }
+  return grupos;
+}
+
+/** Lo que hay que descargar para poder leerlo. Un sticker animado no: no se baja. */
+function esAdjunto(mensaje) {
+  if (mensaje.type === "sticker") return !mensaje.sticker?.animated;
+  return mensaje.type === "image" || mensaje.type === "audio" || mensaje.type === "document";
+}
+
+/**
+ * Varias entradas ya preparadas, una sola entrada para el cerebro.
+ *
+ * Si todo era texto se devuelve texto, para que el historial siga siendo
+ * legible. Si en la ráfaga venía una foto o un PDF, se arma la lista de
+ * bloques respetando el orden en que la persona los mandó.
+ */
+export function juntarEntradas(entradas) {
+  if (entradas.length === 1) return entradas[0];
+  const bloques = [];
+  for (const e of entradas) {
+    if (typeof e.bloques === "string") bloques.push({ type: "text", text: e.bloques });
+    else bloques.push(...e.bloques);
+  }
+  const todoTexto = bloques.every((b) => b.type === "text");
+  return {
+    bloques: todoTexto ? bloques.map((b) => b.text).join("\n") : bloques,
+    memoria: entradas.map((e) => e.memoria).join("\n"),
+  };
+}
+
+/**
+ * ¿Queda cupo para contestarle a esta persona?
+ *
+ * Cuenta lo ENTREGADO en las últimas 24 horas contra los dos topes. La cuenta
+ * sale de la bitácora, que ya registraba cada envío con su sesión desde antes
+ * de que esto existiera (lib/mensajeria.js) — no hubo que inventar contador.
+ *
+ * Devuelve el motivo del corte, o null si se puede seguir.
+ *
+ * Si la base NO CONTESTA se deja pasar, a propósito y como en el resto del
+ * archivo: durante una caída de Supabase, callar al asistente le cuesta al
+ * negocio más que el puñado de mensajes que se escapen. Queda gritado en el
+ * registro.
+ */
+export async function revisarCupo({ almacen, cliente, numero }) {
+  const desde = new Date(Date.now() - VENTANA_TOPE_MS).toISOString();
+  // El que ANOTA la entrega guarda el número ya normalizado (lib/mensajeria.js:
+  // enviarTextoWhatsApp), así que el que CUENTA tiene que buscar por el mismo.
+  // Con los números de Ecuador que manda Meta los dos coinciden hoy, pero por
+  // casualidad y no por diseño: si alguna vez dejan de coincidir, este contador
+  // no encontraría nada y el tope por persona no frenaría a nadie.
+  const sesion = normalizarTelefono(numero) ?? numero;
+  let deLaPersona;
+  let delDia;
+  try {
+    [deLaPersona, delDia] = await Promise.all([
+      almacen.contarEventos({
+        cliente,
+        tipo: "mensaje_entregado",
+        sesion,
+        desde,
+        tope: TOPE_POR_PERSONA + 1,
+      }),
+      almacen.contarEventos({
+        cliente,
+        tipo: "mensaje_entregado",
+        desde,
+        tope: TOPE_POR_DIA + 1,
+      }),
+    ]);
+  } catch (err) {
+    console.error("[TOPE] no se pudo contar lo entregado, se atiende igual:", err?.message ?? err);
+    return null;
+  }
+
+  if (delDia >= TOPE_POR_DIA) return { motivo: "dia", entregados: delDia };
+  if (deLaPersona >= TOPE_POR_PERSONA) return { motivo: "persona", entregados: deLaPersona };
+  return null;
+}
+
+/**
  * Uno tras otro, nunca en paralelo: dos mensajes del mismo número procesados
  * a la vez se pisan la memoria y cruzan las respuestas. Y si uno falla, los
  * siguientes se atienden igual — ya tienen su propia disculpa si hace falta.
  */
 async function procesarEnOrden(paquetes) {
-  for (const { valor, mensaje } of paquetes) {
+  for (const { valor, mensajes } of agruparRafagas(paquetes)) {
     try {
-      await procesar(valor, mensaje);
+      await procesar(valor, mensajes);
     } catch (err) {
       console.error("[WHATSAPP] fallo con un mensaje del lote:", err?.message ?? err);
     }
@@ -208,8 +396,8 @@ async function procesarEnOrden(paquetes) {
 }
 
 /** El trabajo de verdad. Corre después de haberle respondido a Meta. */
-async function procesar(valor, mensaje) {
-  const numero = mensaje.from;
+async function procesar(valor, mensajes) {
+  const numero = mensajes[0].from;
   // En un lote pueden venir mensajes de varios números: el nombre de perfil se
   // busca por wa_id para no colgarle a alguien el nombre de otro remitente.
   const contacto = valor?.contacts?.find((c) => c?.wa_id === numero) ?? valor?.contacts?.[0];
@@ -288,22 +476,32 @@ async function procesar(valor, mensaje) {
   // Con esto viaja el contador de mensajes entregados hasta lib/mensajeria.js.
   const bitacora = { almacen, cliente };
 
-  // ¿Esta huella ya pasó por aquí? Si la bitácora no contesta, se sigue:
-  // ante la duda es mejor arriesgar un duplicado rarísimo que callar siempre.
-  try {
-    if (await almacen.yaProcesado({ marcador: mensaje.id, cliente })) {
-      console.log("[WHATSAPP] mensaje repetido, se ignora:", mensaje.id.slice(-12));
-      return;
+  // ¿Estas huellas ya pasaron por aquí? Se revisa UNA POR UNA aunque vengan en
+  // ráfaga: Meta puede reenviar el lote entero por un 200 que se perdió, y en
+  // ese reenvío puede venir mezclado algún mensaje nuevo. Descartar el grupo
+  // completo por el primer repetido perdería ese mensaje nuevo en silencio.
+  // Si la bitácora no contesta, se sigue: ante la duda es mejor arriesgar un
+  // duplicado rarísimo que callar siempre.
+  const nuevos = [];
+  for (const mensaje of mensajes) {
+    try {
+      if (await almacen.yaProcesado({ marcador: mensaje.id, cliente })) {
+        console.log("[WHATSAPP] mensaje repetido, se ignora:", mensaje.id.slice(-12));
+        continue;
+      }
+      await almacen.registrarEvento({
+        tipo: "mensaje_procesado",
+        actor: "sistema",
+        cliente,
+        detalle: { canal: "whatsapp", marcador: mensaje.id },
+      });
+    } catch (err) {
+      console.error("[WHATSAPP] no se pudo revisar duplicados:", err?.message ?? err);
     }
-    await almacen.registrarEvento({
-      tipo: "mensaje_procesado",
-      actor: "sistema",
-      cliente,
-      detalle: { canal: "whatsapp", marcador: mensaje.id },
-    });
-  } catch (err) {
-    console.error("[WHATSAPP] no se pudo revisar duplicados:", err?.message ?? err);
+    nuevos.push(mensaje);
   }
+  if (nuevos.length === 0) return;
+  mensajes = nuevos;
 
   // ¿Quién atiende este hilo? Se pregunta ANTES del "escribiendo…" y de leer
   // la memoria: en manos humanas el bot calla y no debe prometer respuesta.
@@ -315,17 +513,31 @@ async function procesar(valor, mensaje) {
     console.warn("[WHATSAPP] no se pudo leer el modo (se atiende como bot):", err?.message ?? err);
   }
 
-  // Doble check azul: la persona sabe que la escucharon. El "escribiendo…"
-  // solo cuando va a responder el bot — en manos humanas sería prometerle una
-  // respuesta inmediata que no viene. Es cosmético: si falla, no detiene nada.
-  marcarLeido(mensaje.id, { escribiendo: modo !== "humano" }).catch(() => {});
+  // EL FRENO, antes de gastar. Se CONSULTA aquí y se APLICA más abajo, después
+  // de la baja: descargar la foto, pensar la respuesta y entregarla cuestan los
+  // tres, y ninguno hace falta si ya no hay cupo. Se consulta antes del
+  // "escribiendo…" para no encender un aviso de respuesta que no va a llegar.
+  // En manos humanas no se consulta: el bot no manda nada, no hay qué frenar.
+  const corte = modo === "humano" ? null : await revisarCupo({ almacen, cliente, numero });
+
+  // Doble check azul: la persona sabe que la escucharon, tenga cupo o no. El
+  // "escribiendo…" solo cuando de verdad viene respuesta — en manos humanas o
+  // sin cupo sería prometer algo que no llega. Es cosmético: si falla, no
+  // detiene nada. El último del grupo: marcar leído el más reciente da por
+  // leídos los anteriores, y el "escribiendo…" se enciende una vez por ráfaga.
+  marcarLeido(mensajes[mensajes.length - 1].id, {
+    escribiendo: modo !== "humano" && !corte,
+  }).catch(() => {});
 
   // "SALIR": la única palabra que no pasa por el cerebro. Se atiende aquí,
   // determinista y al instante, porque una baja no es una conversación: es un
   // derecho. Se apunta en la lista (que no caduca), se borra el historial y
   // se confirma. Si la persona vuelve a escribir después, se le responde con
   // normalidad: retomar la conversación es decisión suya.
-  if (esSolicitudDeBaja(mensaje)) {
+  // Basta con que UNO de la ráfaga pida la baja. Es un derecho, no una
+  // conversación: si alguien escribe "gracias" y enseguida "salir", lo que
+  // manda es el "salir", y no se le contesta nada más.
+  if (mensajes.some((m) => esSolicitudDeBaja(m))) {
     // La baja también suelta el volante: sin esto, quien vuelva algún día se
     // encontraría con un bot mudo en vez de la atención normal que promete la
     // confirmación. Va ANTES del borrado porque en Supabase cambiar el modo
@@ -351,14 +563,165 @@ async function procesar(valor, mensaje) {
     return;
   }
 
-  let entrada;
-  try {
-    entrada = await prepararEntrada(mensaje);
-  } catch (err) {
-    console.error("[WHATSAPP] no se pudo preparar la entrada:", err?.message ?? err);
-    entrada = null;
+  // EL FRENO se aplica aquí, después de la baja: no se le niega a nadie por
+  // haber hablado mucho. Lo consultado arriba se ejecuta ahora.
+  if (corte) {
+    console.warn(
+      `[TOPE] ${corte.motivo === "dia" ? "tope diario del despliegue" : "tope de la persona"} ` +
+        `alcanzado (${corte.entregados} entregados en 24 h). No se responde.`,
+    );
+
+    if (corte.motivo === "dia") {
+      // NO se le avisa a quien escribe: el aviso sería otro mensaje pagado,
+      // multiplicado por toda la gente que siga escribiendo, que es exactamente
+      // la sangría que este tope existe para cortar. Se le avisa al dueño, que
+      // es quien puede subir el tope o averiguar qué pasa.
+      //
+      // Con marcador durable: el freno de alertarAlOperador vive en la memoria
+      // de UNA instancia de Vercel (lib/alertas.js) y el tráfico se reparte
+      // entre varias. Sin esto, el aviso —que sale por WhatsApp, y WhatsApp se
+      // paga— se repetiría una vez por instancia: el freno de emergencia
+      // gastando en lo que vino a frenar.
+      let avisar = true;
+      try {
+        avisar =
+          (await almacen.contarEventos({
+            cliente,
+            tipo: "tope_dia_avisado",
+            desde: new Date(Date.now() - ESPERA_AVISO_DIA_MS).toISOString(),
+            tope: 1,
+          })) === 0;
+        if (avisar) {
+          await almacen.registrarEvento({
+            tipo: "tope_dia_avisado",
+            actor: "sistema",
+            cliente,
+            detalle: { canal: "whatsapp", entregados: corte.entregados, tope: TOPE_POR_DIA },
+          });
+        }
+      } catch (err) {
+        // Que el dueño se entere de que su asistente está mudo vale más que
+        // el riesgo de un aviso repetido — pero acotado: sin marcador durable,
+        // esta instancia avisa como mucho una vez cada ESPERA_AVISO_DIA_MS. El
+        // freno de diez minutos de alertarAlOperador, solo, dejaba salir un
+        // aviso pagado por instancia cada diez minutos mientras durara el fallo.
+        console.error("[TOPE] marcador del aviso diario ilegible:", err?.message ?? err);
+        avisar = Date.now() - ultimoAvisoDiaEnEstaInstancia > ESPERA_AVISO_DIA_MS;
+      }
+
+      if (avisar) {
+        ultimoAvisoDiaEnEstaInstancia = Date.now();
+        // La cifra de verdad, solo ahora que se va a avisar (una vez cada seis
+        // horas, no en cada mensaje frenado). revisarCupo deja de contar en
+        // TOPE + 1 porque para frenar no necesita más, pero para DECIDIR el
+        // dueño sí: "501 con el tope en 500" parece un buen día; "5.000" es un
+        // bucle. Si ni con esto se llega al fondo, se dice "más de".
+        const techo = TOPE_POR_DIA * 20;
+        let entregados = corte.entregados;
+        try {
+          entregados = await almacen.contarEventos({
+            cliente,
+            tipo: "mensaje_entregado",
+            desde: new Date(Date.now() - VENTANA_TOPE_MS).toISOString(),
+            tope: techo,
+          });
+        } catch {
+          // se avisa con la cifra que hay
+        }
+        const cifra = entregados >= techo ? `más de ${techo}` : String(entregados);
+        await alertarAlOperador({
+          asunto: "WhatsApp llegó al tope diario y dejó de responder",
+          cuerpo:
+            `Se entregaron ${cifra} mensajes en las últimas 24 horas y el tope está en ` +
+            `${TOPE_POR_DIA}. El asistente no está respondiendo por WhatsApp. Si es tráfico real, ` +
+            "sube WHATSAPP_TOPE_DIARIO en las variables del despliegue; si no lo es, mira quién " +
+            "está escribiendo antes de subirlo.",
+          clave: "tope_diario_whatsapp",
+          almacen,
+          detalle: { entregados, tope: TOPE_POR_DIA },
+        }).catch(() => {});
+      }
+      return;
+    }
+
+    // Tope de la persona: UN mensaje de despedida y nada más. El marcador se
+    // escribe ANTES de mandarlo y solo se manda si quedó escrito. Al revés
+    // —mandar y no poder anotar— la despedida volvería a salir con cada mensaje
+    // siguiente: seguir pagando por decir que ya no se paga. Si no se puede ni
+    // leer ni anotar, se calla, que es el lado barato de la duda.
+    let anotado = false;
+    try {
+      const yaSeDespidio =
+        (await almacen.contarEventos({
+          cliente,
+          tipo: "tope_avisado",
+          sesion: numero,
+          desde: new Date(Date.now() - VENTANA_TOPE_MS).toISOString(),
+          tope: 1,
+        })) > 0;
+      if (!yaSeDespidio) {
+        await almacen.registrarEvento({
+          tipo: "tope_avisado",
+          actor: "sistema",
+          cliente,
+          detalle: { canal: "whatsapp", sesion: numero, entregados: corte.entregados },
+        });
+        anotado = true;
+      }
+    } catch (err) {
+      console.error("[TOPE] sin marcador no se despide:", err?.message ?? err);
+    }
+
+    if (anotado) {
+      // Lo que escribió queda en el historial UNA vez: justo ahora, cuando se
+      // le despide. Si alguien toma el volante desde el panel ve dónde se
+      // cortó y qué pedía. Solo esta vez, y solo el texto: el almacén guarda
+      // apenas los últimos 16 mensajes (lib/almacen.js), y anexar cada ráfaga
+      // posterior de "¿hola? ¿sigues ahí?" empujaría fuera la conversación de
+      // verdad —la cotización, la cita— justo la que el humano necesita ver.
+      // Bajar la foto o transcribir el audio se paga; frenar no puede costar
+      // lo que cuesta atender, así que los adjuntos quedan como una etiqueta.
+      const dicho = mensajes
+        .map((m) => (m.type === "text" ? m.text?.body?.trim().slice(0, 2000) : "[Envió un adjunto]"))
+        .filter(Boolean)
+        .join("\n");
+      if (dicho) {
+        try {
+          const base = await almacen.recordarConversacion({ canal: "whatsapp", sesion: numero, cliente });
+          await almacen.anexarMensajes({
+            canal: "whatsapp",
+            cliente,
+            sesion: numero,
+            nombrePerfil,
+            base,
+            nuevos: [{ role: "user", content: dicho }],
+          });
+        } catch (err) {
+          console.error("[TOPE] no se pudo guardar lo que escribió:", err?.message ?? err);
+        }
+      }
+      await enviarWhatsApp(numero, mensajeTopeDeLaPersona(), {
+        bitacora,
+        motivo: "tope_persona",
+      }).catch((err) => console.error("[TOPE] no se pudo avisar del tope:", err?.message ?? err));
+    }
+    return;
   }
-  if (!entrada) return; // reacciones y mensajes vacíos no se responden
+
+  // Cada mensaje de la ráfaga se prepara por su lado (una puede ser foto y
+  // otra texto) y después se juntan en una sola entrada. Los que no se pueden
+  // preparar —reacciones, mensajes vacíos— se caen del grupo sin tumbarlo.
+  const entradas = [];
+  for (const mensaje of mensajes) {
+    try {
+      const preparada = await prepararEntrada(mensaje);
+      if (preparada) entradas.push(preparada);
+    } catch (err) {
+      console.error("[WHATSAPP] no se pudo preparar la entrada:", err?.message ?? err);
+    }
+  }
+  if (entradas.length === 0) return; // reacciones y mensajes vacíos no se responden
+  const entrada = juntarEntradas(entradas);
 
   // Si la base no contesta, se responde sin memoria. Contestar sin recordar es
   // peor que recordar, pero muchísimo mejor que dejar a alguien sin respuesta.
@@ -492,12 +855,43 @@ function avisarDelTropiezo(numero, err, bitacora) {
  * humana no puede quedar en silencio Y sin registro a la vez. Los mensajes
  * frenados igual quedan guardados en el historial y en la alerta del panel.
  */
-const ESPERA_AVISO_MANOS_MS = 5 * 60 * 1000;
+const ESPERA_AVISO_MANOS_MS = 60 * 60 * 1000; // un aviso por hora por persona
 const avisosManos = new Map(); // número → cuándo se avisó por última vez (por instancia)
 
-async function avisarManosHumanas({ numero, nombrePerfil, texto, bitacora, almacen, cliente }) {
+export async function avisarManosHumanas({ numero, nombrePerfil, texto, bitacora, almacen, cliente }) {
+  // EL FRENO DE ESTE AVISO ES DURABLE, y es el único tope que tiene una
+  // conversación en manos humanas: el bot no responde, así que el freno del
+  // bolsillo no la mira, pero ESTE aviso sale por WhatsApp y WhatsApp se paga.
+  // Decisión de Paul (3 sep 2026): un aviso por hora por persona. El marcador
+  // vive en la bitácora, porque el mapa de la instancia no ve lo que avisaron
+  // las demás instancias de Vercel; el mapa queda solo de respaldo para cuando
+  // la bitácora no contesta.
   const ahora = Date.now();
-  if (ahora - (avisosManos.get(numero) ?? 0) < ESPERA_AVISO_MANOS_MS) return;
+  let avisar;
+  try {
+    avisar =
+      (await almacen.contarEventos({
+        cliente,
+        tipo: "aviso_manos",
+        sesion: numero,
+        desde: new Date(ahora - ESPERA_AVISO_MANOS_MS).toISOString(),
+        tope: 1,
+      })) === 0;
+    if (avisar) {
+      await almacen.registrarEvento({
+        tipo: "aviso_manos",
+        actor: "sistema",
+        cliente,
+        detalle: { canal: "whatsapp", sesion: numero },
+      });
+    }
+  } catch (err) {
+    // Sin bitácora, el freno de la instancia: que el equipo se entere de que
+    // alguien espera vale más que el riesgo de un aviso repetido, acotado.
+    console.error("[WHATSAPP] marcador del aviso de manos humanas ilegible:", err?.message ?? err);
+    avisar = ahora - (avisosManos.get(numero) ?? 0) >= ESPERA_AVISO_MANOS_MS;
+  }
+  if (!avisar) return;
   avisosManos.set(numero, ahora);
   if (avisosManos.size > 500) avisosManos.clear(); // que el mapa no crezca sin fin
 
