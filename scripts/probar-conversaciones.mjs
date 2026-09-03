@@ -72,7 +72,12 @@ const r2 = await almacen.contarConversacion({ canal: "web", sesion: "s_web_B" })
 prueba("el contador directo abre la ventana una sola vez", r1.contada === true && r2.contada === false && (await total()) === 3);
 
 // 7. Pasada la ventana, la misma persona es una conversación nueva.
-const r3 = await almacen.contarConversacion({ canal: "web", sesion: "s_web_B", horas: 0 });
+// La ventana se vence con `horas` NEGATIVO, que empuja el borde al futuro:
+// nada de lo ya escrito cae dentro, sin importar en qué milisegundo se
+// escribió. Con `horas: 0` el borde caía en el instante actual y, si el evento
+// de la prueba 6 se registraba en el MISMO milisegundo, el filtro
+// `creado_en >= desde` lo daba por dentro y esta prueba fallaba sola.
+const r3 = await almacen.contarConversacion({ canal: "web", sesion: "s_web_B", horas: -1 });
 prueba("después de la ventana, la misma persona cuenta de nuevo", r3.contada === true && (await total()) === 4);
 
 // 8. Sin sesión no se cuenta nada (y no se rompe).
