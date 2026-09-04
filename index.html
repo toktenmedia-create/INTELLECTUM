@@ -905,6 +905,100 @@ h1, h2, h3, h4 {
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
+/* UN MARTES CUALQUIERA — la comparación, sin un solo porcentaje inventado.
+   Dos columnas de hechos. La de la izquierda va desnuda —ni marco ni fondo— y
+   la de la derecha dentro de un panel con borde cian: el ojo cae solo donde
+   queremos, y no hace falta pintar cruces rojas sobre lo que el visitante hace
+   hoy, que sería insultarlo. En pantalla angosta el panel no cabe (serían dos
+   columnas de 160 px), así que se cambia por un riel cian a la izquierda de
+   cada respuesta y un rótulo pequeño en cada celda: sin los encabezados de
+   columna, "hoy" y "con IntelliA" se confundirían. */
+.cambio { padding: clamp(56px, 7vw, 88px) 0 var(--sec-y); }
+.cambio-intro { margin-bottom: clamp(32px, 5vw, 52px); }
+.cambio-tabla {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+/* Las celdas se posicionan para pintarse ENCIMA del panel: un pseudo-elemento
+   absoluto se dibuja sobre los hermanos estáticos, no debajo. */
+.cambio-celda, .cambio-rotulo { position: relative; }
+.cambio-rotulo { display: none; }
+.cambio-celda {
+  font-size: 15px;
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+.cambio-celda.antes { color: var(--text-muted); }
+.cambio-celda.despues {
+  color: var(--text);
+  border-left: 2px solid var(--accent-tint-border);
+  padding: 10px 0 0 16px;
+  margin-bottom: 24px;
+}
+/* Todas menos la primera: la que tiene otra "antes" por delante. */
+.cambio-celda.antes ~ .cambio-celda.antes {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+.cambio-mini {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.cambio-celda.despues .cambio-mini { color: var(--accent); }
+.cambio-nota {
+  margin: 30px 0 0;
+  max-width: 76ch;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.cambio-nota a { color: var(--text-dim); text-decoration: underline; text-underline-offset: 3px; }
+.cambio-nota a:hover { color: var(--accent); }
+
+@media (min-width: 860px) {
+  .cambio-tabla { grid-template-columns: 1fr 1fr; }
+  .cambio-tabla::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 50%;
+    border: 1px solid var(--accent-tint-border);
+    border-radius: var(--radius-lg);
+    background:
+      radial-gradient(70% 55% at 50% 0%, rgba(34, 211, 238, 0.07), transparent 72%),
+      var(--bg-card);
+    pointer-events: none;
+  }
+  .cambio-rotulo {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 24px 0 20px;
+  }
+  .cambio-rotulo.despues { color: var(--accent); }
+  .cambio-mini { display: none; }
+  .cambio-celda.antes,
+  .cambio-celda.antes ~ .cambio-celda.antes { padding: 22px clamp(24px, 3.4vw, 46px) 22px 0; }
+  .cambio-celda.despues {
+    padding: 22px clamp(24px, 3vw, 36px);
+    margin: 0;
+    border-left: 0;
+  }
+  .cambio-rotulo.antes { padding-right: clamp(24px, 3.4vw, 46px); }
+  .cambio-rotulo.despues { padding-left: clamp(24px, 3vw, 36px); padding-right: clamp(24px, 3vw, 36px); }
+  .cambio-celda.despues ~ .cambio-celda.despues { border-top: 1px solid rgba(34, 211, 238, 0.13); }
+}
+
 /* MARQUEE */
 .marquee {
   border-top: 1px solid var(--border);
@@ -1699,6 +1793,43 @@ review, the verdict, DESIGN.md, and every shipping raster carrying its provenanc
       cotiza y avisa a tu equipo. ¿Lo quieres con los datos de tu negocio?
       <a href="/chat">Pídeselo a IntelliA</a> o
       <a href="https://wa.me/593967518060?text=Hola%20Intellectum%2C%20probé%20la%20demo%20y%20quiero%20una%20para%20mi%20negocio" target="_blank" rel="noopener">escríbenos por WhatsApp</a>.
+    </p>
+  </div>
+</section>
+
+<!-- HOY / CON INTELLIA -->
+<section class="cambio">
+  <div class="wrap">
+    <div class="cambio-intro reveal">
+      <h2 class="section-title">
+        Un martes cualquiera,<br>
+        <span class="serif-italic">antes y después.</span>
+      </h2>
+      <p class="section-lead">No cambia lo que vendes ni cómo trabajas. Cambia quién contesta primero, a qué hora, y qué queda escrito cuando la conversación termina.</p>
+    </div>
+
+    <div class="cambio-tabla reveal">
+      <div class="cambio-rotulo antes">Hoy</div>
+      <div class="cambio-rotulo despues">Con IntelliA</div>
+
+      <div class="cambio-celda antes"><span class="cambio-mini">Hoy</span>Alguien pregunta un domingo a las diez de la noche. La respuesta le llega el lunes, si alguien se acuerda.</div>
+      <div class="cambio-celda despues"><span class="cambio-mini">Con IntelliA</span>Le contesta en el momento, sea domingo, feriado o dos de la mañana.</div>
+
+      <div class="cambio-celda antes"><span class="cambio-mini">Hoy</span>«¿Cuánto cuesta?», otra vez. Escrito a mano, otra vez.</div>
+      <div class="cambio-celda despues"><span class="cambio-mini">Con IntelliA</span>Lo responde con la información que tú cargaste, y responde igual a las once de la noche que a las once de la mañana.</div>
+
+      <div class="cambio-celda antes"><span class="cambio-mini">Hoy</span>Cuadrar una cita son seis mensajes de ida y vuelta, y una llamada para confirmar.</div>
+      <div class="cambio-celda despues"><span class="cambio-mini">Con IntelliA</span>Mira las horas libres de tu calendario, propone, reserva y recuerda. A ti te llega la cita, no el hilo.</div>
+
+      <div class="cambio-celda antes"><span class="cambio-mini">Hoy</span>Los interesados quedan regados: el WhatsApp de uno, el correo de otro, un cuaderno.</div>
+      <div class="cambio-celda despues"><span class="cambio-mini">Con IntelliA</span>Cada contacto entra a tu panel con su ficha, su estado y todo lo que ya conversó.</div>
+
+      <div class="cambio-celda antes"><span class="cambio-mini">Hoy</span>El que preguntó y no volvió se pierde. Nadie tiene tiempo de perseguirlo.</div>
+      <div class="cambio-celda despues"><span class="cambio-mini">Con IntelliA</span>El seguimiento a quien pidió precio y no volvió sale solo. Y cuando de verdad hace falta una persona, la conversación te llega a ti.</div>
+    </div>
+
+    <p class="cambio-nota reveal">
+      No todo esto entra en el plan más pequeño: WhatsApp, la agenda y el seguimiento automático se suman según el plan que te corresponda. Dile a <a href="/chat">IntelliA</a> qué necesitas y te dice cuál es.
     </p>
   </div>
 </section>
