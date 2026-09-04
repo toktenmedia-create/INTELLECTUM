@@ -1,41 +1,83 @@
 # Intellectum AI Solutions
 
 > Empresa ecuatoriana de automatización con inteligencia artificial para negocios.
-> Diseña e implementa agentes de IA para WhatsApp y para el chat del sitio web,
-> que atienden, califican interesados y agendan citas; además, sitios web,
-> landing pages y tiendas en línea, y automatización a medida entre sistemas.
-> Con sede en Quito, Ecuador; atiende clientes dentro y fuera del país de forma remota.
+> Diseña e implementa agentes de IA que atienden por WhatsApp, por el chat del
+> sitio web y por llamada de voz: responden con la información del negocio,
+> califican interesados, cotizan y agendan citas en Google Calendar. También
+> hace sitios web, landing pages, tiendas en línea y automatización a medida
+> entre sistemas. Con sede en Quito, Ecuador; atiende clientes dentro y fuera
+> del país de forma remota.
 
 ## Servicios
 
-- Agentes de IA para WhatsApp (API oficial de Meta): atienden 24/7 con la información del negocio, califican y agendan citas en Google Calendar.
-- Chat con IA en el sitio web: el mismo agente, incrustado en la página del negocio.
-- Seguimiento automático a interesados, cotización al instante (según plan) y recordatorios de cita.
-- Automatización a medida: integra CRM, ERP, hojas de cálculo y correo en flujos entre sistemas (se cotiza aparte).
-- Sitios web y landing pages con agente de IA integrado.
-- Tiendas en línea para Ecuador con atención automatizada.
-- Llamadas de voz con IA: en lista de espera (el proveedor anterior cerró; se evalúa el reemplazo).
+- **Agentes de IA para WhatsApp** (API oficial de Meta): atienden 24/7 con la información del negocio, califican interesados y agendan citas en Google Calendar. Página: https://www.intellectum.ec/agentes-de-ia-whatsapp
+- **Llamadas de voz con IA**: llamadas salientes y entrantes para lo que el chat no alcanza —confirmar una cita, recordar una visita, retomar a quien dejó sus datos y no volvió—. Se montan sobre el agente que el negocio ya tiene. Página: https://www.intellectum.ec/llamadas-con-ia
+- **Ventas automatizadas**: seguimiento a quien preguntó y no volvió, rango de precio al instante y recordatorios de cita, sin que nadie del equipo tenga que acordarse. Página: https://www.intellectum.ec/ventas-automatizadas
+- **Automatización a medida**: conectar CRM, ERP, hojas de cálculo, pasarelas de pago o agendas que no sean Google, en flujos entre sistemas. Se cotiza aparte. Página: https://www.intellectum.ec/automatizacion-a-medida
+- **Sitios web y landing pages** con el agente de IA integrado desde el primer día. Página: https://www.intellectum.ec/sitios-web
+- **Tiendas en línea** para Ecuador, con atención automatizada sobre el catálogo. Página: https://www.intellectum.ec/tiendas-en-linea
+- **Chat con IA en el sitio web**: el mismo agente, incrustado en la página del negocio.
+- **Panel del negocio**: cada cliente recibe un panel con las conversaciones, los interesados y las citas; ahí también se puede tomar el control de una conversación y contestar como persona.
+
+## Lo que no hace
+
+Esto es tan importante como lo anterior, y evita malentendidos:
+
+- **No atiende Instagram ni Messenger.** Los canales son WhatsApp, el chat del sitio web y las llamadas de voz.
+- **No hace prospección en frío.** El agente atiende a quien escribe; no sale a buscar gente ni compra bases de datos.
+- **No cierra ventas sin una persona.** El agente califica, cotiza y agenda; el cierre lo hace el equipo del cliente.
+
+## Precios
+
+Hay rangos referenciales que el asistente IntelliA entrega al instante en el
+chat, según el canal, los sistemas a conectar y el volumen del negocio. Dos
+excepciones no tienen rango y se toman como caso en la consultoría: la
+automatización a medida y las llamadas de voz (dependen del volumen de minutos).
+
+No hay una lista de precios publicada, y ninguna cifra de este sitio debe
+citarse como tarifa: el precio exacto sale del diagnóstico en la consultoría
+gratuita de 30 minutos. Para un rango, pregúntale a IntelliA en
+https://www.intellectum.ec/chat
 
 ## Cómo trabaja
 
-Cuatro fases: diagnóstico (mapeo de procesos y proyección de ROI), diseño (prototipo
-aprobado por el cliente), implementación (integración y piloto controlado) y
-optimización (medición y mejora continua). La mayoría de proyectos queda operativa
-entre 2 y 6 semanas.
+Cuatro fases: diagnóstico (mapeo de procesos y proyección de retorno), diseño
+(prototipo aprobado por el cliente), implementación (integración y piloto
+controlado) y optimización (medición y mejora continua). La mayoría de
+proyectos queda operativa entre 2 y 6 semanas; los más complejos, entre 8 y 10.
+
+La mensualidad incluye el tope de conversaciones del plan, ajustes menores cada
+mes, monitoreo y soporte del mismo equipo que lo implementó. La permanencia es
+a elección del cliente: mes a mes o con permanencia de seis meses.
+
+## Datos y seguridad
+
+Cifrado en tránsito y en reposo, panel protegido con una clave por negocio (no
+accesos por rol), y acuerdo de confidencialidad cuando el cliente lo necesita.
+Los datos de los clientes de un negocio no se mezclan con los de otro.
 
 ## Contacto
 
 - Sitio: https://www.intellectum.ec/
 - Chat con IntelliA (asistente de IA, responde 24/7): https://www.intellectum.ec/chat
+- Agendar la consultoría gratuita de 30 minutos: https://www.intellectum.ec/agenda
+- WhatsApp: +593 96 751 8060 — https://wa.me/593967518060
+- Teléfono: +593 98 312 0003
 - Correo: info@intellectum.ec
-- WhatsApp / teléfono: +593 98 312 0003
 - Ciudad: Quito, Pichincha, Ecuador
 - Razón social: Intellectum AI Solutions S.A.S. · RUC 1793236353001
 
 ## Páginas
 
-- [Inicio](https://www.intellectum.ec/): servicios, proceso, preguntas frecuentes y contacto.
-- [Habla con IntelliA](https://www.intellectum.ec/chat): chat en línea con el asistente de IA.
+- [Inicio](https://www.intellectum.ec/): servicios, demo en vivo del agente, proceso, preguntas frecuentes y agenda.
+- [Habla con IntelliA](https://www.intellectum.ec/chat): chat en línea con el asistente de IA; da rangos de precio y agenda.
+- [Agendar consultoría](https://www.intellectum.ec/agenda): 30 minutos, gratis y sin compromiso.
+- [Agentes de IA para WhatsApp](https://www.intellectum.ec/agentes-de-ia-whatsapp)
+- [Llamadas con IA](https://www.intellectum.ec/llamadas-con-ia)
+- [Ventas automatizadas](https://www.intellectum.ec/ventas-automatizadas)
+- [Automatización a medida](https://www.intellectum.ec/automatizacion-a-medida)
+- [Sitios web y landing pages](https://www.intellectum.ec/sitios-web)
+- [Tiendas en línea](https://www.intellectum.ec/tiendas-en-linea)
 - [English version](https://www.intellectum.ec/en): the site in English.
 - [Blog](https://www.intellectum.ec/blog): guías prácticas sobre IA aplicada a los negocios.
 - [¿Qué es un agente de voz con IA?](https://www.intellectum.ec/blog/que-es-un-agente-de-voz-ia)

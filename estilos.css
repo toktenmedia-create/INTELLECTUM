@@ -1435,3 +1435,145 @@ h1, h2, h3, h4 {
   .isotipo-cuerpo { animation: none; }
   .isotipo-luz { display: none; }
 }
+
+/* ══ PÁGINAS DE SERVICIO ════════════════════════════════════════════════════
+   Una por cada cosa que se vende. Reutilizan casi todo lo de arriba —.wrap,
+   .section-title, .btn, .faq-*, .service-card— y solo añaden lo que la portada
+   no tiene: una cabecera más baja que la del hero (aquí nadie hay que
+   convencer de que entre: ya entró buscando esto), la miga de pan, y las tres
+   listas que dan el cuerpo de la página. */
+.sv-hero { padding: clamp(84px, 11vw, 120px) 0 clamp(40px, 6vw, 64px); }
+.miga {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 22px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.miga a { color: var(--text-muted); text-decoration: none; }
+.miga a:hover { color: var(--accent); }
+.miga span[aria-hidden] { opacity: 0.5; }
+.sv-hero h1 {
+  font-size: clamp(38px, 6vw, 68px);
+  margin-bottom: 20px;
+  max-width: 18ch;
+}
+.sv-hero .section-lead { max-width: 64ch; font-size: clamp(16px, 1.6vw, 19px); }
+.sv-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+.sv-bloque { padding: 0 0 clamp(52px, 7vw, 76px); }
+.sv-bloque > .wrap > h2 {
+  font-size: clamp(26px, 3.2vw, 38px);
+  margin-bottom: 26px;
+}
+.sv-bloque .sv-entrada { max-width: 68ch; margin: 0 0 30px; color: var(--text-dim); line-height: 1.65; }
+
+/* Las tres listas. Comparten rejilla y se distinguen por la marca de la
+   izquierda: chispa cian para lo que sí hace, número para los pasos, raya
+   apagada para lo que no. La marca ES la información; sin ella habría que
+   repetir "sí" y "no" en cada línea. */
+.sv-lista { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 820px) { .sv-lista { grid-template-columns: 1fr 1fr; gap: 2px 40px; } }
+.sv-lista li {
+  position: relative;
+  padding: 15px 0 15px 30px;
+  border-top: 1px solid var(--border);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  text-wrap: pretty;
+}
+.sv-lista li strong { color: var(--text); font-weight: 500; }
+.sv-lista li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 21px;
+  width: 13px;
+  height: 13px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z' fill='%2322d3ee'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.sv-lista.limites li::before {
+  background: none;
+  top: 25px;
+  height: 1px;
+  width: 14px;
+  background-color: var(--text-muted);
+}
+.sv-lista.limites li { color: var(--text-muted); }
+
+.sv-pasos { counter-reset: paso; display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 820px) { .sv-pasos { grid-template-columns: 1fr 1fr; gap: 2px 40px; } }
+.sv-pasos li {
+  position: relative;
+  counter-increment: paso;
+  padding: 16px 0 16px 44px;
+  border-top: 1px solid var(--border);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  text-wrap: pretty;
+}
+.sv-pasos li strong { color: var(--text); font-weight: 500; }
+.sv-pasos li::before {
+  content: "0" counter(paso);
+  position: absolute;
+  left: 0;
+  top: 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+/* Las otras páginas, al final. El enlace interno es medio punto del asunto:
+   sin él cada página queda sola y el buscador no ve que son un conjunto. */
+.sv-otras { padding: 0 0 var(--sec-y); }
+.sv-otras h2 { font-size: clamp(22px, 2.6vw, 30px); margin-bottom: 24px; }
+.sv-otras-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 700px) { .sv-otras-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1000px) { .sv-otras-grid { grid-template-columns: repeat(3, 1fr); } }
+.sv-otra {
+  display: block;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  text-decoration: none;
+  transition: border-color 260ms var(--ease-out), background 260ms var(--ease-out), transform 260ms var(--ease-out);
+}
+.sv-otra h3 { font-size: 20px; margin-bottom: 8px; }
+.sv-otra p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-muted); }
+@media (hover: hover) and (pointer: fine) {
+  .sv-otra:hover { border-color: var(--accent-tint-border); background: var(--bg-card-hover); transform: translateY(-2px); }
+}
+.sv-otra:active { transform: scale(0.99); }
+
+/* El pie de cada tarjeta de servicio: la etiqueta a la izquierda y el enlace a
+   su página a la derecha. La tarjeta entera no es un enlace a propósito —
+   dentro hay texto que a veces se quiere seleccionar, y un <article> envuelto
+   en <a> deja el lector de pantalla anunciando el párrafo completo como si
+   fuera el nombre del enlace. */
+.service-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 20px;
+}
+.service-pie .tag { margin-top: 0; }
+.service-mas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font-size: 14px;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 200ms var(--ease-out), gap 200ms var(--ease-out);
+}
+.service-mas svg { width: 15px; height: 15px; stroke-width: 2; }
+.service-mas:hover { color: var(--accent); gap: 10px; }
+.service-mas:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
