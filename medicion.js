@@ -35,6 +35,30 @@ var PIXEL = "";
 /** Dónde está el aviso de privacidad de ESTE negocio; sin él, el aviso no enlaza nada. */
 var AVISO_URL = "";
 
+  // El sitio tiene dos puertas y el aviso tiene que hablar el idioma de la que
+  // se usó: pedirle permiso en español a quien entró por /en es la primera
+  // señal de que la página no está terminada.
+  var EN_INGLES = (document.documentElement.lang || "es").slice(0, 2) === "en";
+  var TEXTOS = EN_INGLES
+    ? {
+        etiqueta: "Notice about measurement",
+        cuerpo:
+          "We use a Meta tool to learn which content you find useful. " +
+          "It isn’t needed to browse the site, and you can say no. ",
+        enlace: "How we handle your data",
+        no: "No, thanks",
+        si: "Accept",
+      }
+    : {
+        etiqueta: "Aviso sobre medición",
+        cuerpo:
+          "Usamos una herramienta de Meta para saber qué contenido te resulta útil. " +
+          "No es necesaria para navegar y puedes decir que no. ",
+        enlace: "Cómo tratamos tus datos",
+        no: "No, gracias",
+        si: "Aceptar",
+      };
+
 (function () {
   "use strict";
 
@@ -158,21 +182,16 @@ var AVISO_URL = "";
     caja.id = "aviso-medicion";
     caja.setAttribute("role", "dialog");
     caja.setAttribute("aria-live", "polite");
-    caja.setAttribute("aria-label", "Aviso sobre medición");
+    caja.setAttribute("aria-label", TEXTOS.etiqueta);
 
     var texto = document.createElement("p");
-    texto.appendChild(
-      document.createTextNode(
-        "Usamos una herramienta de Meta para saber qué contenido te resulta útil. " +
-          "No es necesaria para navegar y puedes decir que no. ",
-      ),
-    );
+    texto.appendChild(document.createTextNode(TEXTOS.cuerpo));
     if (AVISO_URL) {
       var enlace = document.createElement("a");
       enlace.href = AVISO_URL;
       enlace.target = "_blank";
       enlace.rel = "noopener";
-      enlace.textContent = "Cómo tratamos tus datos";
+      enlace.textContent = TEXTOS.enlace;
       texto.appendChild(enlace);
       texto.appendChild(document.createTextNode("."));
     }
@@ -180,8 +199,8 @@ var AVISO_URL = "";
     var botones = document.createElement("div");
     botones.className = "botones";
     [
-      ["no", "No, gracias"],
-      ["si", "Aceptar"],
+      ["no", TEXTOS.no],
+      ["si", TEXTOS.si],
     ].forEach(function (par) {
       var b = document.createElement("button");
       b.type = "button";

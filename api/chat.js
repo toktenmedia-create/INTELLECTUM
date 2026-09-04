@@ -15,6 +15,7 @@ import { abrirAlmacen, esPersistente } from "../lib/almacen.js";
 import { enviarAviso } from "../lib/leads.js";
 import { calificarConversacion } from "../lib/calificar.js";
 import { CLIENTE, NEGOCIO } from "../lib/cliente.js";
+import { demoPorSlug } from "../lib/demos.js";
 
 export const config = { maxDuration: 60 };
 
@@ -33,16 +34,64 @@ const VENTANA_MS = 10 * 60 * 1000; // por cada 10 minutos
 const LIMITE_IP_HORA = Math.max(1, Number(process.env.CHAT_LIMITE_IP_HORA) || 60);
 const TOPE_DIARIO = Math.max(1, Number(process.env.CHAT_TOPE_DIARIO) || 400);
 
+// El sitio tiene dos puertas —/ y /en— y quien entra por la de inglés no
+// debería tropezarse con un error en español. El agente ya responde en el
+// idioma en que le escriben; esto es para los avisos que salen ANTES de que
+// el agente exista: límites, origen, configuración.
+const AVISOS = {
+  es: {
+    metodo: "Método no permitido",
+    sinConfigurar: "El asistente no está configurado todavía.",
+    origen: "Origen no permitido",
+    demasiados: "Demasiados mensajes. Intenta de nuevo en unos minutos.",
+    historial: "Historial inválido",
+    demoInexistente: "Ese negocio de demostración no existe",
+    cortado: "Se me cortó la conexión. ¿Me repites lo último?",
+    cortadoWhats: (n) => ` Si prefieres, escríbenos al WhatsApp ${n}.`,
+    tope: "El asistente alcanzó su tope de conversaciones por hoy.",
+    topeVias: (v) => ` Escríbenos ${v} y te atendemos ahí mismo.`,
+    topeSolo: " Vuelve a escribir mañana y con gusto te atendemos.",
+    viaWhats: (n) => `al WhatsApp ${n}`,
+    viaCorreo: (c) => `a ${c}`,
+    o: " o ",
+  },
+  en: {
+    metodo: "Method not allowed",
+    sinConfigurar: "The assistant isn’t set up yet.",
+    origen: "Origin not allowed",
+    demasiados: "Too many messages. Try again in a few minutes.",
+    historial: "Invalid history",
+    demoInexistente: "That demo business doesn’t exist",
+    cortado: "The connection dropped. Could you say that again?",
+    cortadoWhats: (n) => ` If you prefer, message us on WhatsApp ${n}.`,
+    tope: "The assistant has reached its conversation limit for today.",
+    topeVias: (v) => ` Message us ${v} and we’ll help you there.`,
+    topeSolo: " Write again tomorrow and we’ll be glad to help.",
+    viaWhats: (n) => `on WhatsApp ${n}`,
+    viaCorreo: (c) => `at ${c}`,
+    o: " or ",
+  },
+};
+
+/**
+ * Español salvo prueba en contrario. La prueba puede llegar de dos sitios: el
+ * campo `idioma` del cuerpo (lo manda la portada) o, cuando el aviso sale antes
+ * de leer el cuerpo, la página desde la que se pidió.
+ */
+function idiomaDe(req, cuerpo) {
+  const pedido = typeof cuerpo?.idioma === "string" ? cuerpo.idioma.slice(0, 2).toLowerCase() : "";
+  if (pedido === "en" || pedido === "es") return pedido;
+  return /\/en(\.html)?(?:[/?#]|$)/.test(String(req?.headers?.referer ?? "")) ? "en" : "es";
+}
+
 // Función y no constante: si la copia no declaró WhatsApp ni correo, no hay
 // "ahí mismo" al que mandar a nadie, y la frase tiene que decir otra cosa.
-function mensajeTopeDiario() {
+function mensajeTopeDiario(idioma = "es") {
+  const t = AVISOS[idioma] ?? AVISOS.es;
   const vias = [];
-  if (NEGOCIO.whatsappBot) vias.push(`al WhatsApp ${NEGOCIO.whatsappBot}`);
-  if (NEGOCIO.correo) vias.push(`a ${NEGOCIO.correo}`);
-  const base = "El asistente alcanzó su tope de conversaciones por hoy.";
-  return vias.length
-    ? `${base} Escríbenos ${vias.join(" o ")} y te atendemos ahí mismo.`
-    : `${base} Vuelve a escribir mañana y con gusto te atendemos.`;
+  if (NEGOCIO.whatsappBot) vias.push(t.viaWhats(NEGOCIO.whatsappBot));
+  if (NEGOCIO.correo) vias.push(t.viaCorreo(NEGOCIO.correo));
+  return vias.length ? t.tope + t.topeVias(vias.join(t.o)) : t.tope + t.topeSolo;
 }
 
 // De dónde se acepta el chat. Cada copia pone su propio ALLOWED_ORIGINS; el
@@ -70,6 +119,8 @@ const contador = new Map();
 
 export default async function handler(req, res) {
   const cors = cabecerasCors(req);
+  // Antes de leer el cuerpo solo se puede mirar de dónde vino la petición.
+  let t = AVISOS[idiomaDe(req, null)];
 
   if (req.method === "OPTIONS") {
     res.writeHead(204, cors);
@@ -78,33 +129,32 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== "POST") {
-    responderJson(res, cors, 405, { error: "Método no permitido" });
+    responderJson(res, cors, 405, { error: t.metodo });
     return;
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error("[CHAT] falta la variable de entorno ANTHROPIC_API_KEY");
-    responderJson(res, cors, 503, { error: "El asistente no está configurado todavía." });
+    responderJson(res, cors, 503, { error: t.sinConfigurar });
     return;
   }
 
   if (!origenPermitido(req)) {
-    responderJson(res, cors, 403, { error: "Origen no permitido" });
+    responderJson(res, cors, 403, { error: t.origen });
     return;
   }
 
   const ip = primeraIp(req);
   if (superaLimite(ip)) {
-    responderJson(res, cors, 429, {
-      error: "Demasiados mensajes. Intenta de nuevo en unos minutos.",
-    });
+    responderJson(res, cors, 429, { error: t.demasiados });
     return;
   }
 
   const cuerpo = await leerJson(req);
+  t = AVISOS[idiomaDe(req, cuerpo)]; // ya con el cuerpo, el idioma es el que dijo la página
   const historial = validarHistorial(cuerpo?.messages);
   if (!historial) {
-    responderJson(res, cors, 400, { error: "Historial inválido" });
+    responderJson(res, cors, 400, { error: t.historial });
     return;
   }
 
@@ -112,19 +162,28 @@ export default async function handler(req, res) {
   // gastan cupo). Si la base no contesta, se deja pasar: el Map por instancia
   // sigue cubriendo, y castigar a un cliente real por un tropiezo nuestro
   // sería pagar el ahorro con ventas.
+  // ¿Es la demostración de la portada? Un slug que no existe se rechaza en vez
+  // de degradar a la conversación de casa: alguien probando "?demo=loquesea"
+  // terminaría hablando con el agente de Intellectum creyendo que es el de una
+  // clínica, y esa confusión es peor que un error claro.
+  const demoPedida = typeof cuerpo?.demo === "string" ? cuerpo.demo : null;
+  const demo = demoPedida ? demoPorSlug(demoPedida) : null;
+  if (demoPedida && !demo) {
+    responderJson(res, cors, 400, { error: t.demoInexistente });
+    return;
+  }
+
   const almacen = abrirAlmacen();
   const sesionId = typeof cuerpo?.sessionId === "string" ? cuerpo.sessionId.slice(0, 64) : null;
   try {
     const freno = await frenoDurable(almacen, ip);
     if (freno === "ip") {
-      responderJson(res, cors, 429, {
-        error: "Demasiados mensajes. Intenta de nuevo en unos minutos.",
-      });
+      responderJson(res, cors, 429, { error: t.demasiados });
       return;
     }
     if (freno === "dia") {
       topeVisto = Date.now(); // las próximas peticiones ya no pagan las consultas
-      responderJson(res, cors, 429, { error: mensajeTopeDiario() });
+      responderJson(res, cors, 429, { error: mensajeTopeDiario(idiomaDe(req, cuerpo)) });
       return;
     }
     // Se espera de verdad: si el evento no se puede escribir, el contador
@@ -132,7 +191,7 @@ export default async function handler(req, res) {
     await almacen.registrarEvento({
       tipo: "chat_web",
       actor: "visitante",
-      detalle: { ip, sesion: sesionId },
+      detalle: { ip, sesion: sesionId, demo: demo?.slug ?? null },
     });
   } catch (err) {
     console.error("[CHAT] el freno durable no pudo contar (sigue el de instancia):", err?.message ?? err);
@@ -160,6 +219,7 @@ export default async function handler(req, res) {
         origen: req.headers.referer || "sitio web",
         sesion: sesionId,
       },
+      demo,
     });
 
     if (lead) enviar({ t: "lead" });
@@ -168,7 +228,10 @@ export default async function handler(req, res) {
     // LO QUE SE VENDE. El chat web no guarda historial en el servidor, así
     // que el contador de conversaciones se llama aquí, cuando el agente ya
     // respondió: misma sesión dentro de 24 h = misma conversación.
-    if (textoCompleto && sesionId) {
+    // La demostración NO cuenta: lo que se vende son conversaciones con clientes
+    // de verdad, y contar las pruebas de la portada inflaría la única cifra que
+    // le cobramos a alguien.
+    if (textoCompleto && sesionId && !demo) {
       enSegundoPlano(
         almacen
           .contarConversacion({ canal: "web", sesion: sesionId })
@@ -193,9 +256,7 @@ export default async function handler(req, res) {
     console.error("[CHAT] error hablando con Claude:", err?.status, err?.message ?? err);
     enviar({
       t: "error",
-      v:
-        "Se me cortó la conexión. ¿Me repites lo último?" +
-        (NEGOCIO.whatsappBot ? ` Si prefieres, escríbenos al WhatsApp ${NEGOCIO.whatsappBot}.` : ""),
+      v: t.cortado + (NEGOCIO.whatsappBot ? t.cortadoWhats(NEGOCIO.whatsappBot) : ""),
     });
   } finally {
     res.end();

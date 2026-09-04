@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "node --env-file-if-exists=.env dev-server.mjs",
-    "test": "node scripts/probar-multicliente.mjs && node scripts/probar-conversaciones.mjs && node scripts/probar-fusion.mjs && node scripts/probar-busqueda.mjs && node scripts/probar-traspaso.mjs && node scripts/probar-voz-whatsapp.mjs && node scripts/probar-aviso.mjs && node scripts/probar-whatsapp-tope.mjs"
+    "test": "node scripts/probar-multicliente.mjs && node scripts/probar-conversaciones.mjs && node scripts/probar-fusion.mjs && node scripts/probar-busqueda.mjs && node scripts/probar-traspaso.mjs && node scripts/probar-voz-whatsapp.mjs && node scripts/probar-aviso.mjs && node scripts/probar-whatsapp-tope.mjs && node scripts/probar-demos.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
