@@ -77,7 +77,13 @@ Los datos de los clientes de un negocio no se mezclan con los de otro.
 - [Automatización a medida](https://www.intellectum.ec/automatizacion-a-medida)
 - [Sitios web y landing pages](https://www.intellectum.ec/sitios-web)
 - [Tiendas en línea](https://www.intellectum.ec/tiendas-en-linea)
-- [English version](https://www.intellectum.ec/en): the site in English.
+- [English version](https://www.intellectum.ec/en): the site in English. The six service pages also exist in English:
+  [AI agents for WhatsApp](https://www.intellectum.ec/ai-agents-whatsapp) ·
+  [AI voice calls](https://www.intellectum.ec/ai-voice-calls) ·
+  [Automated sales](https://www.intellectum.ec/automated-sales) ·
+  [Custom automation](https://www.intellectum.ec/custom-automation) ·
+  [Websites](https://www.intellectum.ec/websites) ·
+  [Online stores](https://www.intellectum.ec/online-stores)
 - [Blog](https://www.intellectum.ec/blog): guías prácticas sobre IA aplicada a los negocios.
 - [¿Qué es un agente de voz con IA?](https://www.intellectum.ec/blog/que-es-un-agente-de-voz-ia)
 - [Chatbot con IA para WhatsApp](https://www.intellectum.ec/blog/chatbot-whatsapp-para-empresas)
