@@ -253,7 +253,46 @@ input:focus, textarea:focus {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   .hora { opacity: 1; animation: none; }
 }
+/* ── Modo incrustado ──────────────────────────────────────────────────────────
+   La portada mete esta misma página en un iframe (/agenda?incrustado=1) para
+   que se pueda elegir la hora sin salir del sitio. Ahí sobra todo lo que ya
+   dice la sección que la envuelve: el rótulo de marca, la bajada, el pie y el
+   resplandor de fondo. Se esconde por CSS y no por JS para que no alcance a
+   verse y desaparecer. El titular se queda, pero como etiqueta: la lista de
+   horas necesita quien la nombre, no un segundo titular compitiendo con el de
+   la sección. */
+html.incrustado, html.incrustado body { min-height: 0; background: transparent; }
+html.incrustado body { padding: 0; display: block; }
+html.incrustado body::before { display: none; }
+html.incrustado .marca,
+html.incrustado .bajada,
+html.incrustado #pie-nota,
+html.incrustado .pie { display: none !important; }
+html.incrustado .envoltorio { max-width: none; }
+html.incrustado .mas-horas {
+  display: block; width: 100%;
+  margin-top: 6px; padding: 12px;
+  background: none; border: 1px dashed var(--border-fuerte); border-radius: 12px;
+  color: var(--texto-dim); font-family: var(--sans); font-size: 14px;
+  cursor: pointer;
+  transition: color 150ms var(--salida), border-color 150ms var(--salida);
+}
+html.incrustado .mas-horas:hover { color: var(--texto); border-color: var(--cian-borde); }
+html.incrustado h1 {
+  font-family: var(--sans);
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--texto-tenue);
+  margin-bottom: 18px;
+}
 </style>
+<script>
+  /* Antes de pintar: si se decidiera abajo, con el resto del guion, el
+     encabezado alcanzaría a verse y a desaparecer dentro del iframe. */
+  if (/[?&]incrustado=1(?:&|$)/.test(location.search)) {
+    document.documentElement.className = "incrustado";
+  }
+</script>
 </head>
 <body>
 <main class="envoltorio">
@@ -321,6 +360,14 @@ input:focus, textarea:focus {
   var elegido = null;
   var horariosCache = [];
 
+  /* Incrustada en la portada, la lista completa —dos semanas— mide casi dos mil
+     píxeles y se come la sección que la contiene. Se enseñan los primeros días
+     y el resto se despliega aquí mismo: mandar a otra página a quien quiere ver
+     más horas deshace justo lo que se gana teniendo la agenda dentro. */
+  var INCRUSTADA = document.documentElement.classList.contains("incrustado");
+  var DIAS_AL_INICIO = 3;
+  var todosLosDias = false;
+
   /* Dos idiomas, un solo archivo. La página en inglés enlaza aquí con ?lang=en;
      todo lo demás —los horarios, la agenda, el correo de confirmación— es el
      mismo sistema. Traducir la interfaz no es traducir el negocio. */
@@ -351,6 +398,7 @@ input:focus, textarea:focus {
         listoCorreo: function (c) { return "We sent the confirmation to " + c + ", with the invitation for your calendar."; },
         listoSinCorreo: function (c) { return "We'll write to " + c + " to confirm the details."; },
         pie: function (m) { return m + " minutes, no cost and no strings attached."; },
+        masHoras: "Show more times",
       }
     : {
         rotulo: "Agenda tu cita",
@@ -376,6 +424,7 @@ input:focus, textarea:focus {
         listoCorreo: function (c) { return "Te llegó la confirmación a " + c + ", con la invitación para tu calendario."; },
         listoSinCorreo: function (c) { return "Te escribiremos a " + c + " para confirmarte los detalles."; },
         pie: function (m) { return "Son " + m + " minutos, sin costo y sin compromiso."; },
+        masHoras: "Ver más horas",
       };
   var LOCALE = EN ? "en-US" : "es-EC";
 
@@ -479,9 +528,12 @@ input:focus, textarea:focus {
       grupo.horas.push(h);
     });
 
+    var recorta = INCRUSTADA && !todosLosDias && porDia.length > DIAS_AL_INICIO;
+    var visibles = recorta ? porDia.slice(0, DIAS_AL_INICIO) : porDia;
+
     var n = 0;
     caja.className = "";
-    caja.innerHTML = porDia
+    var html = visibles
       .map(function (g) {
         return (
           '<div class="dia"><div class="dia-titulo">' + esc(g.dia) + "</div><div class=\"horas\">" +
@@ -497,6 +549,19 @@ input:focus, textarea:focus {
         );
       })
       .join("");
+    /* El botón entra en el mismo innerHTML y no después: añadirlo aparte
+       borraría los escuchadores que se enganchan justo abajo. */
+    if (recorta) {
+      html += '<button type="button" class="mas-horas" id="mas-horas">' + esc(T.masHoras) + "</button>";
+    }
+    caja.innerHTML = html;
+
+    if (recorta) {
+      $("mas-horas").addEventListener("click", function () {
+        todosLosDias = true;
+        pintar(horariosCache);
+      });
+    }
 
     caja.querySelectorAll(".hora").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -670,6 +735,43 @@ input:focus, textarea:focus {
       '<a href="' + esc(NEG.enlaceWhatsapp) + '" style="color:var(--cian-claro)">WhatsApp</a>' +
       esc(despues)
     );
+  }
+
+  /* Modo incrustado: la portada no puede medir por fuera el alto de un iframe,
+     así que se lo decimos nosotros cada vez que cambia —al llegar los horarios,
+     al desplegar más días, al pasar al formulario, al confirmar—.
+
+     Dos medidas y se toma la mayor, porque cada una falla por un lado. El
+     scrollHeight del DOCUMENTO nunca baja del alto del propio iframe: el marco
+     podría crecer pero jamás encoger, y se quedaría con el hueco del paso más
+     largo. El del CUERPO sí encoge, pero se come el margen inferior del último
+     hijo cuando colapsa: son 31 px que recortan el botón de confirmar. El
+     borde de abajo del envoltorio no miente en ninguno de los dos casos. */
+  if (INCRUSTADA && parent !== window) {
+    var envoltorio = document.querySelector(".envoltorio");
+    var avisarAlto = function () {
+      var alto = document.body.scrollHeight;
+      if (envoltorio) alto = Math.max(alto, Math.ceil(envoltorio.getBoundingClientRect().bottom));
+      parent.postMessage({ agenda: "alto", alto: alto }, location.origin);
+    };
+
+    /* Dos vigilantes, porque cada uno ve lo que el otro no. El de mutaciones
+       cubre los cambios que hace esta página —pintar horarios, cambiar de
+       paso, mostrar un error— y dispara aunque la pestaña esté en segundo
+       plano. El de tamaño cubre lo que no pasa por el DOM: una tipografía que
+       llega tarde, el giro del teléfono, el teclado que se abre. Con el de
+       tamaño solo, el marco se quedaba corto y recortaba el último botón. */
+    var pendiente = 0;
+    var avisarPronto = function () {
+      clearTimeout(pendiente);
+      pendiente = setTimeout(avisarAlto, 40);
+    };
+    new MutationObserver(avisarPronto).observe(document.body, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"],
+    });
+    if (window.ResizeObserver) new ResizeObserver(avisarPronto).observe(document.body);
+    window.addEventListener("load", avisarAlto);
+    avisarAlto();
   }
 
   identidad().then(cargar);

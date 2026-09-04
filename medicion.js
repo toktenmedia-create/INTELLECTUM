@@ -62,6 +62,13 @@ var AVISO_URL = "";
 (function () {
   "use strict";
 
+  /* Dentro de un iframe, no. La portada incrusta /agenda?incrustado=1 y este
+     archivo viaja en las dos páginas: sin este freno el aviso de permiso se
+     pinta dos veces —una encima de la agenda— y la misma visita se le cuenta
+     dos veces a Meta. El permiso es asunto de la página que la persona abrió,
+     no del marco que va dentro. */
+  if (window.parent !== window) return;
+
   var LLAVE = "intellectum:medicion";
 
   fetch("/api/negocio")
