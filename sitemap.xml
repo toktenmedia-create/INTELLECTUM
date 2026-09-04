@@ -58,12 +58,8 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <url>
-    <loc>https://www.intellectum.ec/agenda</loc>
-    <lastmod>2026-09-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
+  <!-- /agenda y /panel NO van aquí: los dos son noindex. agenda.html viaja
+       idéntico a la copia de cada cliente, así que no puede decir de quién es. -->
   <url>
     <loc>https://www.intellectum.ec/blog</loc>
     <lastmod>2026-08-20</lastmod>

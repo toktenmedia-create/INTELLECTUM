@@ -41,7 +41,7 @@ const SERVICIOS = [
     h1a: "Un agente de IA que atiende tu",
     h1b: "WhatsApp y tu web.",
     tituloTag:
-      "Agentes de IA para WhatsApp y chat web · Ecuador | Intellectum AI",
+      "Agentes de IA para WhatsApp en Ecuador | Intellectum",
     descripcion:
       "Agentes de IA entrenados con la información de tu negocio que responden por WhatsApp y por el chat de tu web las 24 horas, califican interesados y agendan citas. Quito, Ecuador.",
     lead: "El mismo agente en los dos canales, entrenado con la información de tu negocio. Responde a la hora que le escriban, entiende qué necesita cada persona, agenda la cita y deja todo anotado en tu panel. Cuando algo necesita a alguien de tu equipo, avisa y se calla.",
@@ -106,7 +106,7 @@ const SERVICIOS = [
     titulo: "Llamadas de voz con IA",
     h1a: "Llamadas con voz de IA para lo que",
     h1b: "el chat no alcanza.",
-    tituloTag: "Llamadas de voz con IA para empresas · Ecuador | Intellectum AI",
+    tituloTag: "Llamadas de voz con IA en Ecuador | Intellectum",
     descripcion:
       "Llamadas con voz de inteligencia artificial para confirmar citas, recordar visitas y retomar a quien dejó sus datos y no volvió. Se monta sobre el agente que ya tengas.",
     lead: "Hay gente que no lee mensajes y contesta el teléfono. Para ellos hay una voz de IA que llama, dice a qué llama y anota la respuesta. No reemplaza al agente de chat: se monta encima del plan que ya tengas.",
@@ -165,7 +165,7 @@ const SERVICIOS = [
     h1a: "El que preguntó y no volvió",
     h1b: "no se pierde.",
     tituloTag:
-      "Seguimiento automático y cotización con IA · Ecuador | Intellectum AI",
+      "Ventas automatizadas con IA en Ecuador | Intellectum",
     descripcion:
       "Seguimiento automático por WhatsApp a quien pidió precio y no volvió, cotización al instante y recordatorios de cita. Cada interesado llega a tu equipo ya calificado.",
     lead: "La mayoría de las ventas no se pierden por precio: se pierden porque nadie volvió a escribir. El seguimiento automático retoma a quien pidió un precio y se quedó callado, y le llega a tu equipo solo el que ya está listo para hablar.",
@@ -225,7 +225,7 @@ const SERVICIOS = [
     h1a: "Lo que hoy alguien copia",
     h1b: "de un lado a otro.",
     tituloTag:
-      "Automatización de procesos e integraciones con IA · Ecuador | Intellectum AI",
+      "Automatización a medida con IA en Ecuador | Intellectum",
     descripcion:
       "Conectamos CRM, ERP, hojas de cálculo, correo y pasarelas de pago en flujos que ejecutan tareas repetitivas, validan datos y avisan de las excepciones.",
     lead: "Casi todo negocio tiene a alguien pasando datos de una pantalla a otra. Eso es un proceso, no un trabajo. Se puede automatizar, y lo que gana tu equipo es el tiempo que hoy se va en copiar, pegar y revisar.",
@@ -283,7 +283,7 @@ const SERVICIOS = [
     h1a: "Un sitio que además",
     h1b: "atiende.",
     tituloTag:
-      "Diseño de sitios web y landing pages en Quito, Ecuador | Intellectum AI",
+      "Diseño de sitios web en Quito, Ecuador | Intellectum",
     descripcion:
       "Sitios web y landing pages rápidos y medibles, con el agente de IA integrado desde el lanzamiento: el visitante encuentra respuesta antes de irse.",
     lead: "Una página bonita que no contesta es un folleto caro. Construimos sitios rápidos, medibles y pensados para que el visitante haga algo — y con el agente adentro desde el primer día, para que quien tenga una duda la resuelva ahí mismo en vez de irse.",
@@ -341,7 +341,7 @@ const SERVICIOS = [
     titulo: "Tiendas en línea para Ecuador",
     h1a: "Una tienda que responde",
     h1b: "mientras duermes.",
-    tituloTag: "Tiendas en línea con IA para Ecuador | Intellectum AI",
+    tituloTag: "Tiendas en línea con IA en Ecuador | Intellectum",
     descripcion:
       "Tiendas en línea con catálogo, carrito y pagos para Ecuador, con atención automatizada por WhatsApp y recuperación de carritos abandonados.",
     lead: "Vender en línea en Ecuador es más que subir un catálogo: es responder la pregunta que frena la compra, a la hora que la hacen. La tienda se construye con el agente adentro, para que esa pregunta no se quede sin respuesta.",

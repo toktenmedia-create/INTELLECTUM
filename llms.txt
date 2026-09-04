@@ -71,7 +71,6 @@ Los datos de los clientes de un negocio no se mezclan con los de otro.
 
 - [Inicio](https://www.intellectum.ec/): servicios, demo en vivo del agente, proceso, preguntas frecuentes y agenda.
 - [Habla con IntelliA](https://www.intellectum.ec/chat): chat en línea con el asistente de IA; da rangos de precio y agenda.
-- [Agendar consultoría](https://www.intellectum.ec/agenda): 30 minutos, gratis y sin compromiso.
 - [Agentes de IA para WhatsApp](https://www.intellectum.ec/agentes-de-ia-whatsapp)
 - [Llamadas con IA](https://www.intellectum.ec/llamadas-con-ia)
 - [Ventas automatizadas](https://www.intellectum.ec/ventas-automatizadas)
